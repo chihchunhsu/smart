@@ -145,6 +145,7 @@ forward_model/__pycache__/mcmc.cpython-37.pyc
 forward_model/__pycache__/model_fit.cpython-37.pyc
 forward_model/__pycache__/rotation_broaden.cpython-37.pyc
 libraries/.DS_Store
+libraries/*
 utils/__pycache__/addKeyword.cpython-37.pyc
 utils/__pycache__/listTarget.cpython-37.pyc
 utils/__pycache__/stats.cpython-37.pyc
@@ -156,4 +157,3 @@ forward_model/__pycache__/InterpolateModel_3D.cpython-37.pyc
 forward_model/__pycache__/InterpolateModel_4D.cpython-37.pyc
 utils/.DS_Store
 wavelength_calibration/.DS_Store
-
