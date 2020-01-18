@@ -1,4 +1,4 @@
-import nirspec_fmp as nsp
+import smart
 import numpy as np
 
 def _residual(data,model):
@@ -23,7 +23,7 @@ def _residual(data,model):
 			residual.append(float(data_flux - model.flux[i]))
 			#residual[i] = float(data_flux - model.flux[i])
 
-	residual_model = nsp.Model()
+	residual_model = smart.Model()
 	residual_model.wave = model.wave[data_model_range]
 	residual_model.flux = np.asarray(residual)
 	# reject fluxes larger than 5 sigmas
@@ -36,7 +36,7 @@ def residual(data, model):
 	Return a residual flux array with the length of the data.
 	"""
 	if np.array_equal(data.wave,model.wave):
-		residual_model      = nsp.Model()
+		residual_model      = smart.Model()
 		residual_model.flux = data.flux - model.flux
 		residual_model.wave = data.wave
 

@@ -29,7 +29,7 @@ def generate_initial_priors_and_limits(sp_type):
 
 def generate_final_priors_and_limits(barycorr, save_to_path1):
 	df = pd.read_csv(save_to_path1+'/mcmc_result.txt', sep=' ', header=None)
-	#barycorr = nsp.barycorr(data.header).value
+	#barycorr = smart.barycorr(data.header).value
 	priors1 =  {'teff_min':max(float(df[1][0])-20,900),   'teff_max':min(float(df[1][0])+20,1300),
 				'logg_min':max(float(df[1][1])-0.001,3.5), 'logg_max':min(float(df[1][1])+0.001,5.5),
 				'vsini_min':float(df[1][2])-0.1,           'vsini_max':float(df[1][2])+0.1,
@@ -71,7 +71,7 @@ def mask_from_initial_mcmc(custom_mask, save_to_path):
 	data2.wave = data2.wave[pixel_start: pixel_end]
 	data2.flux = data2.flux[pixel_start: pixel_end]
 
-	model = nsp.makeModel(mcmc_dic['teff'], mcmc_dic['logg'],0,
+	model = smart.makeModel(mcmc_dic['teff'], mcmc_dic['logg'],0,
 		mcmc_dic['vsini'], mcmc_dic['rv']-barycorr, mcmc_dic['alpha'], 
 		mcmc_dic['B'], mcmc_dic['A'], lsf=mcmc_dic['lsf'], data=data, order=data.order)
 	pixel = np.delete(np.arange(len(data2.oriWave)),data2.mask)[pixel_start: pixel_end]

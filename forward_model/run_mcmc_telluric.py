@@ -9,7 +9,7 @@ from astropy.io import fits
 import emcee
 #from schwimmbad import MPIPool
 from multiprocessing import Pool
-import nirspec_fmp as nsp
+import smart
 import corner
 import os
 import sys
@@ -100,7 +100,7 @@ if pwv is None: pwv = '1.5'
 if order == 35: applymask = True
 
 tell_data_name2 = tell_data_name + '_calibrated'
-tell_sp         = nsp.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
+tell_sp         = smart.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
 
 ###########################################################################################################
 """
@@ -197,22 +197,22 @@ def makeTelluricModel(lsf, alpha, flux_offset, wave_offset0, data=data, pwv=pwv)
 	data2               = copy.deepcopy(data)
 	data2.wave          = data2.wave + wave_offset0
 	#data2.wave          = data2.wave * (1 + wave_offset1) + wave_offset0
-	telluric_model      = nsp.convolveTelluric(lsf, data2, alpha=alpha, pwv=pwv)
+	telluric_model      = smart.convolveTelluric(lsf, data2, alpha=alpha, pwv=pwv)
 
 	if data.order == 35:
 		from scipy.optimize import curve_fit
 		data_flux_avg = np.average(data2.flux)
-		popt, pcov = curve_fit(nsp.voigt_profile,data2.wave[0:-10], data2.flux[0:-10], 
+		popt, pcov = curve_fit(smart.voigt_profile,data2.wave[0:-10], data2.flux[0:-10], 
 			p0=[21660,data_flux_avg,0.1,0.1,0.01,0.1,10000,1000], maxfev=10000)
-		#model               = nsp.continuum(data=data2, mdl=telluric_model, deg=2)
+		#model               = smart.continuum(data=data2, mdl=telluric_model, deg=2)
 		model = telluric_model
-		max_model_flux      = np.max(nsp.voigt_profile(data2.wave, *popt))
-		model.flux         *= nsp.voigt_profile(data2.wave, *popt)/max_model_flux
-		model               = nsp.continuum(data=data2, mdl=model, deg=deg)
+		max_model_flux      = np.max(smart.voigt_profile(data2.wave, *popt))
+		model.flux         *= smart.voigt_profile(data2.wave, *popt)/max_model_flux
+		model               = smart.continuum(data=data2, mdl=model, deg=deg)
 	else:
-		model               = nsp.continuum(data=data2, mdl=telluric_model, deg=deg)
+		model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
 		for i in range(niter):
-			model               = nsp.continuum(data=data2, mdl=model, deg=deg)
+			model               = smart.continuum(data=data2, mdl=model, deg=deg)
 	
 	model.flux             += flux_offset
 
@@ -254,7 +254,7 @@ def lnlike(theta, data=data):
 
 	model = makeTelluricModel(lsf, alpha, A, B, data=data)
 
-	chisquare = nsp.chisquare(data, model)
+	chisquare = smart.chisquare(data, model)
 
 	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*data.noise**2)))
 
@@ -375,11 +375,11 @@ niter = 5
 
 data2               = copy.deepcopy(data)
 data2.wave          = data2.wave + B_mcmc[0]
-telluric_model      = nsp.convolveTelluric(lsf_mcmc[0], data, alpha=alpha_mcmc[0])
-model, pcont        = nsp.continuum(data=data, mdl=telluric_model, deg=deg, tell=True)
+telluric_model      = smart.convolveTelluric(lsf_mcmc[0], data, alpha=alpha_mcmc[0])
+model, pcont        = smart.continuum(data=data, mdl=telluric_model, deg=deg, tell=True)
 polyfit             = np.polyval(pcont, model.wave)
 for i in range(niter):
-	model, pcont2   = nsp.continuum(data=data2, mdl=model, deg=deg, tell=True)
+	model, pcont2   = smart.continuum(data=data2, mdl=model, deg=deg, tell=True)
 	polyfit2        = np.polyval(pcont2, model.wave)
 	polyfit        *= polyfit2
 
@@ -415,7 +415,7 @@ plt.figtext(0.89,0.83,"${0}^{{+{1}}}_{{-{2}}}/{3}^{{+{4}}}_{{-{5}}}/{6}^{{+{7}}}
 	verticalalignment='center',
 	fontsize=12)
 plt.figtext(0.89,0.80,r"$\chi^2$ = {}, DOF = {}".format(\
-	round(nsp.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 	color='k',
 	horizontalalignment='right',
 	verticalalignment='center',
@@ -540,8 +540,8 @@ plt.close()
 
 data2               = copy.deepcopy(data)
 data2.wave          = data2.wave + B_mcmc[0]
-telluric_model      = nsp.convolveTelluric(lsf_mcmc[0], data, alpha=alpha_mcmc[0])
-model, pcont        = nsp.continuum(data=data, mdl=telluric_model, deg=2, tell=True)
+telluric_model      = smart.convolveTelluric(lsf_mcmc[0], data, alpha=alpha_mcmc[0])
+model, pcont        = smart.continuum(data=data, mdl=telluric_model, deg=2, tell=True)
 model.flux         += A_mcmc[0]
 
 plt.tick_params(labelsize=20)
@@ -572,7 +572,7 @@ plt.figtext(0.89,0.83,"${0}^{{+{1}}}_{{-{2}}}/{3}^{{+{4}}}_{{-{5}}}/{6}^{{+{7}}}
 	verticalalignment='center',
 	fontsize=12)
 plt.figtext(0.89,0.80,r"$\chi^2$ = {}, DOF = {}".format(\
-	round(nsp.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 	color='k',
 	horizontalalignment='right',
 	verticalalignment='center',

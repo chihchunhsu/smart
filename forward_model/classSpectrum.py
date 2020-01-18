@@ -9,7 +9,7 @@ import sys
 import os
 import warnings
 import copy
-import nirspec_fmp as nsp
+import smart
 warnings.filterwarnings("ignore")
 
 
@@ -42,9 +42,9 @@ class Spectrum():
 
 	Examples
 	--------
-	>>> import nirspec_pip as nsp
+	>>> import smart
 	>>> path = '/path/to/reducedData'
-	>>> data = nsp.Spectrum(name='jan19s0022', order=33, path=path)
+	>>> data = smart.Spectrum(name='jan19s0022', order=33, path=path)
 	>>> data.plot()
 
 	"""
@@ -136,7 +136,7 @@ class Spectrum():
 				#import bitmask
 				mask_0 = []
 				for i in range(len(hdulist[3].data[0])):
-					bitmask = nsp.bits_set(hdulist[3].data[0][i])
+					bitmask = smart.bits_set(hdulist[3].data[0][i])
 					if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
 					(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
 					(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
@@ -144,7 +144,7 @@ class Spectrum():
 				
 				mask_1 = []
 				for i in range(len(hdulist[3].data[1])):
-					bitmask = nsp.bits_set(hdulist[3].data[1][i])
+					bitmask = smart.bits_set(hdulist[3].data[1][i])
 					if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
 					(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
 					(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
@@ -152,7 +152,7 @@ class Spectrum():
 				
 				mask_2 = []
 				for i in range(len(hdulist[3].data[2])):
-					bitmask = nsp.bits_set(hdulist[3].data[2][i])
+					bitmask = smart.bits_set(hdulist[3].data[2][i])
 					if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
 					(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
 					(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
@@ -442,9 +442,9 @@ class Spectrum():
 				# the telluric standard model
 				wavelow = tell_sp2.wave[0] - 20
 				wavehigh = tell_sp2.wave[-1] + 20
-				tell_mdl = nsp.getTelluric(wavelow=wavelow,wavehigh=wavehigh)
+				tell_mdl = smart.getTelluric(wavelow=wavelow,wavehigh=wavehigh)
 				# continuum correction for the data
-				tell_sp2 = nsp.continuumTelluric(data=tell_sp2, 
+				tell_sp2 = smart.continuumTelluric(data=tell_sp2, 
 					model=tell_mdl,order=tell_sp2.order)
 				# telluric flux
 				hdu6 = fits.PrimaryHDU(tell_sp.flux, header=tell_sp.header)
@@ -480,12 +480,12 @@ class Spectrum():
 			
 			elif tell_sp is not None:
 				tell_sp2 = copy.deepcopy(tell_sp)
-				tell_sp2 = nsp.continuumTelluric(data=tell_sp2
+				tell_sp2 = smart.continuumTelluric(data=tell_sp2
 					,order=self.order)
-				lsf0 = nsp.getLSF(tell_sp2)
+				lsf0 = smart.getLSF(tell_sp2)
 				tell_sp2.flux = tell_sp2.oriFlux
 				tell_sp2.wave = tell_sp2.oriWave
-				tell_mdl = nsp.convolveTelluric(lsf0, tell_sp2)
+				tell_mdl = smart.convolveTelluric(lsf0, tell_sp2)
 
 				print(len(self.oriWave), len(self.oriFlux), len(self.oriNoise), len(tell_sp.oriFlux),
 					len(tell_sp.oriNoise), len(tell_mdl.flux), len(pixel), len(mask))
@@ -603,7 +603,7 @@ class Spectrum():
 				#a.flux = a.flux[np.where(condition)]
 				#a.wave = a.wave[np.where(condition)]
 				## resampling the telluric model
-				#b.flux = np.array(nsp.integralResample(xh=b.wave, 
+				#b.flux = np.array(smart.integralResample(xh=b.wave, 
 				#	yh=b.flux, xl=a.wave))
 				
 				return np.inner(a.oriFlux, b.oriFlux)/\
@@ -638,7 +638,7 @@ class Spectrum():
 			self.oriWave = self.oriWave[np.where(condition)]
 			self.oriNoise = self.oriNoise[np.where(condition)]
 			sp_supers.oriNoise = sp_supers.oriNoise[np.where(condition)]
-			sp_supers.oriFlux = np.array(nsp.integralResample(xh=sp_supers.oriWave, 
+			sp_supers.oriFlux = np.array(smart.integralResample(xh=sp_supers.oriWave, 
 				yh=sp_supers.oriFlux, xl=self.oriWave))
 
 			w1 = 1/self.oriNoise**2
@@ -679,9 +679,9 @@ class Spectrum():
 
 		length1 = tell_sp.header['NAXIS1']
 
-		self.wave = np.delete(nsp.waveSolution(np.arange(length1),
+		self.wave = np.delete(smart.waveSolution(np.arange(length1),
 			wfit0,wfit1,wfit2,wfit3,wfit4,wfit5,c3,c4, order=self.order), list(self.mask))
-		self.oriWave = nsp.waveSolution(np.arange(length1),
+		self.oriWave = smart.waveSolution(np.arange(length1),
 			wfit0,wfit1,wfit2,wfit3,wfit4,wfit5,c3,c4, order=self.order)
 
 		return self

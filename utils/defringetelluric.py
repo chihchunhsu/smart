@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import nirspec_fmp as nspf
+import smart
 import os, sys
 import time
 from astropy.table import Table
@@ -40,7 +40,7 @@ if not os.path.exists(save_to_path):
 ############################################
 print(tell_data_name)
 
-tell_sp = nspf.Spectrum(name=tell_data_name, order=order, path=tell_path)
+tell_sp = smart.Spectrum(name=tell_data_name, order=order, path=tell_path)
 
 clickpoints = []
 def onclick(event):

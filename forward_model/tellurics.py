@@ -2,7 +2,7 @@
 import numpy as np
 from astropy.io import fits
 from astropy.table import Table
-import nirspec_fmp as nsp
+import smart
 import sys, os, os.path, time
 import copy
 
@@ -44,8 +44,8 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, **kwargs):
 
     Examples
     --------
-    >>> import nirspec_pip as nsp
-    >>> telluric = nsp.getTelluric(wavelow=22900, wavehigh=23250)
+    >>> import smart
+    >>> telluric = smart.getTelluric(wavelow=22900, wavehigh=23250)
 
     """
     FULL_PATH  = os.path.realpath(__file__)
@@ -71,7 +71,7 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, **kwargs):
     
     tellurics = fits.open(tfile)
 
-    telluric      = nsp.Model()
+    telluric      = smart.Model()
     telluric.wave = np.array(tellurics[1].data['lam'] * 10000)
     telluric.flux = np.array(tellurics[1].data['trans'])**(alpha)
 
@@ -207,11 +207,11 @@ def convolveTelluric(lsf, airmass, pwv, telluric_data):
     modelwave, modelflux  = InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
     #modelflux           **= alpha
     # lsf
-    modelflux             = nsp.broaden(wave=modelwave, flux=modelflux, vbroad=lsf, rotate=False, gaussian=True)
+    modelflux             = smart.broaden(wave=modelwave, flux=modelflux, vbroad=lsf, rotate=False, gaussian=True)
     # resample
-    modelflux             = np.array(nsp.integralResample(xh=modelwave, yh=modelflux, xl=telluric_data.wave))
+    modelflux             = np.array(smart.integralResample(xh=modelwave, yh=modelflux, xl=telluric_data.wave))
     modelwave             = telluric_data.wave
-    telluric_model        = nsp.Model()
+    telluric_model        = smart.Model()
     telluric_model.flux   = modelflux
     telluric_model.wave   = modelwave
 
@@ -225,7 +225,7 @@ def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data):
     data2.wave          = data2.wave + wave_offset
     telluric_model      = convolveTelluric(lsf, airmass, pwv, data2)
     
-    model               = nsp.continuum(data=data2, mdl=telluric_model, deg=2)
+    model               = smart.continuum(data=data2, mdl=telluric_model, deg=2)
     
     model.flux         += flux_offset
 

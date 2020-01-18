@@ -5,7 +5,7 @@ import numpy as np
 from astropy.io import fits, ascii
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
-import nirspec_fmp as nsp
+import smart
 #import splat
 #import splat.model as spmd
 
@@ -64,8 +64,8 @@ class Model():
 
     Examples
     --------
-    >>> import nirspec_pip as nsp
-    >>> model = nsp.Model(teff=2300, logg=5.5, order=33, path='/path/to/models')
+    >>> import nirspec_pip as smart
+    >>> model = smart.Model(teff=2300, logg=5.5, order=33, path='/path/to/models')
     >>> model.plot()
     """
     def __init__(self, **kwargs):
@@ -94,7 +94,7 @@ class Model():
             #self.wave = sp.wave.value*10000 #convert to Angstrom
             #self.flux = sp.flux.value
 
-            wave, flux = nsp.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
+            wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
                 modelset=self.modelset, order=self.order, instrument=self.instrument)
 
             self.wave = wave * 10000 #convert to Angstrom
@@ -107,10 +107,10 @@ class Model():
             self.en       = kwargs.get('en', 0.00)
             self.modelset = kwargs.get('modelset', 'btsettl08')
 
-            #wave, flux = nsp.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
+            #wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
             #    modelset=self.modelset, order=self.order, instrument=self.instrument)
 
-            wave, flux = nsp.forward_model.InterpolateModel.InterpModel_3D(self.teff, self.logg, self.feh,
+            wave, flux = smart.forward_model.InterpolateModel.InterpModel_3D(self.teff, self.logg, self.feh,
                 modelset=self.modelset, order=self.order, instrument=self.instrument)
 
             self.wave = wave # Angstrom

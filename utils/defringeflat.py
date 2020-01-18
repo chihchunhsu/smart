@@ -418,8 +418,8 @@ def defringeflatAll(data_folder_path, wbin=10, start_col=10,
 
 	Examples
 	--------
-	>>> import nirspec_fmp as nsp
-	>>> nsp.defringeflatAll(data_folder_path, diagnostic=False)
+	>>> import smart
+	>>> smart.defringeflatAll(data_folder_path, diagnostic=False)
 
 	"""
 	originalpath = os.getcwd()

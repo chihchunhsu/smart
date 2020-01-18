@@ -1,4 +1,3 @@
-import nirspec_fmp as nsp
 import numpy as np
 import copy
 

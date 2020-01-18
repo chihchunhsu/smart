@@ -9,7 +9,7 @@ from astropy.io import fits
 import emcee
 #from schwimmbad import MPIPool
 from multiprocessing import Pool
-import nirspec_fmp as nsp
+import smart
 import mcmc_utils
 import corner
 import os
@@ -117,7 +117,7 @@ else:
 
 #####################################
 
-data        = nsp.Spectrum(name=sci_data_name, path=data_path, applymask=applymask, instrument=instrument)
+data        = smart.Spectrum(name=sci_data_name, path=data_path, applymask=applymask, instrument=instrument)
 
 sci_data    = data
 
@@ -185,7 +185,7 @@ else:
 data          = copy.deepcopy(sci_data)
 
 # barycentric corrction
-#barycorr      = nsp.barycorr(data.header).value
+#barycorr      = smart.barycorr(data.header).value
 #print("barycorr:",barycorr)
 
 ## read the input custom mask and priors
@@ -244,7 +244,7 @@ data.noise    = data.noise[pixel_start:pixel_end]
 #print(priors, limits)
 
 if lsf is None:
-	lsf           = nsp.getLSF(tell_sp, alpha=alpha_tell, test=True, save_path=save_to_path)
+	lsf           = smart.getLSF(tell_sp, alpha=alpha_tell, test=True, save_path=save_to_path)
 #	print("LSF: ", lsf)
 #else:
 #	print("Use input lsf:", lsf)
@@ -305,26 +305,26 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 		# read in a model
 		#print('teff ',teff,'logg ',logg, 'z', z, 'order', order, 'modelset', modelset)
 		#print('teff ',type(teff),'logg ',type(logg), 'z', type(z), 'order', type(order), 'modelset', type(modelset))
-		model    = nsp.Model(teff=teff, logg=logg, feh=z, order=order, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, feh=z, order=order, modelset=modelset, instrument=instrument)
 
 	elif data is not None and instrument == 'apogee':
-		model    = nsp.Model(teff=teff, logg=logg, feh=z, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, feh=z, modelset=modelset, instrument=instrument)
 	
 	# wavelength offset
 	#model.wave += wave_offset
 
 	# apply vsini
-	model.flux = nsp.broaden(wave=model.wave, 
+	model.flux = smart.broaden(wave=model.wave, 
 		flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
 	
 	# apply rv (including the barycentric correction)
-	model.wave = nsp.rvShift(model.wave, rv=rv)
+	model.wave = smart.rvShift(model.wave, rv=rv)
 	
 	# apply telluric
 	if tell is True:
-		model = nsp.applyTelluric(model=model, alpha=alpha, airmass='1.5')
+		model = smart.applyTelluric(model=model, alpha=alpha, airmass='1.5')
 	# instrumental LSF
-	model.flux = nsp.broaden(wave=model.wave, 
+	model.flux = smart.broaden(wave=model.wave, 
 		flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# add a fringe pattern to the model
@@ -335,11 +335,11 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 
 	# integral resampling
 	if data is not None:
-		model.flux = np.array(nsp.integralResample(xh=model.wave, 
+		model.flux = np.array(smart.integralResample(xh=model.wave, 
 			yh=model.flux, xl=data.wave))
 		model.wave = data.wave
 		# contunuum correction
-		model = nsp.continuum(data=data, mdl=model)
+		model = smart.continuum(data=data, mdl=model)
 
 	# flux offset
 	model.flux += flux_offset
@@ -506,7 +506,7 @@ def lnlike(theta, data, lsf):
 	model = makeModel(teff, logg, 0.0, vsini, rv, alpha, 0.0, A,
 		lsf=lsf, data=data, modelset=modelset, instrument=instrument)
 	print(len(data.wave),len(model.wave),len(data.noise),teff,logg,modelset,instrument)
-	chisquare = nsp.chisquare(data, model)/N**2
+	chisquare = smart.chisquare(data, model)/N**2
 	print(chisquare)
 	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*(data.noise*N)**2)))
 
@@ -667,31 +667,31 @@ N     = N_mcmc[0]
 
 ## new plotting model 
 ## read in a model
-model        = nsp.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset, instrument=instrument)
+model        = smart.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset, instrument=instrument)
 
 # apply vsini
-model.flux   = nsp.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
+model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
 # apply rv (including the barycentric correction)
-model.wave   = nsp.rvShift(model.wave, rv=rv)
+model.wave   = smart.rvShift(model.wave, rv=rv)
 
 model_notell = copy.deepcopy(model)
 # apply telluric
-model        = nsp.applyTelluric(model=model, alpha=alpha)
+model        = smart.applyTelluric(model=model, alpha=alpha)
 # NIRSPEC LSF
-model.flux   = nsp.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
+model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 	
 # integral resampling
-model.flux   = np.array(nsp.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+model.flux   = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
 model.wave   = data.wave
 
 # contunuum correction
-model, cont_factor = nsp.continuum(data=data, mdl=model, prop=True)
+model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
 
 # NIRSPEC LSF
-model_notell.flux  = nsp.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
+model_notell.flux  = smart.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
 	
 # integral resampling
-model_notell.flux  = np.array(nsp.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
+model_notell.flux  = np.array(smart.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
 model_notell.wave  = data.wave
 model_notell.flux *= cont_factor
 
@@ -740,7 +740,7 @@ plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{
 	verticalalignment='center',
 	fontsize=12)
 plt.figtext(0.89,0.79,r"$\chi^2$ = {}, DOF = {}".format(\
-	round(nsp.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 color='k',
 horizontalalignment='right',
 verticalalignment='center',

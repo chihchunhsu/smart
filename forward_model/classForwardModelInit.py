@@ -69,8 +69,8 @@ class ForwardModelInit():
 	Examples
 	--------
 	>>> path = 'your/catalogue/path'
-	>>> nsp.ForwardModelInit.catalogue_path = path
-	>>> fminit = nsp.ForwardModelInit(name='J0320-0446')
+	>>> smart.ForwardModelInit.catalogue_path = path
+	>>> fminit = smart.ForwardModelInit(name='J0320-0446')
 	>>> fminit.makePriors()
 	"""
 	catalogue_path = None

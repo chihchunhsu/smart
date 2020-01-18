@@ -1,7 +1,7 @@
 ## rountine for reducing the NIRSPEC data using the modified NSDRP
 ## Check KOA keywords --> defringe --> reduce data
 
-import nirspec_fmp as nsp
+import smart
 from astropy.io import fits
 import os
 import warnings
@@ -12,11 +12,11 @@ import glob
 import shutil
 warnings.filterwarnings("ignore")
 
-## Assume the NSDRP is under the same folder as the nirspec_fmp
+## Assume the NSDRP is under the same folder as the smart
 FULL_PATH  = os.path.realpath(__file__)
 BASE       = os.path.split(os.path.split(os.path.split(FULL_PATH)[0])[0])[0]
-BASE       = BASE.split('nirspec_fmp')[0] + 'NIRSPEC-Data-Reduction-Pipeline/'
-#BASE = BASE.split('nirspec_fmp')[0] + 'nsdrp_20180925/' #original NSDRP
+BASE       = BASE.split('smart')[0] + 'NIRSPEC-Data-Reduction-Pipeline/'
+#BASE = BASE.split('smart')[0] + 'nsdrp_20180925/' #original NSDRP
 
 parser = argparse.ArgumentParser(description="Reduce the NIRSPEC data using NIRSPEC-Data-Reduction-Pipeline",\
 	usage="run_nsdrp.py input_dir (output_dir)")
@@ -69,7 +69,7 @@ if args.nodefringe:
     pass
 else:
     print("Defringing flat files...")
-    nsp.defringeflatAll(datadir[0], wbin=10, start_col=10, end_col=980, diagnostic=False, movefiles=True)
+    smart.defringeflatAll(datadir[0], wbin=10, start_col=10, end_col=980, diagnostic=False, movefiles=True)
 
     defringe_list = glob.glob1(path,'*defringe.fits')
     originalflat_list = glob.glob1(path+'defringeflat_diagnostic/','*.fits')

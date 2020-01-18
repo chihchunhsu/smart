@@ -6,7 +6,7 @@ import scipy.signal as signal
 from scipy.optimize import curve_fit
 from scipy.interpolate import UnivariateSpline
 from scipy.special import wofz
-import nirspec_fmp as nsp
+import smart
 import copy
 
 
@@ -139,9 +139,9 @@ def fringeTelluric(data):
     Note: The input data should be continuum corrected 
     before using this function.
     """
-    lsf       = nsp.getLSF(data)
-    alpha     = nsp.getAlpha(data, lsf)
-    tell_mdl2 = nsp.convolveTelluric(lsf=lsf,
+    lsf       = smart.getLSF(data)
+    alpha     = smart.getAlpha(data, lsf)
+    tell_mdl2 = smart.convolveTelluric(lsf=lsf,
         telluric_data=data,alpha=alpha)
     
     pgram_x  = np.array(data.wave,float)[10:-10]
@@ -154,7 +154,7 @@ def fringeTelluric(data):
     pgram_x  = np.array(pgram_x,float)
     pgram_y  = np.array(pgram_y,float)
 
-    f        = np.linspace(0.01,10,100000)
+    f        = np.lismartace(0.01,10,100000)
 
     ## Lomb Scargle Periodogram
     pgram    = signal.lombscargle(pgram_x, pgram_y, f)
@@ -199,16 +199,16 @@ def continuumTelluric(data, model=None):
 
     Examples
     --------
-    >>> import nirspec_pip as nsp
-    >>> nsp.continuumTelluric(data)
+    >>> import smart
+    >>> smart.continuumTelluric(data)
 
-    >>> nsp.continuumTelluric(data,model)
+    >>> smart.continuumTelluric(data,model)
 
     """
     if model is None:
         wavelow  = data.wave[0] - 20
         wavehigh = data.wave[-1] + 20
-        model    = nsp.getTelluric(wavelow,wavehigh)
+        model    = smart.getTelluric(wavelow,wavehigh)
 
     if not data.applymask:
         data2 = copy.deepcopy(data)
@@ -251,10 +251,10 @@ def continuumTelluric(data, model=None):
             return flux/linear
 
         model2      = copy.deepcopy(model)
-        model2.flux = nsp.broaden(wave=model2.wave, 
+        model2.flux = smart.broaden(wave=model2.wave, 
             flux=model2.flux, vbroad=4.8, 
             rotate=False, gaussian=True)
-        model2.flux = np.array(nsp.integralResample(xh=model2.wave, 
+        model2.flux = np.array(smart.integralResample(xh=model2.wave, 
             yh=model2.flux, xl=data.wave))
         model2.wave = data.wave
         

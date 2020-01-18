@@ -5,7 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from astropy.io import fits
-import nirspec_fmp as nsp
+import smart
 import emcee
 import corner
 import copy
@@ -58,20 +58,20 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 		# read in a model
 		#print('teff ',teff,'logg ',logg, 'z', z, 'order', order, 'modelset', modelset)
 		#print('teff ',type(teff),'logg ',type(logg), 'z', type(z), 'order', type(order), 'modelset', type(modelset))
-		model    = nsp.Model(teff=teff, logg=logg, feh=z, order=order, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, feh=z, order=order, modelset=modelset, instrument=instrument)
 
 	#elif data is not None and instrument == 'apogee':
 	elif instrument == 'apogee':
-		model    = nsp.Model(teff=teff, logg=logg, feh=z, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, feh=z, modelset=modelset, instrument=instrument)
 	
 	elif data is None and instrument == 'nirspec':
-		model    = nsp.Model(teff=teff, logg=logg, feh=z, order=order, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, feh=z, order=order, modelset=modelset, instrument=instrument)
 	
 	# wavelength offset
 	#model.wave += wave_offset
 
 	# apply vsini
-	model.flux = nsp.broaden(wave=model.wave, 
+	model.flux = smart.broaden(wave=model.wave, 
 		flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
 	
 	# apply rv (including the barycentric correction)
@@ -79,9 +79,9 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 	
 	## if binary is True: make a binary model
 	if binary:
-		model2      = nsp.Model(teff=teff2, logg=logg2, feh=z, order=order, modelset=modelset, instrument=instrument)
+		model2      = smart.Model(teff=teff2, logg=logg2, feh=z, order=order, modelset=modelset, instrument=instrument)
 		# apply vsini
-		model2.flux = nsp.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
+		model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
 		# apply rv (including the barycentric correction)
 		model2.wave = rvShift(model2.wave, rv=rv2)
 		# linearly interpolate the model2 onto the model1 grid
@@ -99,13 +99,13 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 		stellar_model = copy.deepcopy(model)
 	# apply telluric
 	if tell is True:
-		model = nsp.applyTelluric(model=model, alpha=alpha, airmass=airmass, pwv=pwv)
+		model = smart.applyTelluric(model=model, alpha=alpha, airmass=airmass, pwv=pwv)
 	# instrumental LSF
-	model.flux = nsp.broaden(wave=model.wave, 
+	model.flux = smart.broaden(wave=model.wave, 
 		flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	if output_stellar_model:
-		stellar_model.flux = nsp.broaden(wave=stellar_model.wave, 
+		stellar_model.flux = smart.broaden(wave=stellar_model.wave, 
 			flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# add a fringe pattern to the model
@@ -118,26 +118,26 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 
 	# integral resampling
 	if data is not None:
-		model.flux = np.array(nsp.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+		model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
 		model.wave = data.wave
 
 		if output_stellar_model:
-			stellar_model.flux = np.array(nsp.integralResample(xh=stellar_model.wave, 
+			stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, 
 				yh=stellar_model.flux, xl=data.wave))
 			stellar_model.wave = data.wave
 		# contunuum correction
 		if data.instrument == 'nirspec':
 			niter = 5 # continuum iteration
 			if output_stellar_model:
-				model, cont_factor = nsp.continuum(data=data, mdl=model, prop=True)
+				model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
 				for i in range(niter):
-					model, cont_factor2 = nsp.continuum(data=data, mdl=model, prop=True)
+					model, cont_factor2 = smart.continuum(data=data, mdl=model, prop=True)
 					cont_factor *= cont_factor2
 				stellar_model.flux *= cont_factor
 			else:
-				model = nsp.continuum(data=data, mdl=model)
+				model = smart.continuum(data=data, mdl=model)
 				for i in range(niter):
-					model = nsp.continuum(data=data, mdl=model)
+					model = smart.continuum(data=data, mdl=model)
 		elif data.instrument == 'apogee' and data.datatype =='apvisit':
 			## set the order in the continuum fit
 			deg         = 5
@@ -152,7 +152,7 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 			data0.noise = data0.noise[range0]
 			model0.wave = model0.wave[range0]
 			model0.flux = model0.flux[range0]
-			model0      = nsp.continuum(data=data0, mdl=model0, deg=deg)
+			model0      = smart.continuum(data=data0, mdl=model0, deg=deg)
 
 			data1       = copy.deepcopy(data)
 			model1      = copy.deepcopy(model)
@@ -162,7 +162,7 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 			data1.noise = data1.noise[range1]
 			model1.wave = model1.wave[range1]
 			model1.flux = model1.flux[range1]
-			model1      = nsp.continuum(data=data1, mdl=model1, deg=deg)
+			model1      = smart.continuum(data=data1, mdl=model1, deg=deg)
 
 			data2       = copy.deepcopy(data)
 			model2      = copy.deepcopy(model)
@@ -172,12 +172,12 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 			data2.noise = data2.noise[range2]
 			model2.wave = model2.wave[range2]
 			model2.flux = model2.flux[range2]
-			model2      = nsp.continuum(data=data2, mdl=model2, deg=deg)
+			model2      = smart.continuum(data=data2, mdl=model2, deg=deg)
 
 			model.flux  = np.array( list(model0.flux) + list(model1.flux) + list(model2.flux) )
 			model.wave  = np.array( list(model0.wave) + list(model1.wave) + list(model2.wave) )
 		elif data.instrument == 'apogee' and data.datatype =='apstar':
-			model = nsp.continuum(data=data, mdl=model)
+			model = smart.continuum(data=data, mdl=model)
 
 	# flux offset
 	model.flux += flux_offset
@@ -228,10 +228,10 @@ def applyTelluric(model, alpha=1, airmass=1.5, pwv=0.5):
 	# read in a telluric model
 	wavelow  = model.wave[0] - 10
 	wavehigh = model.wave[-1] + 10
-	#telluric_model = nsp.getTelluric(wavelow=wavelow, wavehigh=wavehigh, alpha=alpha, airmass=airmass)
+	#telluric_model = smart.getTelluric(wavelow=wavelow, wavehigh=wavehigh, alpha=alpha, airmass=airmass)
 
-	telluric_model = nsp.Model()
-	telluric_model.wave, telluric_model.flux = nsp.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, 
+	telluric_model = smart.Model()
+	telluric_model.wave, telluric_model.flux = smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, 
 																		airmass=airmass, pwv=pwv)
 	
 	# apply the telluric alpha parameter
@@ -240,14 +240,14 @@ def applyTelluric(model, alpha=1, airmass=1.5, pwv=0.5):
 	#if len(model.wave) > len(telluric_model.wave):
 	#	print("The model has a higher resolution ({}) than the telluric model ({})."\
 	#		.format(len(model.wave),len(telluric_model.wave)))
-	#	model.flux = np.array(nsp.integralResample(xh=model.wave, 
+	#	model.flux = np.array(smart.integralResample(xh=model.wave, 
 	#		yh=model.flux, xl=telluric_model.wave))
 	#	model.wave = telluric_model.wave
 	#	model.flux *= telluric_model.flux
 
 	#elif len(model.wave) < len(telluric_model.wave):
 	## This should be always true
-	telluric_model.flux = np.array(nsp.integralResample(xh=telluric_model.wave, 
+	telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, 
 		yh=telluric_model.flux, xl=model.wave))
 	telluric_model.wave = model.wave
 	model.flux *= telluric_model.flux
@@ -264,13 +264,13 @@ def convolveTelluric(lsf, telluric_data, alpha=1.0, airmass='1.0', pwv='1.5'):
 	# get a telluric standard model
 	wavelow               = telluric_data.wave[0]  - 50
 	wavehigh              = telluric_data.wave[-1] + 50
-	telluric_model        = nsp.getTelluric(wavelow=wavelow,wavehigh=wavehigh, airmass=airmass, pwv=pwv)
+	telluric_model        = smart.getTelluric(wavelow=wavelow,wavehigh=wavehigh, airmass=airmass, pwv=pwv)
 	telluric_model.flux **= alpha
 	# lsf
-	telluric_model.flux = nsp.broaden(wave=telluric_model.wave, flux=telluric_model.flux, 
+	telluric_model.flux = smart.broaden(wave=telluric_model.wave, flux=telluric_model.flux, 
 		vbroad=lsf, rotate=False, gaussian=True)
 	# resample
-	telluric_model.flux = np.array(nsp.integralResample(xh=telluric_model.wave, 
+	telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, 
 		yh=telluric_model.flux, xl=telluric_data.wave))
 	telluric_model.wave = telluric_data.wave
 	return telluric_model
@@ -286,8 +286,8 @@ def getLSF2(telluric_data, continuum=True, test=False, save_path=None):
 
 		data2          = copy.deepcopy(data)
 		data2.wave     = data2.wave + c0
-		telluric_model = nsp.convolveTelluric(i, data2, alpha=alpha)
-		model          = nsp.continuum(data=data2, mdl=telluric_model)
+		telluric_model = smart.convolveTelluric(i, data2, alpha=alpha)
+		model          = smart.continuum(data=data2, mdl=telluric_model)
 		#plt.figure(2)
 		#plt.plot(model.wave, model.flux+c2, 'r-', alpha=0.5)
 		#plt.plot(data.wave*c1+c0, data.flux, 'b-', alpha=0.5)
@@ -301,8 +301,8 @@ def getLSF2(telluric_data, continuum=True, test=False, save_path=None):
 		i, alpha, c2, c0, c1 = theta 
 		data2                = copy.deepcopy(data)
 		data2.wave           = data2.wave*c1 + c0
-		telluric_model       = nsp.convolveTelluric(i, data2, alpha=alpha)
-		model                = nsp.continuum(data=data2, mdl=telluric_model)
+		telluric_model       = smart.convolveTelluric(i, data2, alpha=alpha)
+		model                = smart.continuum(data=data2, mdl=telluric_model)
 		return np.sum(data.flux - (model.flux + c2))**2
 
 	from scipy.optimize import curve_fit, minimize
@@ -315,8 +315,8 @@ def getLSF2(telluric_data, continuum=True, test=False, save_path=None):
 
 	data.wave      = data.wave+popt[3]
 
-	telluric_model = nsp.convolveTelluric(popt[0], data, alpha=popt[1])
-	model          = nsp.continuum(data=data, mdl=telluric_model)
+	telluric_model = smart.convolveTelluric(popt[0], data, alpha=popt[1])
+	model          = smart.continuum(data=data, mdl=telluric_model)
 
 	#model.flux * np.e**(-popt[2]) + popt[3]
 	model.flux + popt[2]
@@ -332,11 +332,11 @@ def getLSF(telluric_data, alpha=1.0, continuum=True,test=False,save_path=None):
 	
 	data = copy.deepcopy(telluric_data)
 	if continuum is True:
-		data = nsp.continuumTelluric(data=data)
+		data = smart.continuumTelluric(data=data)
 
 	data.flux **= alpha
 	for i in test_lsf:
-		telluric_model = nsp.convolveTelluric(i,data)
+		telluric_model = smart.convolveTelluric(i,data)
 		if telluric_data.order == 59:
 			telluric_model.flux **= 3
 			# mask hydrogen absorption feature
@@ -349,10 +349,10 @@ def getLSF(telluric_data, alpha=1.0, continuum=True,test=False,save_path=None):
 			tell_mdl.wave  = tell_mdl.wave[mask_pixel:]
 			tell_mdl.flux  = tell_mdl.flux[mask_pixel:]
 
-			chisquare = nsp.chisquare(data2,tell_mdl)
+			chisquare = smart.chisquare(data2,tell_mdl)
 
 		else:
-			chisquare = nsp.chisquare(data,telluric_model)
+			chisquare = smart.chisquare(data,telluric_model)
 		lsf_list.append([chisquare,i])
 
 		if test is True:
@@ -407,10 +407,10 @@ def getAlpha(telluric_data,lsf,continuum=True,test=False,save_path=None):
 
 	data = copy.deepcopy(telluric_data)
 	if continuum is True:
-		data = nsp.continuumTelluric(data=data)
+		data = smart.continuumTelluric(data=data)
 
 	for i in test_alpha:
-		telluric_model = nsp.convolveTelluric(lsf,data,
+		telluric_model = smart.convolveTelluric(lsf,data,
 			alpha=i)
 		#telluric_model.flux **= i 
 		if data.order == 59:
@@ -424,10 +424,10 @@ def getAlpha(telluric_data,lsf,continuum=True,test=False,save_path=None):
 			tell_mdl.wave  = tell_mdl.wave[mask_pixel:]
 			tell_mdl.flux  = tell_mdl.flux[mask_pixel:]
 
-			chisquare = nsp.chisquare(data2,tell_mdl)
+			chisquare = smart.chisquare(data2,tell_mdl)
 
 		else:
-			chisquare = nsp.chisquare(data,telluric_model)
+			chisquare = smart.chisquare(data,telluric_model)
 		alpha_list.append([chisquare,i])
 
 		if test is True:
@@ -480,12 +480,12 @@ def getFringeFrequecy(tell_data, test=False):
 	tell_sp  = copy.deepcopy(tell_data)
 
 	## continuum correction
-	tell_sp  = nsp.continuumTelluric(data=tell_sp, order=tell_sp.order)
+	tell_sp  = smart.continuumTelluric(data=tell_sp, order=tell_sp.order)
 
 	## get a telluric model
-	lsf      = nsp.getLSF(tell_sp)
-	alpha    = nsp.getAlpha(tell_sp,lsf)
-	tell_mdl = nsp.convolveTelluric(lsf=lsf,
+	lsf      = smart.getLSF(tell_sp)
+	alpha    = smart.getAlpha(tell_sp,lsf)
+	tell_mdl = smart.convolveTelluric(lsf=lsf,
 		telluric_data=tell_sp,alpha=alpha)
 
 	## fit the fringe pattern in the residual
@@ -499,8 +499,8 @@ def getFringeFrequecy(tell_data, test=False):
 	pgram_x = np.array(pgram_x, float)
 	pgram_y = np.array(pgram_y, float)
 
-	#f = np.linspace(0.01,10,100000)
-	f = np.linspace(1.0,10,100000)
+	#f = np.lismartace(0.01,10,100000)
+	f = np.lismartace(1.0,10,100000)
 
 	## Lomb Scargle Periodogram
 	pgram = signal.lombscargle(pgram_x, pgram_y, f)
@@ -557,9 +557,9 @@ def initModelFit(sci_data, lsf, modelset='btsettl08'):
 			for k, vsini in enumerate(vsini_array):
 				for l, rv in enumerate(rv_array):
 					for m, alpha in enumerate(alpha_array):
-						model = nsp.makeModel(teff, logg, 0.0, vsini, rv, alpha, 0, 0,
+						model = smart.makeModel(teff, logg, 0.0, vsini, rv, alpha, 0, 0,
 							lsf=lsf, order=data.order, data=data, modelset=modelset)
-						chisquare_array[i,j,k,l,m] = nsp.chisquare(data, model)
+						chisquare_array[i,j,k,l,m] = smart.chisquare(data, model)
 	time2 = time.time()
 	print("total time:",time2-time1)
 

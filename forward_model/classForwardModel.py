@@ -5,7 +5,7 @@ import numpy as np
 import emcee
 import corner
 from multiprocessing import Pool
-import nirspec_fmp as nsp
+import smart
 import sys
 import time
 import copy

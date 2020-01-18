@@ -4,7 +4,7 @@ import matplotlib.gridspec as gridspec
 import emcee
 #from schwimmbad import MPIPool
 #from multiprocessing import Pool
-import nirspec_fmp as nsp
+import smart
 import corner
 import os
 import sys
@@ -68,10 +68,10 @@ def run_mcmc(sci_data, tell_data, priors, limits=None, ndim=7, nwalkers=50, step
 
 	Examples
 	--------
-	>>> import nirspec_fmp as nsp
+	>>> import smart
 	>>> order   = 33
-	>>> data    = nsp.Spectrum(name=sci_data_name, order=order, path=data_path)
-	>>> tell_sp = nsp.Spectrum(name=tell_data_name, order=data.order, path=tell_path)
+	>>> data    = smart.Spectrum(name=sci_data_name, order=order, path=data_path)
+	>>> tell_sp = smart.Spectrum(name=tell_data_name, order=data.order, path=tell_path)
 	>>> priors  =  { 'teff_min':2400,  'teff_max':2800,
 					 'logg_min':3.5,   'logg_max':5.5,
 					 'vsini_min':0.0,  'vsini_max':100.0,
@@ -79,7 +79,7 @@ def run_mcmc(sci_data, tell_data, priors, limits=None, ndim=7, nwalkers=50, step
 					 'alpha_min':0.9,  'alpha_max':1.1,
 					 'A_min':-0.01,    'A_max':0.01,
 					 'B_min':-0.01,    'B_max':0.01 		}
-	>>> nsp.run_mcmc(sci_data=data, tell_data=tell_sp, priors=priors)
+	>>> smart.run_mcmc(sci_data=data, tell_data=tell_sp, priors=priors)
 
 	"""
 
@@ -113,11 +113,11 @@ def run_mcmc(sci_data, tell_data, priors, limits=None, ndim=7, nwalkers=50, step
 	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
 
 	# barycentric corrction
-	barycorr      = nsp.barycorr(data.header).value
+	barycorr      = smart.barycorr(data.header).value
 	print("barycorr:",barycorr)
 
 	if lsf is None:
-		lsf           = nsp.getLSF(tell_sp,alpha=alpha_tell, test=True, save_path=save_to_path)
+		lsf           = smart.getLSF(tell_sp,alpha=alpha_tell, test=True, save_path=save_to_path)
 		print("LSF: ", lsf)
 	else:
 		print("Use input lsf:", lsf)
@@ -164,10 +164,10 @@ def run_mcmc(sci_data, tell_data, priors, limits=None, ndim=7, nwalkers=50, step
 		teff, logg, vsini, rv, alpha, A, B = theta
 		#teff, logg, vsini, rv, alpha, A, B, freq, amp, phase = theta
 
-		model = nsp.makeModel(teff, logg, 0.0, vsini, rv, alpha, B, A,
+		model = smart.makeModel(teff, logg, 0.0, vsini, rv, alpha, B, A,
 			lsf=lsf, order=data.order, data=data, modelset=modelset)
 
-		chisquare = nsp.chisquare(data, model)
+		chisquare = smart.chisquare(data, model)
 
 		return -0.5 * (chisquare + np.sum(np.log(2*np.pi*data.noise**2)))
 
@@ -368,37 +368,37 @@ def run_mcmc(sci_data, tell_data, priors, limits=None, ndim=7, nwalkers=50, step
 
 	## new plotting model 
 	## read in a model
-	model        = nsp.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset)
+	model        = smart.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset)
 
 	# apply vsini
-	model.flux   = nsp.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
+	model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
 	# apply rv (including the barycentric correction)
-	model.wave   = nsp.rvShift(model.wave, rv=rv)
+	model.wave   = smart.rvShift(model.wave, rv=rv)
 
 	model_notell = copy.deepcopy(model)
 	# apply telluric
-	model        = nsp.applyTelluric(model=model, alpha=alpha)
+	model        = smart.applyTelluric(model=model, alpha=alpha)
 	# NIRSPEC LSF
-	model.flux   = nsp.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
+	model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# wavelength offset
 	model.wave        += B
 	
 	# integral resampling
-	model.flux   = np.array(nsp.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+	model.flux   = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
 	model.wave   = data.wave
 
 	# contunuum correction
-	model, cont_factor = nsp.continuum(data=data, mdl=model, prop=True)
+	model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
 
 	# NIRSPEC LSF
-	model_notell.flux  = nsp.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
+	model_notell.flux  = smart.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# wavelength offset
 	model_notell.wave += B
 	
 	# integral resampling
-	model_notell.flux  = np.array(nsp.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
+	model_notell.flux  = np.array(smart.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
 	model_notell.wave  = data.wave
 	model_notell.flux *= cont_factor
 
@@ -447,7 +447,7 @@ def run_mcmc(sci_data, tell_data, priors, limits=None, ndim=7, nwalkers=50, step
 		verticalalignment='center',
 		fontsize=12)
 	plt.figtext(0.89,0.79,r"$\chi^2$ = {}, DOF = {}".format(\
-		round(nsp.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+		round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 	color='k',
 	horizontalalignment='right',
 	verticalalignment='center',
@@ -522,10 +522,10 @@ def run_mcmc2(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 
 	Examples
 	--------
-	>>> import nirspec_fmp as nsp
+	>>> import smart
 	>>> order   = 33
-	>>> data    = nsp.Spectrum(name=sci_data_name, order=order, path=data_path)
-	>>> tell_sp = nsp.Spectrum(name=tell_data_name, order=data.order, path=tell_path)
+	>>> data    = smart.Spectrum(name=sci_data_name, order=order, path=data_path)
+	>>> tell_sp = smart.Spectrum(name=tell_data_name, order=data.order, path=tell_path)
 	>>> priors  =  { 'teff_min':2400,  'teff_max':2800,
 					 'logg_min':3.5,   'logg_max':5.5,
 					 'vsini_min':0.0,  'vsini_max':100.0,
@@ -534,7 +534,7 @@ def run_mcmc2(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 					 'A_min':-0.01,    'A_max':0.01,
 					 'B_min':-0.01,    'B_max':0.01,
 					 'lsf_min':4.8,    'lsf_max':4.81 		}
-	>>> nsp.run_mcmc(sci_data=data, tell_data=tell_sp, priors=priors)
+	>>> smart.run_mcmc(sci_data=data, tell_data=tell_sp, priors=priors)
 
 	"""
 
@@ -568,11 +568,11 @@ def run_mcmc2(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
 
 	# barycentric corrction
-	barycorr      = nsp.barycorr(data.header).value
+	barycorr      = smart.barycorr(data.header).value
 	print("barycorr:",barycorr)
 
 	if lsf is None:
-		lsf           = nsp.getLSF(tell_sp, alpha=alpha_tell, test=True, save_path=save_to_path)
+		lsf           = smart.getLSF(tell_sp, alpha=alpha_tell, test=True, save_path=save_to_path)
 		print("LSF: ", lsf)
 	else:
 		print("Use input lsf:", lsf)
@@ -619,10 +619,10 @@ def run_mcmc2(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 		teff, logg, vsini, rv, alpha, A, B, lsf = theta
 		#teff, logg, vsini, rv, alpha, A, B, freq, amp, phase = theta
 
-		model = nsp.makeModel(teff, logg, 0.0, vsini, rv, alpha, B, A,
+		model = smart.makeModel(teff, logg, 0.0, vsini, rv, alpha, B, A,
 			lsf=lsf, order=data.order, data=data, modelset=modelset)
 
-		chisquare = nsp.chisquare(data, model)
+		chisquare = smart.chisquare(data, model)
 
 		return -0.5 * (chisquare + np.sum(np.log(2*np.pi*data.noise**2)))
 
@@ -829,37 +829,37 @@ def run_mcmc2(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 
 	## new plotting model 
 	## read in a model
-	model        = nsp.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset)
+	model        = smart.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset)
 
 	# apply vsini
-	model.flux   = nsp.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
+	model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
 	# apply rv (including the barycentric correction)
-	model.wave   = nsp.rvShift(model.wave, rv=rv)
+	model.wave   = smart.rvShift(model.wave, rv=rv)
 
 	model_notell = copy.deepcopy(model)
 	# apply telluric
-	model        = nsp.applyTelluric(model=model, alpha=alpha)
+	model        = smart.applyTelluric(model=model, alpha=alpha)
 	# NIRSPEC LSF
-	model.flux   = nsp.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
+	model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# wavelength offset
 	model.wave        += B
 	
 	# integral resampling
-	model.flux   = np.array(nsp.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+	model.flux   = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
 	model.wave   = data.wave
 
 	# contunuum correction
-	model, cont_factor = nsp.continuum(data=data, mdl=model, prop=True)
+	model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
 
 	# NIRSPEC LSF
-	model_notell.flux  = nsp.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
+	model_notell.flux  = smart.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# wavelength offset
 	model_notell.wave += B
 	
 	# integral resampling
-	model_notell.flux  = np.array(nsp.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
+	model_notell.flux  = np.array(smart.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
 	model_notell.wave  = data.wave
 	model_notell.flux *= cont_factor
 
@@ -909,7 +909,7 @@ def run_mcmc2(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 		verticalalignment='center',
 		fontsize=12)
 	plt.figtext(0.89,0.79,r"$\chi^2$ = {}, DOF = {}".format(\
-		round(nsp.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+		round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 	color='k',
 	horizontalalignment='right',
 	verticalalignment='center',
@@ -985,10 +985,10 @@ def run_mcmc3(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 
 	Examples
 	--------
-	>>> import nirspec_fmp as nsp
+	>>> import smart
 	>>> order   = 33
-	>>> data    = nsp.Spectrum(name=sci_data_name, order=order, path=data_path)
-	>>> tell_sp = nsp.Spectrum(name=tell_data_name, order=data.order, path=tell_path)
+	>>> data    = smart.Spectrum(name=sci_data_name, order=order, path=data_path)
+	>>> tell_sp = smart.Spectrum(name=tell_data_name, order=data.order, path=tell_path)
 	>>> priors  =  { 'teff_min':2400,  'teff_max':2800,
 					 'logg_min':3.5,   'logg_max':5.5,
 					 'vsini_min':0.0,  'vsini_max':100.0,
@@ -996,7 +996,7 @@ def run_mcmc3(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 					 'alpha_min':0.9,  'alpha_max':1.1,
 					 'A_min':-0.01,    'A_max':0.01,
 					 'B_min':-0.01,    'B_max':0.01 		}
-	>>> nsp.run_mcmc(sci_data=data, tell_data=tell_sp, priors=priors)
+	>>> smart.run_mcmc(sci_data=data, tell_data=tell_sp, priors=priors)
 
 	"""
 
@@ -1030,11 +1030,11 @@ def run_mcmc3(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
 
 	# barycentric corrction
-	barycorr      = nsp.barycorr(data.header).value
+	barycorr      = smart.barycorr(data.header).value
 	print("barycorr:",barycorr)
 
 	if lsf is None:
-		lsf           = nsp.getLSF(tell_sp,alpha=alpha_tell, test=True, save_path=save_to_path)
+		lsf           = smart.getLSF(tell_sp,alpha=alpha_tell, test=True, save_path=save_to_path)
 		print("LSF: ", lsf)
 	else:
 		print("Use input lsf:", lsf)
@@ -1081,10 +1081,10 @@ def run_mcmc3(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 		teff, logg, vsini, rv, alpha, A, B, N = theta #N noise prefactor
 		#teff, logg, vsini, rv, alpha, A, B, freq, amp, phase = theta
 
-		model = nsp.makeModel(teff, logg, 0.0, vsini, rv, alpha, B, A,
+		model = smart.makeModel(teff, logg, 0.0, vsini, rv, alpha, B, A,
 			lsf=lsf, order=data.order, data=data, modelset=modelset)
 
-		chisquare = nsp.chisquare(data, model)/N**2
+		chisquare = smart.chisquare(data, model)/N**2
 
 		return -0.5 * (chisquare + np.sum(np.log(2*np.pi*(data.noise*N)**2)))
 
@@ -1256,37 +1256,37 @@ def run_mcmc3(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 
 	## new plotting model 
 	## read in a model
-	model        = nsp.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset)
+	model        = smart.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset)
 
 	# apply vsini
-	model.flux   = nsp.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
+	model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
 	# apply rv (including the barycentric correction)
-	model.wave   = nsp.rvShift(model.wave, rv=rv)
+	model.wave   = smart.rvShift(model.wave, rv=rv)
 
 	model_notell = copy.deepcopy(model)
 	# apply telluric
-	model        = nsp.applyTelluric(model=model, alpha=alpha)
+	model        = smart.applyTelluric(model=model, alpha=alpha)
 	# NIRSPEC LSF
-	model.flux   = nsp.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
+	model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# wavelength offset
 	model.wave        += B
 	
 	# integral resampling
-	model.flux   = np.array(nsp.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+	model.flux   = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
 	model.wave   = data.wave
 
 	# contunuum correction
-	model, cont_factor = nsp.continuum(data=data, mdl=model, prop=True)
+	model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
 
 	# NIRSPEC LSF
-	model_notell.flux  = nsp.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
+	model_notell.flux  = smart.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# wavelength offset
 	model_notell.wave += B
 	
 	# integral resampling
-	model_notell.flux  = np.array(nsp.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
+	model_notell.flux  = np.array(smart.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
 	model_notell.wave  = data.wave
 	model_notell.flux *= cont_factor
 
@@ -1335,7 +1335,7 @@ def run_mcmc3(sci_data, tell_data, priors, limits=None, ndim=8, nwalkers=50, ste
 		verticalalignment='center',
 		fontsize=12)
 	plt.figtext(0.89,0.79,r"$\chi^2$ = {}, DOF = {}".format(\
-		round(nsp.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+		round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 	color='k',
 	horizontalalignment='right',
 	verticalalignment='center',
@@ -1385,9 +1385,9 @@ def telluric_mcmc(tell_sp, nwalkers=30, step=400, burn=300, priors=None, moves=2
 
 	Examples
 	--------
-	>>> import nirspec_fmp as nsp
-	>>> tell_sp = nsp.Spectrum(name='jan19s0024_calibrated',order=33)
-	>>> nsp.telluric_mcmc(tell_sp)
+	>>> import smart
+	>>> tell_sp = smart.Spectrum(name='jan19s0024_calibrated',order=33)
+	>>> smart.telluric_mcmc(tell_sp)
 
 	"""
 
@@ -1431,8 +1431,8 @@ def telluric_mcmc(tell_sp, nwalkers=30, step=400, burn=300, priors=None, moves=2
 		data2               = copy.deepcopy(data)
 		data2.wave          = data2.wave + wave_offset0
 		#data2.wave          = data2.wave * (1 + wave_offset1) + wave_offset0
-		telluric_model      = nsp.convolveTelluric(lsf, data2, alpha=alpha)
-		model               = nsp.continuum(data=data2, mdl=telluric_model, deg=2)
+		telluric_model      = smart.convolveTelluric(lsf, data2, alpha=alpha)
+		model               = smart.continuum(data=data2, mdl=telluric_model, deg=2)
 		model.flux         += flux_offset
 
 		return model
@@ -1471,7 +1471,7 @@ def telluric_mcmc(tell_sp, nwalkers=30, step=400, burn=300, priors=None, moves=2
 
 		model = makeTelluricModel(lsf, alpha, A, B, data=data)
 
-		chisquare = nsp.chisquare(data, model)
+		chisquare = smart.chisquare(data, model)
 
 		return -0.5 * (chisquare + np.sum(np.log(2*np.pi*data.noise**2)))
 
@@ -1590,8 +1590,8 @@ def telluric_mcmc(tell_sp, nwalkers=30, step=400, burn=300, priors=None, moves=2
 
 	data2               = copy.deepcopy(data)
 	data2.wave          = data2.wave + B_mcmc[0]
-	telluric_model      = nsp.convolveTelluric(lsf_mcmc[0], data, alpha=alpha_mcmc[0])
-	model, pcont        = nsp.continuum(data=data, mdl=telluric_model, deg=2, tell=True)
+	telluric_model      = smart.convolveTelluric(lsf_mcmc[0], data, alpha=alpha_mcmc[0])
+	model, pcont        = smart.continuum(data=data, mdl=telluric_model, deg=2, tell=True)
 	model.flux         += A_mcmc[0]
 
 	plt.tick_params(labelsize=20)
@@ -1621,7 +1621,7 @@ def telluric_mcmc(tell_sp, nwalkers=30, step=400, burn=300, priors=None, moves=2
 		verticalalignment='center',
 		fontsize=12)
 	plt.figtext(0.89,0.80,r"$\chi^2$ = {}, DOF = {}".format(\
-		round(nsp.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+		round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 		color='k',
 		horizontalalignment='right',
 		verticalalignment='center',

@@ -7,10 +7,8 @@ import pandas as pd
 import numpy as np
 from astropy.io import fits
 import emcee
-
 import tellurics
-import nirspec_fmp as nsp
-
+import smart
 from multiprocessing import Pool
 import corner
 import os
@@ -92,7 +90,7 @@ save                   = args.save
 if order == 35: applymask = True
 
 tell_data_name2 = tell_data_name + '_calibrated'
-tell_sp         = nsp.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
+tell_sp         = smart.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
 
 ###########################################################################################################
 """
@@ -164,7 +162,7 @@ if priors is None:
 		model_tmp      = tellurics.makeTelluricModel(lsf=5.0, airmass=round(airmass_0*2)/2, pwv=pwv, 
 			flux_offset=0, wave_offset=0, data=data_tmp)
 	
-		pwv_chi2.append(nsp.chisquare(data_tmp, model_tmp))
+		pwv_chi2.append(smart.chisquare(data_tmp, model_tmp))
 	
 	# find the pwv with minimum chisquare
 	pwv_chi2_array = np.array(pwv_chi2)
@@ -280,7 +278,7 @@ def lnlike(theta, data=data):
 
 	model = tellurics.makeTelluricModel(lsf, airmass, pwv, A, B, data=data)
 
-	chisquare = nsp.chisquare(data, model)
+	chisquare = smart.chisquare(data, model)
 
 	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*data.noise**2)))
 
@@ -404,7 +402,7 @@ plt.close()
 data2               = copy.deepcopy(data)
 data2.wave          = data2.wave + B_mcmc[0]
 telluric_model      = tellurics.convolveTelluric(lsf_mcmc[0], airmass_mcmc[0], pwv_mcmc[0], data)
-model, pcont        = nsp.continuum(data=data, mdl=telluric_model, deg=2, tell=True)
+model, pcont        = smart.continuum(data=data, mdl=telluric_model, deg=2, tell=True)
 model.flux         += A_mcmc[0]
 
 plt.tick_params(labelsize=20)
@@ -435,7 +433,7 @@ plt.figtext(0.89,0.83,"LSF ${0}^{{+{1}}}_{{-{2}}} (km/s)/ airmass \, {3}^{{+{4}}
 	verticalalignment='center',
 	fontsize=12)
 plt.figtext(0.89,0.80,r"$\chi^2$ = {}, DOF = {}".format(\
-	round(nsp.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 	color='k',
 	horizontalalignment='right',
 	verticalalignment='center',
