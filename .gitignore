@@ -158,4 +158,9 @@ forward_model/__pycache__/InterpolateModel_3D.cpython-37.pyc
 forward_model/__pycache__/InterpolateModel_4D.cpython-37.pyc
 utils/.DS_Store
 wavelength_calibration/.DS_Store
-forward_model/apogee/*.fits
+forward_model/apogee/apLSF-a-05440020.fits
+forward_model/apogee/apLSF-b-05440020.fits
+forward_model/apogee/apLSF-c-05440020.fits
+forward_model/apogee/apWave-a-02420038.fits
+forward_model/apogee/apWave-b-02420038.fits
+forward_model/apogee/apWave-c-02420038.fits
