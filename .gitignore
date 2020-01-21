@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.DS_Store
 
 # C extensions
 *.so
@@ -157,3 +158,4 @@ forward_model/__pycache__/InterpolateModel_3D.cpython-37.pyc
 forward_model/__pycache__/InterpolateModel_4D.cpython-37.pyc
 utils/.DS_Store
 wavelength_calibration/.DS_Store
+forward_model/apogee/*.fits
