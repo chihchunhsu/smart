@@ -1,4 +1,4 @@
-import nirspec_fmp as nsp
+import smart
 import numpy
 from scipy import special, interpolate, sparse, ndimage
 import math
