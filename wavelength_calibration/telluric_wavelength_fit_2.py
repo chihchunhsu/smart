@@ -1290,6 +1290,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		if airmass > 3.0: airmass = 3.0
 		print('airmass', airmass)
 		airmass  = str(airmass)
+
 		
 		"""
 		## testing
@@ -1347,23 +1348,23 @@ def run_wave_cal(data_name, data_path, order_list,
 		data0 = copy.deepcopy(data)
 
 		if applymask:
-			#data.flux  = data.oriFlux
-			#data.wave  = data.oriWave
-			#data.noise = data.oriNoise
+			data.flux  = data.oriFlux
+			data.wave  = data.oriWave
+			data.noise = data.oriNoise
 			
 			mask_combined = np.union1d(mask_custom, data.mask)
 
 			print('mediam-averaging the pixels:', data.mask)
 
-			#for i in mask_combined:
-			#	if (int(i) > pixel_range_start) and (int(i) < length1 + pixel_range_end -1): 
-			#		data.oriFlux[int(i)] = (data.oriFlux[int(i)-1] + data.oriFlux[int(i)+1])/2
-			#		data.flux = data.oriFlux
+			for i in mask_combined:
+				if (int(i) > pixel_range_start) and (int(i) < length1 + pixel_range_end -1): 
+					data.oriFlux[int(i)] = (data.oriFlux[int(i)-1] + data.oriFlux[int(i)+1])/2
+					data.flux = data.oriFlux
 
 			# select the pixel for wavelength calibration
-			data.flux  = data.flux[pixel_range_start:pixel_range_end]
-			data.wave  = data.wave[pixel_range_start:pixel_range_end]
-			data.noise = data.noise[pixel_range_start:pixel_range_end]
+			#data.flux  = data.flux[pixel_range_start:pixel_range_end]
+			#data.wave  = data.wave[pixel_range_start:pixel_range_end]
+			#data.noise = data.noise[pixel_range_start:pixel_range_end]
 		elif not applymask:
 			data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
 			data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
@@ -1374,7 +1375,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		plt.xlabel(r'$\lambda$ ($\AA)$')
 		plt.ylabel(r'$F_{\lambda}$')
 		plt.legend()
-		plt.show()
+		#plt.show()
 		plt.close()
 		#sys.exit()
 
