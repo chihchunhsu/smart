@@ -1,4 +1,4 @@
-import nirspec_fmp as nsp
+import smart
 import numpy as np
 import sys, os, os.path, time
 from astropy.table import Table
@@ -14,6 +14,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
     BASE, NAME = os.path.split(FULL_PATH)
 
     # Check the model set and instrument
+    print(instrument, modelset)
     if instrument == 'nirspec':
         if modelset == 'btsettl08':
             path     = BASE + '/../libraries/btsettl08/NIRSPEC-O%s-RAW/'%order
@@ -175,5 +176,5 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
     #print(Points)
     waves2 = GetModel(T1['Temp'][ind1111], logg=T1['Logg'][ind1111], metal=T1['Metal'][ind1111], alpha=T1['Alpha'][ind1111], instrument=instrument, order=order, gridfile=T1, wave=True)
 
-    return waves2, nsp.utils.interpolations.quadlinear_interpolation(np.log10(teff), logg, metal, alpha, Points)
+    return waves2, smart.utils.interpolations.quadlinear_interpolation(np.log10(teff), logg, metal, alpha, Points)
 

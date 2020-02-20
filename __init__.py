@@ -19,6 +19,7 @@ from .utils.addKeyword import addKeyword
 from .utils.listTarget import makeTargetList
 from .utils.compute_uvw_velocity import compute_uvw_velocity
 from .utils.compute_galactic_thin_thick_disk import compute_galactic_pop_prob
+from .utils.interpolations import bilinear_interpolation, trilinear_interpolation, quadlinear_interpolation
 try:
 	from .utils.defringeflat import defringeflat, defringeflatAll
 except ImportError:
