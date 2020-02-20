@@ -3,7 +3,7 @@ from .forward_model.classModel import Model
 from .forward_model.classSpectrum import Spectrum
 from .forward_model.classForwardModelInit import ForwardModelInit
 from .forward_model.integralResample import integralResample
-from .forward_model.InterpolateModel import InterpModel, InterpModel_3D
+from .forward_model.InterpolateModel import InterpModel
 from .forward_model.rotation_broaden import lsf_rotate, broaden
 from .forward_model.continuum import *
 from .forward_model.tellurics import InterpTelluricModel
