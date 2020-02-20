@@ -14,7 +14,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
     BASE, NAME = os.path.split(FULL_PATH)
 
     # Check the model set and instrument
-    print(instrument, modelset)
+    #print(instrument, modelset)
     if instrument == 'nirspec':
         if modelset == 'btsettl08':
             path     = BASE + '/../libraries/btsettl08/NIRSPEC-O%s-RAW/'%order
