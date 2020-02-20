@@ -167,7 +167,7 @@ def InterpModel(Teff, Logg, modelset='btsettl08', order=33, instrument='nirspec'
                 print('No Model', x, y)
                 return 1
 
-    print(Teff, Logg, x0, x1, y0, y1)
+    #print(Teff, Logg, x0, x1, y0, y1)
     
     # Get the four points
     Points =  [ [np.log10(T1['Temp'][np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0))]), T1['Logg'][np.where((T1['Temp'] == x0) & (T1['Logg'] == y0))], np.log10(GetModel(T1['Temp'][np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0))], T1['Logg'][np.where((T1['Temp'] == x0) & (T1['Logg'] == y0))], modelset=modelset))],
