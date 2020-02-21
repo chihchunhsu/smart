@@ -96,9 +96,12 @@ class Model():
 
             wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
                 modelset=self.modelset, order=self.order, instrument=self.instrument)
-
-            self.wave = wave * 10000 #convert to Angstrom
-            self.flux = flux / 10000 #convert from erg/s/cm^2/micron to erg/s/cm^2/Angstrom
+            if self.modelset == 'btsettl08':
+                self.wave = wave * 10000 #convert to Angstrom
+                self.flux = flux / 10000 #convert from erg/s/cm^2/micron to erg/s/cm^2/Angstrom
+            else:
+                self.wave = wave
+                self.flux = flux
 
         elif self.instrument == 'apogee':
             self.teff     = kwargs.get('teff', 2500)
