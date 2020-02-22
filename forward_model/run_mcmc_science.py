@@ -22,7 +22,7 @@ import argparse
 import json
 import ast
 import warnings
-warnings.filterwarnings("ignore")
+#warnings.filterwarnings("ignore")
 
 ##############################################################################################
 ## This is the script to make the code multiprocessing, using arcparse to pass the arguments
