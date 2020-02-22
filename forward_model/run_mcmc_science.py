@@ -412,7 +412,8 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 ## multiprocessing
 
 with Pool() as pool:
-	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
+	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool,
+		moves=[(emcee.moves.KDEMove(), 1.0),])
 	time1 = time.time()
 	sampler.run_mcmc(pos, step, progress=True)
 	time2 = time.time()
