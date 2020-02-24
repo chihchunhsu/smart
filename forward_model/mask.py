@@ -95,8 +95,8 @@ def telluric_mask(data, sigma=2.5, lsf=4.8, pwv=None, pixel_start=10, pixel_end=
 			plt.xlabel('pwv (mm)', fontsize=15)
 			plt.ylabel('$\chi^2$', fontsize=15)
 			plt.tight_layout()
-			#plt.savefig('pwv_chi2.png'.format(order))
-			plt.show()
+			plt.savefig(save_to_path+'pwv_chi2.png'.format(order))
+			#plt.show()
 			plt.close()
 
 	pwv_min_index = np.where(pwv_chi2_array == np.min(pwv_chi2_array))[0][0]
@@ -176,7 +176,8 @@ def telluric_mask(data, sigma=2.5, lsf=4.8, pwv=None, pixel_start=10, pixel_end=
 		plt.plot(data.wave, data.flux-model.flux, 'r-')
 		plt.xlabel('$\lambda (\AA)$')
 		plt.ylabel('$F_{\lambda}$')
-		plt.show()
+		plt.savefig(save_to_path+'telluric_data_model_mask.png')
+		#plt.show()
 		plt.close()
 
 	return mask, pwv, airmass
