@@ -10,6 +10,7 @@ import emcee
 #from schwimmbad import MPIPool
 from multiprocessing import Pool
 import smart
+from . import tellurics
 import corner
 import os
 import sys
@@ -187,7 +188,7 @@ data = copy.deepcopy(tell_sp)
 #sys.exit()
 
 ## MCMC functions
-def makeTelluricModel(lsf, alpha, flux_offset, wave_offset0, data=data, pwv=pwv):
+def makeTelluricModel(lsf, alpha, flux_offset, wave_offset, data=data, pwv=pwv, airmass=airmass):
 	"""
 	Make a telluric model as a function of LSF, alpha, and flux offset.
 	"""
@@ -195,24 +196,24 @@ def makeTelluricModel(lsf, alpha, flux_offset, wave_offset0, data=data, pwv=pwv)
 	niter               = 5 # continuum iteration
 
 	data2               = copy.deepcopy(data)
-	data2.wave          = data2.wave + wave_offset0
-	#data2.wave          = data2.wave * (1 + wave_offset1) + wave_offset0
+	data2.wave          = data2.wave + wave_offset
+	#data2.wave          = data2.wave * (1 + wave_offset1) + wave_offset
 	telluric_model      = smart.convolveTelluric(lsf, data2, alpha=alpha, pwv=pwv)
 
-	if data.order == 35:
-		from scipy.optimize import curve_fit
-		data_flux_avg = np.average(data2.flux)
-		popt, pcov = curve_fit(smart.voigt_profile,data2.wave[0:-10], data2.flux[0:-10], 
-			p0=[21660,data_flux_avg,0.1,0.1,0.01,0.1,10000,1000], maxfev=10000)
-		#model               = smart.continuum(data=data2, mdl=telluric_model, deg=2)
-		model = telluric_model
-		max_model_flux      = np.max(smart.voigt_profile(data2.wave, *popt))
-		model.flux         *= smart.voigt_profile(data2.wave, *popt)/max_model_flux
+	#if data.order == 35:
+	#	from scipy.optimize import curve_fit
+	#	data_flux_avg = np.average(data2.flux)
+	#	popt, pcov = curve_fit(smart.voigt_profile,data2.wave[0:-10], data2.flux[0:-10], 
+	#		p0=[21660,data_flux_avg,0.1,0.1,0.01,0.1,10000,1000], maxfev=10000)
+	#	#model               = smart.continuum(data=data2, mdl=telluric_model, deg=2)
+	#	model = telluric_model
+	#	max_model_flux      = np.max(smart.voigt_profile(data2.wave, *popt))
+	#	model.flux         *= smart.voigt_profile(data2.wave, *popt)/max_model_flux
+	#	model               = smart.continuum(data=data2, mdl=model, deg=deg)
+	#else:
+	model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
+	for i in range(niter):
 		model               = smart.continuum(data=data2, mdl=model, deg=deg)
-	else:
-		model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
-		for i in range(niter):
-			model               = smart.continuum(data=data2, mdl=model, deg=deg)
 	
 	model.flux             += flux_offset
 
@@ -220,13 +221,14 @@ def makeTelluricModel(lsf, alpha, flux_offset, wave_offset0, data=data, pwv=pwv)
 
 ## log file
 log_path = save_to_path + '/mcmc_parameters.txt'
-
 file_log = open(log_path,"w+")
 file_log.write("tell_path {} \n".format(tell_path))
 file_log.write("tell_name {} \n".format(tell_data_name))
 file_log.write("order {} \n".format(order))
 file_log.write("custom_mask {} \n".format(custom_mask))
 file_log.write("med_snr {} \n".format(np.average(tell_sp.flux/tell_sp.noise)))
+file_log.write("pwv {} \n".format(pwv))
+file_log.write("airmass {} \n".format(airmass))
 file_log.write("ndim {} \n".format(ndim))
 file_log.write("nwalkers {} \n".format(nwalkers))
 file_log.write("step {} \n".format(step))
