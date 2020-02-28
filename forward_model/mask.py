@@ -95,7 +95,7 @@ def telluric_mask(data, sigma=2.5, lsf=4.8, pwv=None, pixel_start=10, pixel_end=
 			plt.xlabel('pwv (mm)', fontsize=15)
 			plt.ylabel('$\chi^2$', fontsize=15)
 			plt.tight_layout()
-			plt.savefig(save_to_path+'pwv_chi2.png'.format(order))
+			plt.savefig(save_to_path+'pwv_chi2.png')
 			#plt.show()
 			plt.close()
 
@@ -180,5 +180,5 @@ def telluric_mask(data, sigma=2.5, lsf=4.8, pwv=None, pixel_start=10, pixel_end=
 		#plt.show()
 		plt.close()
 
-	return mask, pwv, airmass
+	return mask.tolist(), pwv, airmass
 

@@ -146,7 +146,7 @@ def convolveTelluric(lsf, airmass, pwv, telluric_data):
 
     return telluric_model
 
-def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2):
+def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, niter=None):
     """
     Make a continuum-corrected telluric model as a function of LSF, airmass, pwv, and flux and wavelength offsets.
 
@@ -157,9 +157,11 @@ def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2):
     telluric_model      = convolveTelluric(lsf, airmass, pwv, data2)
     
     model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
+    if niter is not None:
+        for i in range(niter):
+            model               = smart.continuum(data=data2, mdl=model, deg=deg)
     
     model.flux         += flux_offset
 
     return model
-
 

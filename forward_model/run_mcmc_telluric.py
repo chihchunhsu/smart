@@ -10,7 +10,7 @@ import emcee
 #from schwimmbad import MPIPool
 from multiprocessing import Pool
 import smart
-from . import tellurics
+from smart.forward_model import tellurics
 import corner
 import os
 import sys
@@ -91,12 +91,19 @@ priors                 = args.priors
 applymask              = args.applymask
 pixel_start, pixel_end = int(args.pixel_start), int(args.pixel_end)
 save                   = args.save
-pwv                    = str(args.pwv[0])
+#pwv                    = str(args.pwv[0])
 
 lines                  = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
 custom_mask            = json.loads(lines[3].split('custom_mask')[1])
+#pwv                    = float(json.loads(lines[4].split('pwv')[1]))
+#airmass                = float(json.loads(lines[5].split('airmass')[1]))
+pwv                    = "{:.1f}".format(round( float(json.loads(lines[4].split('pwv')[1])) * 2 ) / 2 )
+airmass                = "{:.1f}".format(round( float(json.loads(lines[5].split('airmass')[1])) * 2 )/2)
+print('pwv', pwv)
+print('airmass', airmass)
 
 if pwv is None: pwv = '1.5'
+if airmass is None: airmass = '1.0'
 
 if order == 35: applymask = True
 
@@ -191,8 +198,10 @@ data = copy.deepcopy(tell_sp)
 def makeTelluricModel(lsf, alpha, flux_offset, wave_offset, data=data, pwv=pwv, airmass=airmass):
 	"""
 	Make a telluric model as a function of LSF, alpha, and flux offset.
+
+	## Note: The function "convolveTelluric " used is from the model_fit.py, not in the tellurics!s 
 	"""
-	deg                 = 10  # continuum polynomial order
+	deg                 = 2  # continuum polynomial order
 	niter               = 5 # continuum iteration
 
 	data2               = copy.deepcopy(data)
@@ -221,14 +230,15 @@ def makeTelluricModel(lsf, alpha, flux_offset, wave_offset, data=data, pwv=pwv, 
 
 ## log file
 log_path = save_to_path + '/mcmc_parameters.txt'
-file_log = open(log_path,"w+")
-file_log.write("tell_path {} \n".format(tell_path))
-file_log.write("tell_name {} \n".format(tell_data_name))
-file_log.write("order {} \n".format(order))
-file_log.write("custom_mask {} \n".format(custom_mask))
-file_log.write("med_snr {} \n".format(np.average(tell_sp.flux/tell_sp.noise)))
-file_log.write("pwv {} \n".format(pwv))
-file_log.write("airmass {} \n".format(airmass))
+file_log = open(log_path,"a")
+#file_log = open(log_path,"w+")
+#file_log.write("tell_path {} \n".format(tell_path))
+#file_log.write("tell_name {} \n".format(tell_data_name))
+#file_log.write("order {} \n".format(order))
+#file_log.write("custom_mask {} \n".format(custom_mask))
+#file_log.write("med_snr {} \n".format(np.average(tell_sp.flux/tell_sp.noise)))
+#file_log.write("pwv {} \n".format(pwv))
+#file_log.write("airmass {} \n".format(airmass))
 file_log.write("ndim {} \n".format(ndim))
 file_log.write("nwalkers {} \n".format(nwalkers))
 file_log.write("step {} \n".format(step))
@@ -603,6 +613,8 @@ if save is True:
 	with fits.open(data_path) as hdulist:
 		hdulist[0].header['LSF']       = lsf_mcmc[0]
 		hdulist[0].header['ALPHA']     = alpha_mcmc[0]
+		hdulist[0].header['PWV']       = pwv
+		hdulist[0].header['AM']        = airmass
 		#hdulist[0].header['WFIT0NEW'] += A_mcmc[0]
 		try:
 			hdulist.writeto(data_path, overwrite=True)
