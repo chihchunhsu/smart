@@ -76,7 +76,7 @@ def telluric_mask(data, sigma=2.5, lsf=4.8, pwv=None, pixel_start=10, pixel_end=
 			data_tmp       = copy.deepcopy(data)
 	
 			#data_tmp       = smart.continuumTelluric(data=data_tmp, model=model_tmp)
-			model_tmp      = tellurics.makeTelluricModel(lsf=lsf, airmass=airmass, pwv=pwv, flux_offset=0, wave_offset=0, data=data_tmp)
+			model_tmp      = tellurics.makeTelluricModel(lsf=lsf, airmass=airmass, pwv=pwv, flux_offset=0, wave_offset=0, data=data_tmp, deg=10)
 	
 			model_tmp.flux = np.array(smart.integralResample(xh=model_tmp.wave, yh=model_tmp.flux, xl=data_tmp.wave))
 			model_tmp.wave = data_tmp.wave
