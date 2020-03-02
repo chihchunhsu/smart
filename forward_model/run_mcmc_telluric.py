@@ -209,7 +209,7 @@ def makeTelluricModel(lsf, alpha, flux_offset, wave_offset, data=data, pwv=pwv, 
 
 	## Note: The function "convolveTelluric " used is from the model_fit.py, not in the tellurics!s 
 	"""
-	deg                 = 10  # continuum polynomial order
+	deg                 = 2 # continuum polynomial order
 	niter               = 5 # continuum iteration
 
 	data2               = copy.deepcopy(data)
