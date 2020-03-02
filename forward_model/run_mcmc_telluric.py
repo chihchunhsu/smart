@@ -91,24 +91,32 @@ priors                 = args.priors
 applymask              = args.applymask
 pixel_start, pixel_end = int(args.pixel_start), int(args.pixel_end)
 save                   = args.save
-#pwv                    = str(args.pwv[0])
+pwv                    = str(args.pwv[0])
 
 lines                  = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
 custom_mask            = json.loads(lines[3].split('custom_mask')[1])
 #pwv                    = float(json.loads(lines[4].split('pwv')[1]))
 #airmass                = float(json.loads(lines[5].split('airmass')[1]))
-pwv                    = "{:.1f}".format(round( float(json.loads(lines[4].split('pwv')[1])) * 2 ) / 2 )
-airmass                = "{:.1f}".format(round( float(json.loads(lines[5].split('airmass')[1])) * 2 )/2)
-print('pwv', pwv)
-print('airmass', airmass)
+
+# this is for the new implementation of telluric mcmc using best-fit pwv and airmass (need tests)
+#if pwv is None:
+#	pwv                    = "{:.1f}".format(round( float(json.loads(lines[4].split('pwv')[1])) * 2 ) / 2 )
+#airmass                = "{:.1f}".format(round( float(json.loads(lines[5].split('airmass')[1])) * 2 )/2)
 
 if pwv is None: pwv = '1.5'
-if airmass is None: airmass = '1.0'
+#if airmass is None: airmass = '1.0'
+
+print('pwv', pwv)
 
 if order == 35: applymask = True
 
 tell_data_name2 = tell_data_name + '_calibrated'
 tell_sp         = smart.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
+
+# use the cloest airamss in the header
+airmass = float(round(tell_sp.header['AIRMASS']*2)/2)
+
+print('airmass', airmass)
 
 ###########################################################################################################
 """
