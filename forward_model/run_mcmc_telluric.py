@@ -203,13 +203,13 @@ data = copy.deepcopy(tell_sp)
 #sys.exit()
 
 ## MCMC functions
-def makeTelluricModel(lsf, alpha, flux_offset, wave_offset, data=data, pwv=pwv, airmass=airmass):
+cont_deg                 = 2 # continuum polynomial order
+def makeTelluricModel(lsf, alpha, flux_offset, wave_offset, data=data, pwv=pwv, airmass=airmass, deg=cont_deg):
 	"""
 	Make a telluric model as a function of LSF, alpha, and flux offset.
 
 	## Note: The function "convolveTelluric " used is from the model_fit.py, not in the tellurics!s 
 	"""
-	deg                 = 2 # continuum polynomial order
 	niter               = 5 # continuum iteration
 
 	data2               = copy.deepcopy(data)
@@ -390,7 +390,7 @@ fig.savefig(save_to_path+'/triangle.png', dpi=300, bbox_inches='tight')
 #plt.show()
 plt.close()
 
-deg   = 10
+deg   = cont_deg
 niter = 5
 
 data2               = copy.deepcopy(data)
