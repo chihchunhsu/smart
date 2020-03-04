@@ -49,8 +49,8 @@ def make_spt_teff_relation(SpT):
 	if '+' in SpT:
 		SpT0 = SpT
 		SpT = SpT.split('+')[0]
-		self.binary = True
-		self.SpT2 = SpT.split('+')[-1]
+		#self.binary = True
+		#self.SpT2 = SpT.split('+')[-1]
 	elif '-' in SpT:
 		# assume earlier spt
 		SpT0 = SpT
@@ -84,7 +84,7 @@ class ForwardModelInit():
 
 		self.binary         = False
 			
-		def make_spt_teff_relation(SpT):
+		def make_spt_teff_relation(self, SpT):
 			"""
 			Use Eric Mamajek's compilation of spectral types and effective temperature relations.
 			http://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt
