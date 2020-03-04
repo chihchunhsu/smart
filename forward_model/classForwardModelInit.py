@@ -84,7 +84,7 @@ class ForwardModelInit():
 
 		self.binary         = False
 			
-		def make_spt_teff_relation(self, SpT):
+		def make_spt_teff_relation(SpT):
 			"""
 			Use Eric Mamajek's compilation of spectral types and effective temperature relations.
 			http://www.pas.rochester.edu/~emamajek/EEM_dwarf_UBVIJHK_colors_Teff.txt
@@ -152,6 +152,8 @@ class ForwardModelInit():
         
 		elif self.catalogue_path is not None and self.name in list(cat['name']):
 			self.SpT    = cat['SpT'][cat['name'] == self.name].values[0]
+			if 'V' in self.SpT:
+				self.SpT = self.SpT.split('V')[0]
 			self.teff   = make_spt_teff_relation(self.SpT)
 		if self.binary:
 			self.teff2 = make_spt_teff_relation(self.SpT2)
