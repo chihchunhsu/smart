@@ -134,7 +134,7 @@ modelset               = str(args.modelset)
 final_mcmc             = args.final_mcmc
 
 if final_mcmc:
-	save_to_path1  = save_to_path_base + '/init_mcmc'
+	#save_to_path1  = save_to_path_base + '/init_mcmc'
 	save_to_path   = save_to_path_base + '/final_mcmc'
 
 else:
@@ -255,7 +255,7 @@ priors         = ast.literal_eval(lines[6].split('priors ')[1])
 barycorr       = json.loads(lines[13].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
-if priors['teff_min'] < 900: logg_max = 5.0
+if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
 else: logg_max = 5.5
 
 # limit of the flux nuisance parameter: 5 percent of the median flux
@@ -412,10 +412,8 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 ## multiprocessing
 
 with Pool() as pool:
-	if final_mcmc:
-		sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
-	else:
-		sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool,
+	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
+	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool,
 			moves=emcee.moves.KDEMove())
 	time1 = time.time()
 	sampler.run_mcmc(pos, step, progress=True)
