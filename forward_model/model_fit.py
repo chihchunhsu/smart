@@ -13,7 +13,7 @@ import time
 import os
 import sys
 
-def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
+def makeModel(teff,logg=5,z=0,vsini=1,rv=0,alpha=0,wave_offset=0,flux_offset=0,**kwargs):
 	"""
 	Return a forward model.
 
@@ -36,10 +36,12 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 	order      = kwargs.get('order', 33)
 	modelset   = kwargs.get('modelset', 'btsettl08')
 	instrument = kwargs.get('instrument', 'nirspec')
+	veiling    = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf        = kwargs.get('lsf', 4.5)   # instrumental LSF
 	airmass    = kwargs.get('airmass', 1.5) # airmass of the telluric model
 	pwv        = kwargs.get('pwv', 1.5)   # pwv of the telluric model
 	tell       = kwargs.get('tell', True) # apply telluric
+	tell_alpha = kwargs.get('tell_alpha', 1) # Telluric alpha power
 	binary     = kwargs.get('binary', False) # make a binary model
 
 	if binary:
@@ -77,6 +79,9 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 	# apply rv (including the barycentric correction)
 	model.wave = rvShift(model.wave, rv=rv)
 	
+	# flux veiling
+	model.flux += veiling
+
 	## if binary is True: make a binary model
 	if binary:
 		model2      = smart.Model(teff=teff2, logg=logg2, feh=z, order=order, modelset=modelset, instrument=instrument)
@@ -99,7 +104,7 @@ def makeModel(teff,logg,z,vsini,rv,alpha,wave_offset,flux_offset,**kwargs):
 		stellar_model = copy.deepcopy(model)
 	# apply telluric
 	if tell is True:
-		model = smart.applyTelluric(model=model, alpha=alpha, airmass=airmass, pwv=pwv)
+		model = smart.applyTelluric(model=model, alpha=tell_alpha, airmass=airmass, pwv=pwv)
 	# instrumental LSF
 	model.flux = smart.broaden(wave=model.wave, 
 		flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
