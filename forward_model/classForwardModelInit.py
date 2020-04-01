@@ -49,12 +49,12 @@ def make_spt_teff_relation(SpT):
 	if '+' in SpT:
 		SpT0 = SpT
 		SpT = SpT.split('+')[0]
-		self.binary = True
-		self.SpT2 = SpT.split('+')[-1]
+		#self.binary = True
+		#self.SpT2 = SpT.split('+')[-1]
 	elif '-' in SpT:
+		# assume earlier spt
 		SpT0 = SpT
 		SpT = SpT.split('-')[0]
-
 	if SpT in spt_teff_dic.keys():
 		teff = spt_teff_dic[SpT]
 	else:
@@ -142,21 +142,29 @@ class ForwardModelInit():
 				teff = spt_teff_dic[SpT]
 			else:
 				teff = int((spt_teff_dic[SpT[0:2]] + spt_teff_dic[SpT[0:1]+str(int(SpT[1:2])+1)])/2)
+			self.teff = teff
 
 			return teff
 
 		if self.catalogue_path is not None and self.name not in list(cat['name']):
-			raise ValueError('{} is not in the catalogue.'.format(self.name))
+			print('{} is not in the catalogue; need to designate the spectral type.'.format(self.name))
+		#	#raise ValueError('{} is not in the catalogue.'.format(self.name))
         
 		elif self.catalogue_path is not None and self.name in list(cat['name']):
 			self.SpT    = cat['SpT'][cat['name'] == self.name].values[0]
+			if 'V' in self.SpT:
+				self.SpT = self.SpT.split('V')[0]
 			self.teff   = make_spt_teff_relation(self.SpT)
 		if self.binary:
 			self.teff2 = make_spt_teff_relation(self.SpT2)
 		self.young  = False
 
 	def compute_teff(self):
-		self.teff   = make_spt_teff_relation(self.SpT)
+		teff      = make_spt_teff_relation(self.SpT)
+		self.teff = teff
+
+		return self
+		
 
 	def add_secondary(self, SpT2):
 		self.binary = True
@@ -176,7 +184,10 @@ class ForwardModelInit():
 
 		if self.catalogue_path is not None:
 			# check if RV is in the catalogue
-			rv = cat['RV'][cat['name'] == self.name].values[0]
+			try:
+				rv = cat['RV'][cat['name'] == self.name].values[0]
+			except:
+				rv = np.nan
 			if np.isnan(rv):
 				rv_min = -100.0
 				rv_max = 100.0
@@ -185,7 +196,10 @@ class ForwardModelInit():
 				rv_max = rv + 10.0
 				            
 			# check if vsini is in the catalogue
-			vsini = cat['VSINI'][cat['name'] == self.name].values[0]
+			try:
+				vsini = cat['VSINI'][cat['name'] == self.name].values[0]
+			except:
+				vsini = np.nan
 			if np.isnan(vsini):
 				vsini_min = 0.0
 				vsini_max = 70.0

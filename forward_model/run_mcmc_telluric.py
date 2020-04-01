@@ -10,6 +10,7 @@ import emcee
 #from schwimmbad import MPIPool
 from multiprocessing import Pool
 import smart
+from smart.forward_model import tellurics
 import corner
 import os
 import sys
@@ -94,13 +95,28 @@ pwv                    = str(args.pwv[0])
 
 lines                  = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
 custom_mask            = json.loads(lines[3].split('custom_mask')[1])
+#pwv                    = float(json.loads(lines[4].split('pwv')[1]))
+#airmass                = float(json.loads(lines[5].split('airmass')[1]))
+
+# this is for the new implementation of telluric mcmc using best-fit pwv and airmass (need tests)
+#if pwv is None:
+#	pwv                    = "{:.1f}".format(round( float(json.loads(lines[4].split('pwv')[1])) * 2 ) / 2 )
+#airmass                = "{:.1f}".format(round( float(json.loads(lines[5].split('airmass')[1])) * 2 )/2)
 
 if pwv is None: pwv = '1.5'
+#if airmass is None: airmass = '1.0'
+
+print('pwv', pwv)
 
 if order == 35: applymask = True
 
 tell_data_name2 = tell_data_name + '_calibrated'
 tell_sp         = smart.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
+
+# use the cloest airamss in the header
+airmass = float(round(tell_sp.header['AIRMASS']*2)/2)
+
+print('airmass', airmass)
 
 ###########################################################################################################
 """
@@ -187,32 +203,34 @@ data = copy.deepcopy(tell_sp)
 #sys.exit()
 
 ## MCMC functions
-def makeTelluricModel(lsf, alpha, flux_offset, wave_offset0, data=data, pwv=pwv):
+cont_deg                 = 2 # continuum polynomial order
+def makeTelluricModel(lsf, alpha, flux_offset, wave_offset, data=data, pwv=pwv, airmass=airmass, deg=cont_deg):
 	"""
 	Make a telluric model as a function of LSF, alpha, and flux offset.
+
+	## Note: The function "convolveTelluric " used is from the model_fit.py, not in the tellurics!s 
 	"""
-	deg                 = 10  # continuum polynomial order
 	niter               = 5 # continuum iteration
 
 	data2               = copy.deepcopy(data)
-	data2.wave          = data2.wave + wave_offset0
-	#data2.wave          = data2.wave * (1 + wave_offset1) + wave_offset0
+	data2.wave          = data2.wave + wave_offset
+	#data2.wave          = data2.wave * (1 + wave_offset1) + wave_offset
 	telluric_model      = smart.convolveTelluric(lsf, data2, alpha=alpha, pwv=pwv)
 
-	if data.order == 35:
-		from scipy.optimize import curve_fit
-		data_flux_avg = np.average(data2.flux)
-		popt, pcov = curve_fit(smart.voigt_profile,data2.wave[0:-10], data2.flux[0:-10], 
-			p0=[21660,data_flux_avg,0.1,0.1,0.01,0.1,10000,1000], maxfev=10000)
-		#model               = smart.continuum(data=data2, mdl=telluric_model, deg=2)
-		model = telluric_model
-		max_model_flux      = np.max(smart.voigt_profile(data2.wave, *popt))
-		model.flux         *= smart.voigt_profile(data2.wave, *popt)/max_model_flux
+	#if data.order == 35:
+	#	from scipy.optimize import curve_fit
+	#	data_flux_avg = np.average(data2.flux)
+	#	popt, pcov = curve_fit(smart.voigt_profile,data2.wave[0:-10], data2.flux[0:-10], 
+	#		p0=[21660,data_flux_avg,0.1,0.1,0.01,0.1,10000,1000], maxfev=10000)
+	#	#model               = smart.continuum(data=data2, mdl=telluric_model, deg=2)
+	#	model = telluric_model
+	#	max_model_flux      = np.max(smart.voigt_profile(data2.wave, *popt))
+	#	model.flux         *= smart.voigt_profile(data2.wave, *popt)/max_model_flux
+	#	model               = smart.continuum(data=data2, mdl=model, deg=deg)
+	#else:
+	model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
+	for i in range(niter):
 		model               = smart.continuum(data=data2, mdl=model, deg=deg)
-	else:
-		model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
-		for i in range(niter):
-			model               = smart.continuum(data=data2, mdl=model, deg=deg)
 	
 	model.flux             += flux_offset
 
@@ -220,13 +238,15 @@ def makeTelluricModel(lsf, alpha, flux_offset, wave_offset0, data=data, pwv=pwv)
 
 ## log file
 log_path = save_to_path + '/mcmc_parameters.txt'
-
-file_log = open(log_path,"w+")
-file_log.write("tell_path {} \n".format(tell_path))
-file_log.write("tell_name {} \n".format(tell_data_name))
-file_log.write("order {} \n".format(order))
-file_log.write("custom_mask {} \n".format(custom_mask))
-file_log.write("med_snr {} \n".format(np.average(tell_sp.flux/tell_sp.noise)))
+file_log = open(log_path,"a")
+#file_log = open(log_path,"w+")
+#file_log.write("tell_path {} \n".format(tell_path))
+#file_log.write("tell_name {} \n".format(tell_data_name))
+#file_log.write("order {} \n".format(order))
+#file_log.write("custom_mask {} \n".format(custom_mask))
+#file_log.write("med_snr {} \n".format(np.average(tell_sp.flux/tell_sp.noise)))
+file_log.write("pwv {} \n".format(pwv))
+file_log.write("airmass {} \n".format(airmass))
 file_log.write("ndim {} \n".format(ndim))
 file_log.write("nwalkers {} \n".format(nwalkers))
 file_log.write("step {} \n".format(step))
@@ -370,7 +390,7 @@ fig.savefig(save_to_path+'/triangle.png', dpi=300, bbox_inches='tight')
 #plt.show()
 plt.close()
 
-deg   = 10
+deg   = cont_deg
 niter = 5
 
 data2               = copy.deepcopy(data)
@@ -601,6 +621,8 @@ if save is True:
 	with fits.open(data_path) as hdulist:
 		hdulist[0].header['LSF']       = lsf_mcmc[0]
 		hdulist[0].header['ALPHA']     = alpha_mcmc[0]
+		hdulist[0].header['PWV']       = pwv
+		hdulist[0].header['AM']        = airmass
 		#hdulist[0].header['WFIT0NEW'] += A_mcmc[0]
 		try:
 			hdulist.writeto(data_path, overwrite=True)

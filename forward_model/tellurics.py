@@ -72,7 +72,7 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, **kwargs):
     tellurics = fits.open(tfile)
 
     telluric      = smart.Model()
-    telluric.wave = np.array(tellurics[1].data['lam'] * 10000)
+    telluric.wave = np.array(tellurics[1].data['lam'] * 10000) # convert to Angstrom
     telluric.flux = np.array(tellurics[1].data['trans'])**(alpha)
 
     # select the wavelength range
@@ -128,7 +128,7 @@ def InterpTelluricModel(wavelow, wavehigh, airmass, pwv):
 
 def convolveTelluric(lsf, airmass, pwv, telluric_data):
     """
-    Return a convolved telluric transmission model given a telluric data and lsf.
+    Return a convolved, normalized telluric transmission model given a telluric data and lsf.
     """
     # get a telluric standard model
     wavelow               = telluric_data.wave[0]  - 50
@@ -146,18 +146,22 @@ def convolveTelluric(lsf, airmass, pwv, telluric_data):
 
     return telluric_model
 
-def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data):
+def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, niter=None):
     """
-    Make a telluric model as a function of LSF, alpha, and flux offset.
+    Make a continuum-corrected telluric model as a function of LSF, airmass, pwv, and flux and wavelength offsets.
+
+    The model assumes a second-order polynomail for the continuum.
     """
     data2               = copy.deepcopy(data)
     data2.wave          = data2.wave + wave_offset
     telluric_model      = convolveTelluric(lsf, airmass, pwv, data2)
     
-    model               = smart.continuum(data=data2, mdl=telluric_model, deg=2)
+    model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
+    if niter is not None:
+        for i in range(niter):
+            model               = smart.continuum(data=data2, mdl=model, deg=deg)
     
     model.flux         += flux_offset
 
     return model
-
 
