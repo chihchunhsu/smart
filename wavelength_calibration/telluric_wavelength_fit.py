@@ -705,8 +705,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		#if i > 4: break
 
 		if i == 0: # Change the width for the first iteration
-			width     = 100
-			step_size = 20
+			width     = 300
+			step_size = 10
 			include_ends = True #False
 		elif i == 1: # Change the width for the second iteration
 			width     = 150
@@ -1223,7 +1223,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 
 
 def run_wave_cal(data_name, data_path, order_list,
-	             save_to_path, test=False, save=False,
+	             save_to_path, test=False, save=False, plot_masked=False,
 	             window_width=40, window_step=5, mask_custom=[], applymask=False, pwv='1.5',
 	             xcorr_step=0.05, niter=20, outlier_rej=None, defringe_list=[62], cal_param=None):
 	"""
@@ -1368,16 +1368,17 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
 			data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
 			data.noise = np.delete(data.oriNoise, mask_custom)[pixel_range_start: pixel_range_end]
-
-		plt.plot(data0.wave, data0.flux, 'k-', alpha=0.5, label='original data')
-		plt.plot(data.wave, data.flux, 'r-', alpha=0.5, label='median combined mask data')
-		plt.xlabel(r'$\lambda$ ($\AA)$')
-		plt.ylabel(r'$F_{\lambda}$')
-		plt.legend()
-		plt.show()
-		plt.close()
-		#sys.exit()
-
+		
+		if plot_masked:
+			plt.plot(data0.wave, data0.flux, 'k-', alpha=0.5, label='original data')
+			plt.plot(data.wave, data.flux, 'r-', alpha=0.5, label='median combined mask data')
+			plt.xlabel(r'$\lambda$ ($\AA)$')
+			plt.ylabel(r'$F_{\lambda}$')
+			plt.legend()
+			plt.show()
+			plt.close()
+			#sys.exit()
+		
 
 		# continuum correction for the data
 		data1    = copy.deepcopy(data)
