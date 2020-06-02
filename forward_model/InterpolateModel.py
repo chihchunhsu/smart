@@ -3,7 +3,7 @@ import numpy as np
 import sys, os, os.path, time
 from astropy.table import Table
 from numpy.linalg import inv, det
-
+from ..utils.interpolations import trilinear_interpolation
 
 ##############################################################################################################
 
@@ -304,44 +304,6 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
 
         elif modelset == 'marcs-apogee-dr15' :
             path = BASE + '/../libraries/MARCS_APOGEE_DR15/APOGEE-RAW_3D/'
-        
-
-    def trilinear_interpolation(x, y, z, points):
-        '''Interpolate (x,y) from values associated with 9 points.
-
-        Custom routine
-
-        '''
-
-        (x0, y0, z0, q000), (x1, y0, z0, q100), (x0, y1, z0, q010), (x1, y1, z0, q110), \
-        (x0, y0, z1, q001), (x1, y0, z1, q101), (x0, y1, z1, q011), (x1, y1, z1, q111),  = points
-        x0 = x0.data[0]
-        x1 = x1.data[0]
-        y0 = y0.data[0]
-        y1 = y1.data[0]
-        z0 = z0.data[0]
-        z1 = z1.data[0]
-
-        c = np.array([ [1., x0, y0, z0, x0*y0, x0*z0, y0*z0, x0*y0*z0], #000
-                       [1., x1, y0, z0, x1*y0, x1*z0, y0*z0, x1*y0*z0], #100
-                       [1., x0, y1, z0, x0*y1, x0*z0, y1*z0, x0*y1*z0], #010
-                       [1., x1, y1, z0, x1*y1, x1*z0, y1*z0, x1*y1*z0], #110
-                       [1., x0, y0, z1, x0*y0, x0*z1, y0*z1, x0*y0*z1], #001
-                       [1., x1, y0, z1, x1*y0, x1*z1, y0*z1, x1*y0*z1], #101
-                       [1., x0, y1, z1, x0*y1, x0*z1, y1*z1, x0*y1*z1], #011
-                       [1., x1, y1, z1, x1*y1, x1*z1, y1*z1, x1*y1*z1], #111
-                      ], dtype='float')
-
-        invc      = inv(c)
-        transinvc = np.transpose(invc)
-
-        final = np.dot(transinvc, [1, x, y, z, x*y, x*z, y*z, x*y*z])
-
-        interpFlux = 10**( (q000*final[0] + q100*final[1] + q010*final[2] + q110*final[3] + 
-                            q001*final[4] + q101*final[5] + q011*final[6] + q111*final[7] ) )
-
-        return interpFlux
-
 
     def GetModel(temp, logg, metal, modelset='marcs-apogee-dr15', wave=False):
         en = 0.00

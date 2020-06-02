@@ -113,7 +113,7 @@ class Model():
             #wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
             #    modelset=self.modelset, order=self.order, instrument=self.instrument)
 
-            wave, flux = smart.forward_model.InterpolateModel.InterpModel_3D(self.teff, self.logg, self.feh,
+            wave, flux = smart.forward_model.InterpolateModel.InterpModel_3D(Teff=self.teff, Logg=self.logg, Metal=self.feh,
                 modelset=self.modelset, order=self.order, instrument=self.instrument)
 
             self.wave = wave # Angstrom
