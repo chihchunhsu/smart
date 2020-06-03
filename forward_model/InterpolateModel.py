@@ -278,7 +278,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
 
 
 def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='nirspec', order=33):
-
+    Alpha = 0.0
     FULL_PATH  = os.path.realpath(__file__)
     BASE, NAME = os.path.split(FULL_PATH)
 
@@ -364,7 +364,7 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
 
     # Check if the model already exists (grid point)
     if (Teff, Logg, Metal) in zip(T1['Temp'], T1['Logg'], T1['Metal']): 
-        index0 = np.where( (T1['Temp'] == Teff) & (T1['Logg'] == Logg) & (T1['Metal'] == Metal) )
+        index0 = np.where( (T1['Temp'] == Teff) & (T1['Logg'] == Logg) & (T1['Metal'] == Metal) & (T1['Alpha'] == Alpha) )
         flux2  = GetModel(T1['Temp'][index0], T1['Logg'][index0], T1['Metal'][index0], modelset=modelset )
         waves2 = GetModel(T1['Temp'][index0], T1['Logg'][index0], T1['Metal'][index0], modelset=modelset, wave=True)
         return waves2, flux2
@@ -410,14 +410,14 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
     print(np.log10(T1['Temp'][np.where( (T1['Temp'] == x2) & (T1['Logg'] == y2))]), np.log10(T1['Logg'][np.where( (T1['Temp'] == x2) & (T1['Logg'] == y2))]))
     '''
     # Get the 16 points
-    ind000 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z0) ) # 000
-    ind100 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z0) ) # 100
-    ind010 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z0) ) # 010
-    ind110 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z0) ) # 110
-    ind001 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z1) ) # 001
-    ind101 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z1) ) # 101
-    ind011 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z1) ) # 011
-    ind111 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z1) ) # 111
+    ind000 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 000
+    ind100 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 100
+    ind010 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 010
+    ind110 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 110
+    ind001 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 001
+    ind101 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 101
+    ind011 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 011
+    ind111 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 111
     Points =  [ [np.log10(T1['Temp'][ind000]), T1['Logg'][ind000], T1['Metal'][ind000], 
                  np.log10(GetModel(T1['Temp'][ind000], T1['Logg'][ind000], T1['Metal'][ind000], modelset=modelset))],
                 [np.log10(T1['Temp'][ind100]), T1['Logg'][ind100], T1['Metal'][ind100], 
