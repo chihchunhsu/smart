@@ -15,27 +15,27 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
 
     # Check the model set and instrument
     if instrument == 'nirspec':
-        if modelset == 'btsettl08':
+        if modelset.lower() == 'btsettl08':
             path     = BASE + '/../libraries/btsettl08/NIRSPEC-O%s-RAW/'%order
             Gridfile = BASE + '/../libraries/btsettl08/btsettl08_gridparams.csv'
-        elif modelset == 'phoenix-aces-agss-cond-2011':
+        elif modelset.lower() == 'phoenix-aces-agss-cond-2011':
             path     = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/NIRSPEC-O%s-RAW/'%order
             Gridfile = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/PHOENIX_ACES_AGSS_COND_2011_gridparams.csv'
-        elif modelset == 'sonora-2018':
+        elif modelset.lower() == 'sonora-2018':
             path     = BASE + '/../libraries/SONORA_2018/NIRSPEC-O%s-RAW/'%order
             Gridfile = BASE + '/../libraries/SONORA_2018/SONORA_2018_gridparams.csv'
 
     elif instrument == 'apogee':
-        if modelset == 'btsettl08':
+        if modelset.lower() == 'btsettl08':
             path     = BASE + '/../libraries/btsettl08/APOGEE-RAW/'
             Gridfile = BASE + '/../libraries/btsettl08/btsettl08_gridparams_apogee.csv'
-        elif modelset == 'phoenix-btsettl-cifist2011-2015':
+        elif modelset.lower() == 'phoenix-btsettl-cifist2011-2015':
             path     = BASE + '/../libraries/PHOENIX_BTSETTL_CIFIST2011_2015/APOGEE-RAW/'
             Gridfile = BASE + '/../libraries/PHOENIX_BTSETTL_CIFIST2011_2015/PHOENIX_BTSETTL_CIFIST2011_2015_gridparams_apogee.csv'
-        elif modelset == 'phoenix-aces-agss-cond-2011' :
+        elif modelset.lower() == 'phoenix-aces-agss-cond-2011' :
             path     = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-RAW/'
             Gridfile = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/PHOENIX_ACES_AGSS_COND_2011_gridparams_apogee.csv'
-        elif modelset == 'marcs-apogee-dr15' :
+        elif modelset.lower() == 'marcs-apogee-dr15' :
             path     = BASE + '/../libraries/MARCS_APOGEE_DR15/APOGEE-RAW/'
             Gridfile = BASE + '/../libraries/MARCS_APOGEE_DR15/MARCS_APOGEE_DR15_gridparams_apogee.csv'
 
@@ -57,11 +57,11 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
             raise ValueError('Model gridfile must be provided.') 
 
         if instrument == 'nirspec': 
-            if modelset == 'btsettl08': 
+            if modelset.lower() == 'btsettl08': 
                 filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
-            elif modelset == 'phoenix-aces-agss-cond-2011':
+            elif modelset.lower() == 'phoenix-aces-agss-cond-2011':
                 filename = 'PHOENIX_ACES_AGSS_COND_2011_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_alpha{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
-            elif modelset == 'sonora-2018':
+            elif modelset.lower() == 'sonora-2018':
                 filename = 'SONORA_2018_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH{0:.2f}'.format(0) + '_Y{0:.2f}'.format(0.28) + '_CO{0:.2f}'.format(1.00) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
 
         if instrument == 'apogee':
@@ -77,7 +77,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
     ###################################################################################
 
     # Check if the model already exists (grid point)
-    if modelset == 'sonora-2018':
+    if modelset.lower() == 'sonora-2018':
         if (teff, logg) in zip(T1['Temp'], T1['Logg']):
             metal, ys = 0, 0.28
             index0 = np.where( (T1['Temp'] == teff) & (T1['Logg'] == logg) & (T1['FeH'] == metal) & (T1['Y'] == ys) )
@@ -97,7 +97,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
 
 
     try:
-        if modelset == 'sonora-2018':
+        if modelset.lower() == 'sonora-2018':
             metal, alpha = 0, 0.28
             # Get the nearest models to the gridpoint (Temp)
             x0 = np.max(T1['Temp'][np.where(T1['Temp'] <= teff)])
@@ -165,7 +165,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
         raise ValueError('Model Parameters Teff: %0.3f, Logg: %0.3f, [M/H]: %0.3f, Alpha: %0.3f are outside the model grid.'%(teff, logg, metal, alpha))
 
 
-    if modelset == 'sonora-2018':
+    if modelset.lower() == 'sonora-2018':
         # Get the 16 points
         ind0000 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['FeH'] == z0) & (T1['Y'] == t0) ) # 0000
         ind1000 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['FeH'] == z0) & (T1['Y'] == t0) ) # 1000
@@ -285,31 +285,31 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
     # Check the model set
     if instrument == 'nirspec':
 
-        if modelset == 'btsettl08':
+        if modelset.lower() == 'btsettl08':
             path = BASE + '/../libraries/btsettl08/NIRSPEC-O%s-RAW/'%order
 
-        elif modelset == 'phoenixaces' :
+        elif modelset.lower() == 'phoenixaces' :
             path = BASE + '/../libraries/phoenixaces/NIRSPEC-O%s-RAW/'%order
 
     elif instrument == 'apogee':
 
-        if modelset == 'btsettl08':
+        if modelset.lower() == 'btsettl08':
             path = BASE + '/../libraries/btsettl08/APOGEE-RAW/'
 
-        elif modelset == 'phoenix-btsettl-cifist2011-2015':
+        elif modelset.lower() == 'phoenix-btsettl-cifist2011-2015':
             path = BASE + '/../libraries/PHOENIX_BTSETTL_CIFIST2011_2015/APOGEE-RAW/'
         
-        elif modelset == 'phoenix-aces-agss-cond-2011' :
+        elif modelset.lower() == 'phoenix-aces-agss-cond-2011' :
             path = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-RAW/'
 
-        elif modelset == 'marcs-apogee-dr15' :
+        elif modelset.lower() == 'marcs-apogee-dr15' :
             path = BASE + '/../libraries/MARCS_APOGEE_DR15/APOGEE-RAW_3D/'
 
     def GetModel(temp, logg, metal, modelset='marcs-apogee-dr15', wave=False):
         en = 0.00
         if instrument == 'nirspec':
 
-            if modelset == 'btsettl08':
+            if modelset.lower() == 'btsettl08':
                 # alpha enhancement correction
                 if metal == -0.5:
                     en = 0.2
@@ -323,11 +323,11 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
                 else:
                     filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
             
-            elif modelset == 'phoenixaces':
+            elif modelset.lower() == 'phoenixaces':
                 filename = 'phoenixaces_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z-{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
         
         elif instrument == 'apogee':
-            if modelset == 'btsettl08':
+            if modelset.lower() == 'btsettl08':
                 # alpha enhancement correction
                 if metal == -0.5:
                     en = 0.2
@@ -341,13 +341,13 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
                 else:
                     filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
             
-            elif modelset == 'phoenix-btsettl-cifist2011-2015':
+            elif modelset.lower() == 'phoenix-btsettl-cifist2011-2015':
                 filename = 'PHOENIX_BTSETTL_CIFIST2011_2015_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
 
-            elif modelset == 'phoenix-aces-agss-cond-2011':
+            elif modelset.lower() == 'phoenix-aces-agss-cond-2011':
                 filename = 'PHOENIX_ACES_AGSS_COND_2011_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
             
-            elif modelset == 'marcs-apogee-dr15':
+            elif modelset.lower() == 'marcs-apogee-dr15':
                 filename = 'MARCS_APOGEE_DR15_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
 
         Tab = Table.read(path+filename, format='ascii.tab', names=['wave', 'flux'])
@@ -361,30 +361,30 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
 
     if instrument == 'nirspec':
 
-        if modelset == 'btsettl08':
+        if modelset.lower() == 'btsettl08':
             Gridfile = BASE + '/../libraries/btsettl08/btsettl08_gridparams.csv'
 
-        elif modelset == 'phoenixaces':
+        elif modelset.lower() == 'phoenixaces':
             Gridfile = BASE + '/../libraries/phoenixaces/phoenixaces_gridparams.csv'
 
     elif instrument == 'apogee':
 
-        if modelset == 'btsettl08':
+        if modelset.lower() == 'btsettl08':
             Gridfile = BASE + '/../libraries/btsettl08/btsettl08_gridparams_apogee.csv'
 
-        elif modelset == 'phoenix-btsettl-cifist2011-2015':
+        elif modelset.lower() == 'phoenix-btsettl-cifist2011-2015':
             Gridfile = BASE + '/../libraries/PHOENIX_BTSETTL_CIFIST2011_2015/PHOENIX_BTSETTL_CIFIST2011_2015_gridparams_apogee.csv'
 
-        elif modelset == 'phoenix-aces-agss-cond-2011':
+        elif modelset.lower() == 'phoenix-aces-agss-cond-2011':
             Gridfile = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/PHOENIX_ACES_AGSS_COND_2011_gridparams_apogee.csv'
 
-        elif modelset == 'marcs-apogee-dr15':
+        elif modelset.lower() == 'marcs-apogee-dr15':
             Gridfile = BASE + '/../libraries/MARCS_APOGEE_DR15/MARCS_APOGEE_DR15_3D_gridparams_apogee.csv'
 
     T1 = Table.read(Gridfile)
     # Check if the model already exists (grid point)
     if (Teff, Logg, Metal) in zip(T1['Temp'], T1['Logg'], T1['Metal']):
-        if modelset == 'btsettl08':
+        if modelset.lower() == 'btsettl08':
             if Metal == -0.5:
                 Alpha = 0.2
             elif (Metal == -1.0) or (Metal == -1.5) or (Metal == -2.0) or (Metal == -2.5):
@@ -435,7 +435,7 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
     print(np.log10(T1['Temp'][np.where( (T1['Temp'] == x2) & (T1['Logg'] == y2))]), np.log10(T1['Logg'][np.where( (T1['Temp'] == x2) & (T1['Logg'] == y2))]))
     '''
     # Get the 16 points
-    if modelset == 'btsettl08':
+    if modelset.lower() == 'btsettl08':
         if z0 == -0.5:
             Alpha0 = 0.2
         elif (z0 == -1.0) or (z0 == -1.5) or (z0 == -2.0) or (z0 == -2.5):

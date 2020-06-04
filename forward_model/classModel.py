@@ -33,8 +33,8 @@ class Model():
     Parameters
     ----------
     1. Read in a BT-Settl model or PHOENIXACES model.
-    teff : int 
-          The effective temperature, given from 500 to 3,500 K.
+    teff : float 
+          The effective temperature in Kelvins.
     logg : float
           The log(gravity), given in two decimal digits. 
           Ex: logg=4.50
@@ -44,8 +44,15 @@ class Model():
     en   : float
            alpha enhancement. given in two decimal digits. 
            Ex. en=0.00
+
+    modelset: str
+            available models are 
+            NIRSPEC: 'btsettl08', 'SONORA_2018'
+            APOGEE: 'btsettl08', 'marcs-apogee-dr15', 'phoenix-aces-agss-cond-2011', 'phoenix-btsettl-cifist2011-2015'
+
     order: int
-           The order of the model, given from 29 to 80
+           This is only for the Keck/NIRSPEC. The order of the model, given from 29 to 80
+
     path : str
            The path to the model
 
@@ -58,9 +65,9 @@ class Model():
     Returns
     -------
     flux : astropy.table.column.Column
-           The flux retrieved from the model.
+           The flux retrieved from the model. Our default unit is erg/s/cm^2/Angstrom.
     wave : astropy.table.column.Column
-           The wavelength retrieved from the model.
+           The wavelength retrieved from the model. Our default unit is Angstrom.
 
     Examples
     --------
