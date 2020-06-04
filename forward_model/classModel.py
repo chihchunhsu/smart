@@ -9,7 +9,7 @@ import smart
 #import splat
 #import splat.model as spmd
 
-#def _constructModelName(teff, logg, feh, en, order, path=None):
+#def _constructModelName(teff, logg, metal, en, order, path=None):
 #    """
 #    Return the full name of the BT-Settl model.
 #    """
@@ -19,7 +19,7 @@ import smart
 #    else:
 #        path  = path + '/NIRSPEC-O' + str(order) + '-RAW/'
 #    full_name = path + 'btsettl08_t'+ str(teff) + '_g' + \
-#    '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(feh)) + \
+#    '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + \
 #    '_en' + '{0:.2f}'.format(float(en)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
 #    
 #    return full_name
@@ -38,9 +38,9 @@ class Model():
     logg : float
           The log(gravity), given in two decimal digits. 
           Ex: logg=4.50
-    feh  : float
+    metal  : float
            The metalicity, given in two decimal digits. 
-           Ex. feh=0.00
+           Ex. metal=0.00
     en   : float
            alpha enhancement. given in two decimal digits. 
            Ex. en=0.00
@@ -64,7 +64,7 @@ class Model():
 
     Examples
     --------
-    >>> import nirspec_pip as smart
+    >>> import smart
     >>> model = smart.Model(teff=2300, logg=5.5, order=33, path='/path/to/models')
     >>> model.plot()
     """
@@ -76,26 +76,17 @@ class Model():
         if self.order != None and self.instrument == 'nirspec':
             self.teff     = kwargs.get('teff', 2500)
             self.logg     = kwargs.get('logg', 5.00)
-            self.feh      = kwargs.get('feh', 0.00)
+            self.metal    = kwargs.get('metal', 0.00)
             self.en       = kwargs.get('en', 0.00)
             self.modelset = kwargs.get('modelset', 'btsettl08')
 
-            #print('Return a BT-Settl model of the order {0}, with Teff {1} logg {2}, z {3}, Alpha enhancement {4}.'\
-            #    .format(self.order, self.teff, self.logg, self.feh, self.en))
-        
-            #full_name = _constructModelName(self.teff, self.logg, self.feh, self.en, self.order, self.path)
-            #model = ascii.read(full_name, format='no_header', fast_reader=False)
-            #self.wave  = model[0][:]*10000 #convert to Angstrom
-            #self.flux  = model[1][:]
-            
-            ## load the splat.interpolation BTSETTL model
-            #instrument = "NIRSPEC-O{}-RAW".format(self.order)
-            #sp = spmd.getModel(instrument=str(instrument),teff=self.teff,logg=self.logg,z=self.feh)
-            #self.wave = sp.wave.value*10000 #convert to Angstrom
-            #self.flux = sp.flux.value
-
-            wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
+            if self.metal == 0.0:
+                wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
+                    modelset=self.modelset, order=self.order, instrument=self.instrument)
+            elif self.metal != 0.0:
+                wave, flux = smart.forward_model.InterpolateModel.InterpModel_3D(Teff=self.teff, Logg=self.logg, Metal=self.metal,
                 modelset=self.modelset, order=self.order, instrument=self.instrument)
+            
             if self.modelset == 'btsettl08':
                 self.wave = wave * 10000 #convert to Angstrom
                 self.flux = flux / 10000 #convert from erg/s/cm^2/micron to erg/s/cm^2/Angstrom
@@ -106,18 +97,23 @@ class Model():
         elif self.instrument == 'apogee':
             self.teff     = kwargs.get('teff', 2500)
             self.logg     = kwargs.get('logg', 5.00)
-            self.feh      = kwargs.get('feh', 0.00)
+            self.metal      = kwargs.get('metal', 0.00)
             self.en       = kwargs.get('en', 0.00)
             self.modelset = kwargs.get('modelset', 'btsettl08')
 
             #wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
             #    modelset=self.modelset, order=self.order, instrument=self.instrument)
 
-            wave, flux = smart.forward_model.InterpolateModel.InterpModel_3D(Teff=self.teff, Logg=self.logg, Metal=self.feh,
+            wave, flux = smart.forward_model.InterpolateModel.InterpModel_3D(Teff=self.teff, Logg=self.logg, Metal=self.metal,
                 modelset=self.modelset, order=self.order, instrument=self.instrument)
 
-            self.wave = wave # Angstrom
-            self.flux = flux # erg/s/cm^2/Angstrom
+            if self.modelset == 'btsettl08':
+                self.wave = wave * 10000 #convert to Angstrom
+                self.flux = flux / 10000 #convert from erg/s/cm^2/micron to erg/s/cm^2/Angstrom 
+
+            else:
+                self.wave = wave # Angstrom
+                self.flux = flux # erg/s/cm^2/Angstrom
 
         else:
             self.wave   = kwargs.get('wave', [])
@@ -130,7 +126,7 @@ class Model():
         """
         if self.order != None:
             name = str(_constructModelName(self.teff, self.logg, 
-                self.feh, self.en, self.order, self.path))
+                self.metal, self.en, self.order, self.path))
             output = kwargs.get('output', str(name) + '.pdf')
             ylim = kwargs.get('yrange', [min(self.flux)-.2, max(self.flux)+.2])
             title  = kwargs.get('title')

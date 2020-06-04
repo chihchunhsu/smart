@@ -310,15 +310,36 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
         if instrument == 'nirspec':
 
             if modelset == 'btsettl08':
-                filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
+                # alpha enhancement correction
+                if metal == -0.5:
+                    en = 0.2
+                elif (metal == -1.0) or (metal == -1.5) or (metal == -2.0) or (metal == -2.5):
+                    en = 0.4
+
+                if metal == 0.0:
+                    filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
+                elif metal == 0.5:
+                    filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
+                else:
+                    filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
             
             elif modelset == 'phoenixaces':
                 filename = 'phoenixaces_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z-{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
         
         elif instrument == 'apogee':
-            
             if modelset == 'btsettl08':
-                filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
+                # alpha enhancement correction
+                if metal == -0.5:
+                    en = 0.2
+                elif (metal == -1.0) or (metal == -1.5) or (metal == -2.0) or (metal == -2.5):
+                    en = 0.4
+
+                if metal == 0.0:
+                    filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
+                elif metal > 0.0:
+                    filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
+                else:
+                    filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
             
             elif modelset == 'phoenix-btsettl-cifist2011-2015':
                 filename = 'PHOENIX_BTSETTL_CIFIST2011_2015_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
@@ -361,9 +382,13 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
             Gridfile = BASE + '/../libraries/MARCS_APOGEE_DR15/MARCS_APOGEE_DR15_3D_gridparams_apogee.csv'
 
     T1 = Table.read(Gridfile)
-
     # Check if the model already exists (grid point)
-    if (Teff, Logg, Metal) in zip(T1['Temp'], T1['Logg'], T1['Metal']): 
+    if (Teff, Logg, Metal) in zip(T1['Temp'], T1['Logg'], T1['Metal']):
+        if modelset == 'btsettl08':
+            if Metal == -0.5:
+                Alpha = 0.2
+            elif (Metal == -1.0) or (Metal == -1.5) or (Metal == -2.0) or (Metal == -2.5):
+                Alpha = 0.4
         index0 = np.where( (T1['Temp'] == Teff) & (T1['Logg'] == Logg) & (T1['Metal'] == Metal) & (T1['Alpha'] == Alpha) )
         flux2  = GetModel(T1['Temp'][index0], T1['Logg'][index0], T1['Metal'][index0], modelset=modelset )
         waves2 = GetModel(T1['Temp'][index0], T1['Logg'][index0], T1['Metal'][index0], modelset=modelset, wave=True)
@@ -410,14 +435,38 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
     print(np.log10(T1['Temp'][np.where( (T1['Temp'] == x2) & (T1['Logg'] == y2))]), np.log10(T1['Logg'][np.where( (T1['Temp'] == x2) & (T1['Logg'] == y2))]))
     '''
     # Get the 16 points
-    ind000 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 000
-    ind100 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 100
-    ind010 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 010
-    ind110 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 110
-    ind001 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 001
-    ind101 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 101
-    ind011 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 011
-    ind111 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 111
+    if modelset == 'btsettl08':
+        if z0 == -0.5:
+            Alpha0 = 0.2
+        elif (z0 == -1.0) or (z0 == -1.5) or (z0 == -2.0) or (z0 == -2.5):
+            Alpha0 = 0.4
+        else:
+            Alpha0 = 0.0
+        if z1 == -0.5:
+            Alpha1 = 0.2
+        elif (z1 == -1.0) or (z1 == -1.5) or (z1 == -2.0) or (z1 == -2.5):
+            Alpha1 = 0.4
+        else:
+            Alpha1 = 0.0
+        ind000 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha0) ) # 000
+        ind100 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha0) ) # 100
+        ind010 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha0) ) # 010
+        ind110 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha0) ) # 110
+        ind001 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha1) ) # 001
+        ind101 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha1) ) # 101
+        ind011 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha1) ) # 011
+        ind111 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha1) ) # 111
+
+    else:
+        ind000 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 000
+        ind100 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 100
+        ind010 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 010
+        ind110 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z0) & (T1['Alpha'] == Alpha) ) # 110
+        ind001 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y0) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 001
+        ind101 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y0) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 101
+        ind011 = np.where( (T1['Temp'] == x0) & (T1['Logg'] == y1) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 011
+        ind111 = np.where( (T1['Temp'] == x1) & (T1['Logg'] == y1) & (T1['Metal'] == z1) & (T1['Alpha'] == Alpha) ) # 111
+
     Points =  [ [np.log10(T1['Temp'][ind000]), T1['Logg'][ind000], T1['Metal'][ind000], 
                  np.log10(GetModel(T1['Temp'][ind000], T1['Logg'][ind000], T1['Metal'][ind000], modelset=modelset))],
                 [np.log10(T1['Temp'][ind100]), T1['Logg'][ind100], T1['Metal'][ind100], 
