@@ -705,11 +705,11 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		#if i > 4: break
 
 		if i == 0: # Change the width for the first iteration
-			width     = 300
-			step_size = 10
-			include_ends = True #False
+			width     = 100
+			step_size = 20
+			include_ends = False
 		elif i == 1: # Change the width for the second iteration
-			width     = 150
+			width     = 300
 			step_size = 10
 			include_ends = True
 		elif i == 2: # Change the width for the second iteration
