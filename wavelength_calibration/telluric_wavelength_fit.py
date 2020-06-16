@@ -1365,9 +1365,12 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.wave  = data.wave[pixel_range_start:pixel_range_end]
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
 		elif not applymask:
-			data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
-			data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
-			data.noise = np.delete(data.oriNoise, mask_custom)[pixel_range_start: pixel_range_end]
+			#data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
+			#data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
+			#data.noise = np.delete(data.oriNoise, mask_custom)[pixel_range_start: pixel_range_end]
+			data.flux  = np.delete(data.oriFlux, mask_custom)
+			data.wave  = np.delete(data.oriWave, mask_custom)
+			data.noise = np.delete(data.oriNoise, mask_custom)
 		
 		if plot_masked:
 			plt.plot(data0.wave, data0.flux, 'k-', alpha=0.5, label='original data')
