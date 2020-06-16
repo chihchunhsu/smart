@@ -9,6 +9,7 @@
 from astropy.io import fits
 import os
 import warnings
+import smart
 warnings.filterwarnings("ignore")
 
 def _addHeader(begin, end, date, imagetypes='object', debug=False):
@@ -110,6 +111,33 @@ def addKeyword(file=input, debug=False):
 			_addHeader(begin=begin, end=end, date=date, imagetypes='object', debug=debug)
 	os.chdir(originalpath)
 	print('Keywords have been added, ready to be reduced by NSDRP.')
+
+def add_WFITS(filename, WFITS_filename, path):
+	"""
+	"""
+	# get order
+	#order = 
+
+	with fits.open(path+filename) as hdulist:
+		with fits.open(path+WFITS_filename) as hdulist0:
+			wfit0                         = hdulist0[0].header['WFIT0']
+			wfit1                         = hdulist0[0].header['WFIT1'] 
+			wfit2                         = hdulist0[0].header['WFIT2'] 
+			wfit3                         = hdulist0[0].header['WFIT3'] 
+			wfit4                         = hdulist0[0].header['WFIT4'] 
+			wfit5                         = hdulist0[0].header['WFIT5'] 
+
+			hdulist[0].header['COMMENT']  = 'Below are the keywords added by SMART package...'
+			hdulist[0].header['WFIT0'] 	  = wfit0
+			hdulist[0].header['WFIT1']    = wfit1
+			hdulist[0].header['WFIT2']    = wfit2
+			hdulist[0].header['WFIT3']    = wfit3
+			hdulist[0].header['WFIT4']    = wfit4
+			hdulist[0].header['WFIT5']    = wfit5
+			hdulist[0].data               = smart.waveSolution(np.arange(length1),
+				                                           	wfit0, wfit1, wfit2, wfit3, 
+				                                           	wfit4, wfit5, 0, 0, order=order)
+			hdulist.writeto(path+filename, overwrite=True)
 
 
 

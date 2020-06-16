@@ -144,50 +144,45 @@ if save_to_path is not None:
 		os.makedirs(save_to_path)
 
 if priors is None:
-	if tell_sp.header['AIRMASS'] < 3.0:
-		airmass_0 = tell_sp.header['AIRMASS']
-	else:
-		airmass_0 = 2.9
+	#if tell_sp.header['AIRMASS'] < 3.0:
+	#	airmass_0 = tell_sp.header['AIRMASS']
+	#else:
+	#	airmass_0 = 2.9
 
-	## estimating the pwv parameter
-	pwv_list = [0.5, 1.0, 1.5, 2.5, 3.5, 5.0, 7.5, 10.0, 20.0]
-	pwv_chi2 = []
-	for pwv in pwv_list:
-		data_tmp       = copy.deepcopy(tell_sp)
-	
-		data_tmp.flux  = data_tmp.flux[pixel_start:pixel_end]
-		data_tmp.wave  = data_tmp.wave[pixel_start:pixel_end]
-		data_tmp.noise = data_tmp.noise[pixel_start:pixel_end]
+	### estimating the pwv parameter
+	#pwv_list = [0.5, 1.0, 1.5, 2.5, 3.5, 5.0, 7.5, 10.0, 20.0]
+	#pwv_chi2 = []
+	#for pwv in pwv_list:
+	#	data_tmp       = copy.deepcopy(tell_sp)
+	#
+	#	data_tmp.flux  = data_tmp.flux[pixel_start:pixel_end]
+	#	data_tmp.wave  = data_tmp.wave[pixel_start:pixel_end]
+	#	data_tmp.noise = data_tmp.noise[pixel_start:pixel_end]
+	#	model_tmp      = tellurics.makeTelluricModel(lsf=5.0, airmass=round(airmass_0*2)/2, pwv=pwv, 
+	#		flux_offset=0, wave_offset=0, data=data_tmp)
+	#
+	#	pwv_chi2.append(smart.chisquare(data_tmp, model_tmp))
+	#
+	## find the pwv with minimum chisquare
+	#pwv_chi2_array = np.array(pwv_chi2)
+	#
+	#plt.plot(pwv_list, pwv_chi2)
+	#plt.xlabel('pwv (mm)')
+	#plt.ylabel('$\chi^2$')
+	#plt.minorticks_on()
+	#plt.tight_layout()
+	#plt.savefig(save_to_path+'/pwv_chisquare_comparison.png', bbox_inches='tight')
+	##plt.show()
+	#plt.close()
+	##sys.exit()
 
-		model_tmp      = tellurics.makeTelluricModel(lsf=5.0, airmass=round(airmass_0*2)/2, pwv=pwv, 
-			flux_offset=0, wave_offset=0, data=data_tmp)
-	
-		pwv_chi2.append(smart.chisquare(data_tmp, model_tmp))
-	
-	# find the pwv with minimum chisquare
-	pwv_chi2_array = np.array(pwv_chi2)
-	
-	plt.plot(pwv_list, pwv_chi2)
-	plt.xlabel('pwv (mm)')
-	plt.ylabel('$\chi^2$')
-	plt.minorticks_on()
-	plt.tight_layout()
-	plt.savefig(save_to_path+'/pwv_chisquare_comparison.png', bbox_inches='tight')
-	#plt.show()
-	plt.close()
-	#sys.exit()
+	#pwv_min_index = np.where(pwv_chi2_array == np.min(pwv_chi2_array))[0][0]
+	#pwv_0         = pwv_list[pwv_min_index]
 
-	pwv_min_index = np.where(pwv_chi2_array == np.min(pwv_chi2_array))[0][0]
-	pwv_0         = pwv_list[pwv_min_index]
-
-	priors      =	{	'lsf_min':4.5  		,  'lsf_max':5.5,
-						'airmass_min':airmass_0-0.1   ,  'airmass_max':airmass_0+0.1,		
-						'pwv_min':pwv_0-0.1 ,	'pwv_max':pwv_0+0.1,
+	priors      =	{	'lsf_min':3.0  		,  'lsf_max':8.0,
+						'airmass_min':1.0   ,  'airmass_max':3.0,		
+						'pwv_min':0.5 ,	'pwv_max':20.0,
 						'A_min':-0.1 		,  'A_max':0.1,
-						#'lsf_min':2.0  		,  'lsf_max':10.0,
-						#'airmass_min':1.0   ,  'airmass_max':3.0,
-						#'pwv_min':0.50 		,	'pwv_max':2.50,
-						#'A_min':-500.0 		,  'A_max':500.0,
 						'B_min':-0.04  	    ,  'B_max':0.04    
 					}
 
@@ -276,7 +271,7 @@ def lnlike(theta, data=data):
 
 	lsf, airmass, pwv, A, B = theta
 
-	model = tellurics.makeTelluricModel(lsf, airmass, pwv, A, B, data=data)
+	model = tellurics.makeTelluricModel(lsf, airmass, pwv, A, B, data=data, deg=2, niter=None)
 
 	chisquare = smart.chisquare(data, model)
 
@@ -319,7 +314,7 @@ pos = [np.array([priors['lsf_min']       + (priors['lsf_max']        - priors['l
 				 priors['B_min']         + (priors['B_max']          - priors['B_min'])     * np.random.uniform()]) for i in range(nwalkers)]
 
 with Pool() as pool:
-	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data,), a=moves, pool=pool)
+	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data,), a=moves, pool=pool, moves=emcee.moves.KDEMove())
 	time1 = time.time()
 	sampler.run_mcmc(pos, step, progress=True)
 	time2 = time.time()
