@@ -9,6 +9,7 @@
 from astropy.io import fits
 import os
 import warnings
+import numpy as np
 import smart
 warnings.filterwarnings("ignore")
 
@@ -59,7 +60,7 @@ def _addHeader(begin, end, date, imagetypes='object', debug=False):
 			if ('IMAGETYP' in header) is True and ('DISPERS' in header) is True:
 				print('The imagetype {0} and the high dispersion are added to the {1}'.format(imagetypes, files))
 
-def addKeyword(file=input, debug=False):
+def add_nsdrp_keyword(file=input, debug=False):
 	"""
 	Add the required keywords for NSDRP reduction.
 	@Dino Hsu
@@ -112,11 +113,10 @@ def addKeyword(file=input, debug=False):
 	os.chdir(originalpath)
 	print('Keywords have been added, ready to be reduced by NSDRP.')
 
-def add_WFITS(filename, WFITS_filename, path):
+def add_wfits_keyword(filename, WFITS_filename, path, order):
 	"""
+	Add the WFITS parameters for initial guess of telluric wavelength calibrations.
 	"""
-	# get order
-	#order = 
 
 	with fits.open(path+filename) as hdulist:
 		with fits.open(path+WFITS_filename) as hdulist0:
@@ -134,7 +134,7 @@ def add_WFITS(filename, WFITS_filename, path):
 			hdulist[0].header['WFIT3']    = wfit3
 			hdulist[0].header['WFIT4']    = wfit4
 			hdulist[0].header['WFIT5']    = wfit5
-			hdulist[0].data               = smart.waveSolution(np.arange(length1),
+			hdulist[0].data               = smart.waveSolution(np.arange(len(hdulist[0].data)),
 				                                           	wfit0, wfit1, wfit2, wfit3, 
 				                                           	wfit4, wfit5, 0, 0, order=order)
 			hdulist.writeto(path+filename, overwrite=True)

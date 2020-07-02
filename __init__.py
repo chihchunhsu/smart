@@ -15,7 +15,7 @@ from .forward_model.apogee.bitmask import bits_set
 from .wavelength_calibration.telluric_wavelength_fit import *
 from .wavelength_calibration.residual import residual
 from .utils.stats import chisquare
-from .utils.addKeyword import addKeyword
+from .utils.addKeyword import add_nsdrp_keyword, add_wfits_keyword
 from .utils.listTarget import makeTargetList
 from .utils.compute_uvw_velocity import compute_uvw_velocity
 from .utils.compute_galactic_thin_thick_disk import compute_galactic_pop_prob

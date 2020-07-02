@@ -1224,7 +1224,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 
 def run_wave_cal(data_name, data_path, order_list,
 	             save_to_path, test=False, save=False, plot_masked=False,
-	             window_width=40, window_step=5, mask_custom=[], applymask=False, pwv='1.5',
+	             window_width=40, window_step=5, mask_custom=[], applymask=False, apply_edge_mask=False, pwv='1.5',
 	             xcorr_step=0.05, niter=20, outlier_rej=None, defringe_list=[62], cal_param=None):
 	"""
 	Run the telluric wavelength calibration.
@@ -1346,6 +1346,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		## Use the median values to replace bad single pixels
 		data0 = copy.deepcopy(data)
 
+		# this is to apply a sigma clipping mask
 		if applymask:
 			#data.flux  = data.oriFlux
 			#data.wave  = data.oriWave
@@ -1365,12 +1366,15 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.wave  = data.wave[pixel_range_start:pixel_range_end]
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
 		elif not applymask:
-			#data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
-			#data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
-			#data.noise = np.delete(data.oriNoise, mask_custom)[pixel_range_start: pixel_range_end]
-			data.flux  = np.delete(data.oriFlux, mask_custom)
-			data.wave  = np.delete(data.oriWave, mask_custom)
-			data.noise = np.delete(data.oriNoise, mask_custom)
+			if apply_edge_mask:
+				data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
+				data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
+				data.noise = np.delete(data.oriNoise, mask_custom)[pixel_range_start: pixel_range_end]
+			else:
+				data.flux  = np.delete(data.oriFlux, mask_custom)
+				data.wave  = np.delete(data.oriWave, mask_custom)
+				data.noise = np.delete(data.oriNoise, mask_custom)
+			print(len(data.wave), len(data.flux), len(data.noise))
 		
 		if plot_masked:
 			plt.plot(data0.wave, data0.flux, 'k-', alpha=0.5, label='original data')

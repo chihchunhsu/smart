@@ -11,7 +11,7 @@ import emcee
 from multiprocessing import Pool
 import smart
 import model_fit
-import InterpolateModel
+#import InterpolateModel
 import mcmc_utils
 import corner
 import os
@@ -365,7 +365,7 @@ def lnlike(theta, data, lsf, pwv):
 	teff, logg, vsini, rv, alpha, A, B, N = theta #N noise prefactor
 	#teff, logg, vsini, rv, alpha, A, B, freq, amp, phase = theta
 
-	model = model_fit.makeModel(teff, logg, 0.0, vsini, rv, alpha, B, A,
+	model = model_fit.makeModel(teff=teff, logg=logg, z=0.0, vsini=vsini, rv=rv, tell_alpha=alpha, wave_offset=B, flux_offset=A,
 		lsf=lsf, order=data.order, data=data, modelset=modelset, pwv=pwv)
 
 	chisquare = smart.chisquare(data, model)/N**2
@@ -540,7 +540,8 @@ B     = B_mcmc[0]
 N     = N_mcmc[0]
 
 
-model, model_notell = smart.makeModel(teff, logg, 0.0, vsini, rv, alpha, B, A, 
+model, model_notell = model_fit.makeModel(teff=teff, logg=logg, z=0.0, 
+	vsini=vsini, rv=rv, tell_alpha=alpha, wave_offset=B, flux_offset=A,
 	lsf=lsf, order=data.order, data=data, modelset=modelset, pwv=pwv, output_stellar_model=True)
 
 """
