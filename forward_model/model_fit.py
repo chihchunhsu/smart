@@ -13,7 +13,7 @@ import time
 import os
 import sys
 
-def makeModel(teff,logg=5,z=0,vsini=1,rv=0,alpha=0,wave_offset=0,flux_offset=0,**kwargs):
+def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,wave_offset=0,flux_offset=0,**kwargs):
 	"""
 	Return a forward model.
 
@@ -38,10 +38,8 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0,alpha=0,wave_offset=0,flux_offset=0,*
 	instrument = kwargs.get('instrument', 'nirspec')
 	veiling    = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf        = kwargs.get('lsf', 4.5)   # instrumental LSF
-	airmass    = kwargs.get('airmass', 1.5) # airmass of the telluric model
-	pwv        = kwargs.get('pwv', 1.5)   # pwv of the telluric model
 	tell       = kwargs.get('tell', True) # apply telluric
-	tell_alpha = kwargs.get('tell_alpha', 1) # Telluric alpha power
+	tell_alpha = kwargs.get('tell_alpha', 1.0) # Telluric alpha power
 	binary     = kwargs.get('binary', False) # make a binary model
 
 	if binary:
@@ -104,7 +102,7 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0,alpha=0,wave_offset=0,flux_offset=0,*
 		stellar_model = copy.deepcopy(model)
 	# apply telluric
 	if tell is True:
-		model = smart.applyTelluric(model=model, alpha=tell_alpha, airmass=airmass, pwv=pwv)
+		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
 	# instrumental LSF
 	model.flux = smart.broaden(wave=model.wave, 
 		flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
@@ -213,7 +211,7 @@ def rvShift(wavelength, rv):
 	"""
 	return wavelength * ( 1 + rv / 299792.458)
 
-def applyTelluric(model, alpha=1, airmass=1.5, pwv=0.5):
+def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5):
 	"""
 	Apply the telluric model on the science model.
 
@@ -236,11 +234,10 @@ def applyTelluric(model, alpha=1, airmass=1.5, pwv=0.5):
 	#telluric_model = smart.getTelluric(wavelow=wavelow, wavehigh=wavehigh, alpha=alpha, airmass=airmass)
 
 	telluric_model = smart.Model()
-	telluric_model.wave, telluric_model.flux = smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, 
-																		airmass=airmass, pwv=pwv)
+	telluric_model.wave, telluric_model.flux = 	smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
 	
 	# apply the telluric alpha parameter
-	telluric_model.flux = telluric_model.flux**(alpha)
+	telluric_model.flux = telluric_model.flux**(tell_alpha)
 
 	#if len(model.wave) > len(telluric_model.wave):
 	#	print("The model has a higher resolution ({}) than the telluric model ({})."\
@@ -252,8 +249,7 @@ def applyTelluric(model, alpha=1, airmass=1.5, pwv=0.5):
 
 	#elif len(model.wave) < len(telluric_model.wave):
 	## This should be always true
-	telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, 
-		yh=telluric_model.flux, xl=model.wave))
+	telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, yh=telluric_model.flux, xl=model.wave))
 	telluric_model.wave = model.wave
 	model.flux *= telluric_model.flux
 

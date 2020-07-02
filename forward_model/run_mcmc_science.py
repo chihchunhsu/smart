@@ -11,7 +11,6 @@ import emcee
 from multiprocessing import Pool
 import smart
 import model_fit
-#import InterpolateModel
 import mcmc_utils
 import corner
 import os
@@ -84,8 +83,8 @@ parser.add_argument("-pixel_start",type=int,
 parser.add_argument("-pixel_end",type=int,
     default=-40, help="ending pixel index for the science data; default -40")
 
-parser.add_argument("-pwv",type=float,
-    default=0.5, help="precipitable water vapor for telluric profile; default 0.5 mm")
+#parser.add_argument("-pwv",type=float,
+#    default=0.5, help="precipitable water vapor for telluric profile; default 0.5 mm")
 
 #parser.add_argument("-alpha_tell",type=float,
 #    default=1.0, help="telluric alpha; default 1.0")
@@ -125,7 +124,7 @@ burn                   = int(args.burn)
 moves                  = float(args.moves)
 applymask              = args.applymask
 pixel_start, pixel_end = int(args.pixel_start), int(args.pixel_end)
-pwv                    = float(args.pwv)
+#pwv                    = float(args.pwv)
 #alpha_tell             = float(args.alpha_tell[0])
 plot_show              = args.plot_show
 coadd                  = args.coadd
@@ -192,7 +191,8 @@ tell_data 	: 	spectrum object
 				telluric data for calibrating the science spectra
 
 priors   	: 	dic
-				keys are teff_min, teff_max, logg_min, logg_max, vsini_min, vsini_max, rv_min, rv_max, alpha_min, alpha_max, A_min, A_max, B_min, B_max
+				keys are teff_min, teff_max, logg_min, logg_max, vsini_min, vsini_max, rv_min, rv_max, 
+				am_min, am_max, pwv_min, pwv_max, A_min, A_max, B_min, B_max
 
 Optional Parameters
 -------------------
@@ -267,9 +267,10 @@ if modelset == 'btsettl08' or modelset == 'sonora-2018':
 						'logg_min':3.5,                             'logg_max':logg_max,
 						'vsini_min':0.0,                            'vsini_max':100.0,
 						'rv_min':-200.0,                            'rv_max':200.0,
-						'alpha_min':0.1,                            'alpha_max':10.0,
+						'am_min':1.0,                               'am_max':3.0,
+						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,                              'B_max':0.6,
+						'B_min':-0.6,                              	'B_max':0.6,
 						'N_min':0.10,                               'N_max':5.0 				
 					}
 
@@ -279,7 +280,8 @@ elif modelset == 'phoenixaces':
 						'logg_min':3.5,                             'logg_max':logg_max,
 						'vsini_min':0.0,                            'vsini_max':100.0,
 						'rv_min':-200.0,                            'rv_max':200.0,
-						'alpha_min':0.1,                            'alpha_max':10.0,
+						'am_min':1.0,                               'am_max':3.0,
+						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,								'B_max':0.6,
 						'N_min':0.10,                               'N_max':5.50 				
@@ -313,7 +315,7 @@ tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
 #print(priors, limits)
 
 if lsf is None:
-	lsf           = smart.getLSF(tell_sp,alpha=alpha_tell, test=True, save_path=save_to_path)
+	lsf           = smart.getLSF(tell_sp, alpha=alpha_tell, test=True, save_path=save_to_path)
 #	print("LSF: ", lsf)
 #else:
 #	print("Use input lsf:", lsf)
@@ -345,7 +347,7 @@ file_log.close()
 ## for multiprocessing
 #########################################################################################
 
-def lnlike(theta, data, lsf, pwv):
+def lnlike(theta, data, lsf):
 	"""
 	Log-likelihood, computed from chi-squared.
 
@@ -362,11 +364,11 @@ def lnlike(theta, data, lsf, pwv):
 	"""
 
 	## Parameters MCMC
-	teff, logg, vsini, rv, alpha, A, B, N = theta #N noise prefactor
-	#teff, logg, vsini, rv, alpha, A, B, freq, amp, phase = theta
+	teff, logg, vsini, rv, am, pwv, A, B, N = theta #N noise prefactor
+	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
-	model = model_fit.makeModel(teff=teff, logg=logg, z=0.0, vsini=vsini, rv=rv, tell_alpha=alpha, wave_offset=B, flux_offset=A,
-		lsf=lsf, order=data.order, data=data, modelset=modelset, pwv=pwv)
+	model = model_fit.makeModel(teff=teff, logg=logg, z=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+		lsf=lsf, order=data.order, data=data, modelset=modelset, airmass=am, pwv=pwv)
 
 	chisquare = smart.chisquare(data, model)/N**2
 
@@ -377,13 +379,14 @@ def lnprior(theta, limits=limits):
 	Specifies a flat prior
 	"""
 	## Parameters for theta
-	teff, logg, vsini, rv, alpha, A, B, N = theta
+	teff, logg, vsini, rv, am, pwv, A, B, N = theta
 
 	if  limits['teff_min']  < teff  < limits['teff_max'] \
 	and limits['logg_min']  < logg  < limits['logg_max'] \
 	and limits['vsini_min'] < vsini < limits['vsini_max']\
 	and limits['rv_min']    < rv    < limits['rv_max']   \
-	and limits['alpha_min'] < alpha < limits['alpha_max']\
+	and limits['am_min']    < am    < limits['am_max']\
+	and limits['pwv_min']   < pwv   < limits['pwv_max']\
 	and limits['A_min']     < A     < limits['A_max']\
 	and limits['B_min']     < B     < limits['B_max']\
 	and limits['N_min']     < N     < limits['N_max']:
@@ -391,20 +394,21 @@ def lnprior(theta, limits=limits):
 
 	return -np.inf
 
-def lnprob(theta, data, lsf, pwv):
+def lnprob(theta, data, lsf):
 		
 	lnp = lnprior(theta)
 		
 	if not np.isfinite(lnp):
 		return -np.inf
 		
-	return lnp + lnlike(theta, data, lsf, pwv)
+	return lnp + lnlike(theta, data, lsf)
 
 pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min'] ) * np.random.uniform(), 
 					priors['logg_min']  + (priors['logg_max']   - priors['logg_min'] ) * np.random.uniform(), 
 					priors['vsini_min'] + (priors['vsini_max']  - priors['vsini_min']) * np.random.uniform(),
 					priors['rv_min']    + (priors['rv_max']     - priors['rv_min']   ) * np.random.uniform(), 
-					priors['alpha_min'] + (priors['alpha_max']  - priors['alpha_min']) * np.random.uniform(),
+					priors['am_min']    + (priors['am_max']     - priors['am_min'])    * np.random.uniform(),
+					priors['pwv_min']   + (priors['pwv_max']    - priors['pwv_min'])   * np.random.uniform(),
 					priors['A_min']     + (priors['A_max']      - priors['A_min'])     * np.random.uniform(),
 					priors['B_min']     + (priors['B_max']      - priors['B_min'])     * np.random.uniform(),
 					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform()]) for i in range(nwalkers)]
@@ -413,7 +417,7 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
-	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool,
+	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
 			moves=emcee.moves.KDEMove())
 	time1 = time.time()
 	sampler.run_mcmc(pos, step, progress=True)
@@ -436,7 +440,8 @@ print(autocorr_time)
 sampler_chain = np.load(save_to_path + '/sampler_chain.npy')
 samples = np.load(save_to_path + '/samples.npy')
 
-ylabels = ["$T_{eff} (K)$","$log \, g$(dex)","$vsin \, i(km/s)$","$RV(km/s)$","$\\alpha$","$C_{F_{\lambda}}$ (cnt/s)","$C_{\lambda}$($\AA$)","$C_{noise}$"]
+ylabels = ["$T_{eff} (K)$","$log \, g$(dex)","$vsin \, i(km/s)$","$RV(km/s)$","$AM$", "pwv (mm)","$C_{F_{\lambda}}$ (cnt/s)","$C_{\lambda}$($\AA$)","$C_{noise}$"]
+
 
 ## create walker plots
 plt.rc('font', family='sans-serif')
@@ -463,7 +468,7 @@ triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
-teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, alpha_mcmc, A_mcmc, B_mcmc, N_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
+teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
 
 # add the summary to the txt file
@@ -477,7 +482,8 @@ file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
 file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
 file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
 file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
-file_log.write("alpha_mcmc {}\n".format(str(alpha_mcmc)))
+file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
+file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
 file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
 file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
 file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
@@ -491,7 +497,8 @@ file_log2.write("teff_mcmc {}\n".format(str(teff_mcmc[0])))
 file_log2.write("logg_mcmc {}\n".format(str(logg_mcmc[0])))
 file_log2.write("vsini_mcmc {}\n".format(str(vsini_mcmc[0])))
 file_log2.write("rv_mcmc {}\n".format(str(rv_mcmc[0]+barycorr)))
-file_log2.write("alpha_mcmc {}\n".format(str(alpha_mcmc[0])))
+file_log2.write("am_mcmc {}\n".format(str(am_mcmc[0])))
+file_log2.write("pwv_mcmc {}\n".format(str(pwv_mcmc[0])))
 file_log2.write("A_mcmc {}\n".format(str(A_mcmc[0])))
 file_log2.write("B_mcmc {}\n".format(str(B_mcmc[0])))
 file_log2.write("N_mcmc {}\n".format(str(N_mcmc[0])))
@@ -499,13 +506,14 @@ file_log2.write("teff_mcmc_e {}\n".format(str(max(abs(teff_mcmc[1]), abs(teff_mc
 file_log2.write("logg_mcmc_e {}\n".format(str(max(abs(logg_mcmc[1]), abs(logg_mcmc[2])))))
 file_log2.write("vsini_mcmc_e {}\n".format(str(max(abs(vsini_mcmc[1]), abs(vsini_mcmc[2])))))
 file_log2.write("rv_mcmc_e {}\n".format(str(max(abs(rv_mcmc[1]), abs(rv_mcmc[2])))))
-file_log2.write("alpha_mcmc_e {}\n".format(str(max(abs(alpha_mcmc[1]), abs(alpha_mcmc[2])))))
+file_log2.write("am_mcmc_e {}\n".format(str(max(abs(am_mcmc[1]), abs(am_mcmc[2])))))
+file_log2.write("pwv_mcmc_e {}\n".format(str(max(abs(pwv_mcmc[1]), abs(pwv_mcmc[2])))))
 file_log2.write("A_mcmc_e {}\n".format(str(max(abs(A_mcmc[1]), abs(A_mcmc[2])))))
 file_log2.write("B_mcmc_e {}\n".format(str(max(abs(B_mcmc[1]), abs(B_mcmc[2])))))
 file_log2.write("N_mcmc_e {}\n".format(str(max(abs(N_mcmc[1]), abs(N_mcmc[2])))))
 file_log2.close()
 
-#print(teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, alpha_mcmc, A_mcmc, B_mcmc, N_mcmc)
+#print(teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc)
 
 triangle_samples[:,3] += barycorr
 
@@ -517,7 +525,8 @@ fig = corner.corner(triangle_samples,
 	logg_mcmc[0],
 	vsini_mcmc[0], 
 	rv_mcmc[0]+barycorr, 
-	alpha_mcmc[0],
+	am_mcmc[0],
+	pwv_mcmc[0],
 	A_mcmc[0],
 	B_mcmc[0],
 	N_mcmc[0]],
@@ -534,63 +543,16 @@ logg  = logg_mcmc[0]
 z     = 0.0
 vsini = vsini_mcmc[0]
 rv    = rv_mcmc[0]
-alpha = alpha_mcmc[0]
+am    = am_mcmc[0]
+pwv   = pwv_mcmc[0]
 A     = A_mcmc[0]
 B     = B_mcmc[0]
 N     = N_mcmc[0]
 
 
 model, model_notell = model_fit.makeModel(teff=teff, logg=logg, z=0.0, 
-	vsini=vsini, rv=rv, tell_alpha=alpha, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=data.order, data=data, modelset=modelset, pwv=pwv, output_stellar_model=True)
-
-"""
-## new plotting model 
-## read in a model
-model        = smart.Model(teff=teff, logg=logg, feh=z, order=data.order, modelset=modelset)
-
-# apply vsini
-model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True)    
-# apply rv (including the barycentric correction)
-model.wave   = smart.rvShift(model.wave, rv=rv)
-
-model_notell = copy.deepcopy(model)
-# apply telluric
-model        = smart.applyTelluric(model=model, alpha=alpha)
-# NIRSPEC LSF
-model.flux   = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
-
-# wavelength offset
-model.wave        += B
-	
-# integral resampling
-model.flux   = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
-model.wave   = data.wave
-
-# contunuum correction
-model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
-for i in range(5):
-	model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
-
-# NIRSPEC LSF
-model_notell.flux  = smart.broaden(wave=model_notell.wave, flux=model_notell.flux, vbroad=lsf, rotate=False, gaussian=True)
-
-# wavelength offset
-model_notell.wave += B
-	
-# integral resampling
-model_notell.flux  = np.array(smart.integralResample(xh=model_notell.wave, yh=model_notell.flux, xl=data.wave))
-model_notell.wave  = data.wave
-model_notell.flux *= cont_factor
-
-# flux offset
-model.flux        += A
-model_notell.flux += A
-
-# include fringe pattern
-#model.flux        *= (1 + amp * np.sin(freq * (model.wave - phase)))
-#model_notell.flux *= (1 + amp * np.sin(freq * (model.wave - phase)))
-"""
+	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+	lsf=lsf, order=data.order, data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)

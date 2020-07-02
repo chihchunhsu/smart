@@ -181,7 +181,7 @@ if priors is None:
 
 	priors      =	{	'lsf_min':3.0  		,  'lsf_max':8.0,
 						'airmass_min':1.0   ,  'airmass_max':3.0,		
-						'pwv_min':0.5 ,	'pwv_max':20.0,
+						'pwv_min':0.5       ,	'pwv_max':20.0,
 						'A_min':-0.1 		,  'A_max':0.1,
 						'B_min':-0.04  	    ,  'B_max':0.04    
 					}
