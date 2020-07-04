@@ -441,7 +441,7 @@ pos = [np.array([	priors['teff_min']   + (priors['teff_max']   - priors['teff_mi
 					priors['N_min']      + (priors['N_max']      - priors['N_min']     ) * np.random.uniform()]) for i in range(nwalkers)]
 
 ## multiprocessing
-"""
+
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
@@ -462,7 +462,7 @@ print(sampler.acceptance_fraction)
 autocorr_time = sampler.get_autocorr_time(discard=burn, quiet=True)
 print("Mean autocorrelation time: {0:.3f} steps".format(np.mean(autocorr_time)))
 print(autocorr_time)
-"""
+
 # create walker plots
 sampler_chain = np.load(save_to_path + '/sampler_chain.npy')
 samples = np.load(save_to_path + '/samples.npy')
