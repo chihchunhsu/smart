@@ -13,7 +13,7 @@ import time
 import os
 import sys
 
-def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,wave_offset=0,flux_offset=0,**kwargs):
+def makeModel(teff,logg=5, metal=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,wave_offset=0,flux_offset=0,**kwargs):
 	"""
 	Return a forward model.
 
@@ -59,14 +59,14 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 		# read in a model
 		#print('teff ',teff,'logg ',logg, 'z', z, 'order', order, 'modelset', modelset)
 		#print('teff ',type(teff),'logg ',type(logg), 'z', type(z), 'order', type(order), 'modelset', type(modelset))
-		model    = smart.Model(teff=teff, logg=logg, feh=z, order=order, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=order, modelset=modelset, instrument=instrument)
 
 	#elif data is not None and instrument == 'apogee':
 	elif instrument == 'apogee':
-		model    = smart.Model(teff=teff, logg=logg, feh=z, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, metal=metal, modelset=modelset, instrument=instrument)
 	
 	elif data is None and instrument == 'nirspec':
-		model    = smart.Model(teff=teff, logg=logg, feh=z, order=order, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=order, modelset=modelset, instrument=instrument)
 	
 	# wavelength offset
 	#model.wave += wave_offset
@@ -83,7 +83,7 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 
 	## if binary is True: make a binary model
 	if binary:
-		model2      = smart.Model(teff=teff2, logg=logg2, feh=z, order=order, modelset=modelset, instrument=instrument)
+		model2      = smart.Model(teff=teff2, logg=logg2, metal=z, order=order, modelset=modelset, instrument=instrument)
 		# apply vsini
 		model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
 		# apply rv (including the barycentric correction)

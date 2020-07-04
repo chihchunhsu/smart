@@ -269,7 +269,7 @@ if modelset == 'btsettl08' or modelset == 'sonora-2018':
 						'logg_min':priors['logg_min'],              'logg_max':priors['logg_max'],
 						'vsini_min':priors['vsini_min'],            'vsini_max':priors['vsini_max'],
 						'rv_min':priors['rv_min'],                  'rv_max':priors['rv_max'],
-						'teff_min2':max(priors['teff_min2']-300,900),'teff_max2':min(priors['teff_max2'],3500),
+						'teff_min2':max(priors['teff_min2']-300,500),'teff_max2':min(priors['teff_max2'],3500),
 						'logg_min2':priors['logg_min2'],            'logg_max2':priors['logg_max2'],
 						'vsini_min2':priors['vsini_min2'],          'vsini_max2':priors['vsini_max2'],
 						'rv_min2':priors['rv_min2'],                'rv_max2':priors['rv_max2'],
@@ -381,7 +381,7 @@ def lnlike(theta, data, lsf):
 	teff, logg, vsini, rv, teff2, logg2, vsini2, rv2, flsc, am, pwv, A, B, N = theta #N noise prefactor
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
-	model = model_fit.makeModel(teff=teff, logg=logg, z=0.0, vsini=vsini, rv=rv, 
+	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, 
 		teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flsc,
 		tell_alpha=1.0, wave_offset=B, flux_offset=A,
 		lsf=lsf, order=data.order, data=data, modelset=modelset, airmass=am, pwv=pwv,
@@ -604,7 +604,7 @@ B      = B_mcmc[0]
 N      = N_mcmc[0]
 
 
-model, model_notell, model2 = model_fit.makeModel(teff=teff, logg=logg, z=z, vsini=vsini, rv=rv, 
+model, model_notell, model2 = model_fit.makeModel(teff=teff, logg=logg, metal=z, vsini=vsini, rv=rv, 
 	teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flsc,
 	tell_alpha=1.0, wave_offset=B, flux_offset=A,
 	lsf=lsf, order=data.order, data=data, modelset=modelset, airmass=am, pwv=pwv,
@@ -630,7 +630,7 @@ plt.figtext(0.89,0.85,str(data.header['OBJECT'])+' '+data.name+' O'+str(data.ord
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=15)
-plt.figtext(0.89,0.82,"$Teff1 \, {0}^{{+{1}}}_{{-{2}}}/ logg1 \, {3}^{{+{4}}}_{{-{5}}}/ en1 \, 0.0/ vsini1 \, {6}^{{+{7}}}_{{-{8}}}/ RV1 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+plt.figtext(0.89,0.81,"$Teff1 \, {0}^{{+{1}}}_{{-{2}}}/ logg1 \, {3}^{{+{4}}}_{{-{5}}}/ en1 \, 0.0/ vsini1 \, {6}^{{+{7}}}_{{-{8}}}/ RV1 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
 	round(teff_mcmc[0]),
 	round(teff_mcmc[1]),
 	round(teff_mcmc[2]),
@@ -647,7 +647,7 @@ plt.figtext(0.89,0.82,"$Teff1 \, {0}^{{+{1}}}_{{-{2}}}/ logg1 \, {3}^{{+{4}}}_{{
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=12)
-plt.figtext(0.89,0.79,"$Teff2 \, {0}^{{+{1}}}_{{-{2}}}/ logg2 \, {3}^{{+{4}}}_{{-{5}}}/ en2 \, 0.0/ vsini2 \, {6}^{{+{7}}}_{{-{8}}}/ RV2 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+plt.figtext(0.89,0.77,"$Teff2 \, {0}^{{+{1}}}_{{-{2}}}/ logg2 \, {3}^{{+{4}}}_{{-{5}}}/ en2 \, 0.0/ vsini2 \, {6}^{{+{7}}}_{{-{8}}}/ RV2 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
 	round(teff_mcmc2[0]),
 	round(teff_mcmc2[1]),
 	round(teff_mcmc2[2]),
@@ -664,7 +664,7 @@ plt.figtext(0.89,0.79,"$Teff2 \, {0}^{{+{1}}}_{{-{2}}}/ logg2 \, {3}^{{+{4}}}_{{
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=12)
-plt.figtext(0.89,0.76,r"$\chi^2$ = {}, DOF = {}".format(\
+plt.figtext(0.89,0.74,r"$\chi^2$ = {}, DOF = {}".format(\
 	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 color='k',
 horizontalalignment='right',
