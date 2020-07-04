@@ -269,7 +269,7 @@ if modelset == 'btsettl08' or modelset == 'sonora-2018':
 						'logg_min':priors['logg_min'],              'logg_max':priors['logg_max'],
 						'vsini_min':priors['vsini_min'],            'vsini_max':priors['vsini_max'],
 						'rv_min':priors['rv_min'],                  'rv_max':priors['rv_max'],
-						'teff_min2':max(priors['teff_min2']-300,900),'teff_max2':msin(priors['teff_max2'],3500),
+						'teff_min2':max(priors['teff_min2']-300,900),'teff_max2':min(priors['teff_max2'],3500),
 						'logg_min2':priors['logg_min2'],            'logg_max2':priors['logg_max2'],
 						'vsini_min2':priors['vsini_min2'],          'vsini_max2':priors['vsini_max2'],
 						'rv_min2':priors['rv_min2'],                'rv_max2':priors['rv_max2'],
