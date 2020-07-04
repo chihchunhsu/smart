@@ -13,7 +13,7 @@ import time
 import os
 import sys
 
-def makeModel(teff,logg=5, metal=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,wave_offset=0,flux_offset=0,**kwargs):
+def makeModel(teff,logg=5, metal=0, vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,wave_offset=0,flux_offset=0,**kwargs):
 	"""
 	Return a forward model.
 
@@ -83,7 +83,7 @@ def makeModel(teff,logg=5, metal=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=
 
 	## if binary is True: make a binary model
 	if binary:
-		model2      = smart.Model(teff=teff2, logg=logg2, metal=z, order=order, modelset=modelset, instrument=instrument)
+		model2      = smart.Model(teff=teff2, logg=logg2, metal=metal, order=order, modelset=modelset, instrument=instrument)
 		# apply vsini
 		model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
 		# apply rv (including the barycentric correction)
