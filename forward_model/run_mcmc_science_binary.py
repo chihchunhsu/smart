@@ -266,14 +266,14 @@ if modelset == 'btsettl08' or modelset == 'sonora-2018':
 	# assume teff lower limit = 900 K to avoid logg ceiling issue
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,900), 'teff_max':min(priors['teff_max']+300,3500),
-						'logg_min':3.5,                             'logg_max':logg_max,
-						'vsini_min':0.0,                            'vsini_max':100.0,
-						'rv_min':-200.0,                            'rv_max':200.0,
-						'teff_min2':max(priors['teff_min2']-300,900),'teff_max2':min(priors['teff_max2'],3500),
-						'logg_min2':3.5,                            'logg_max2':logg_max,
-						'vsini_min2':0.0,                           'vsini_max2':100.0,
-						'rv_min2':-200.0,                           'rv_max2':200.0,
-						'flsc_min':0.1,				        		'flsc_max':0.8,
+						'logg_min':priors['logg_min'],              'logg_max':priors['logg_max'],
+						'vsini_min':priors['vsini_min'],            'vsini_max':priors['vsini_max'],
+						'rv_min':priors['rv_min'],                  'rv_max':priors['rv_max'],
+						'teff_min2':max(priors['teff_min2']-300,900),'teff_max2':msin(priors['teff_max2'],3500),
+						'logg_min2':priors['logg_min2'],            'logg_max2':priors['logg_max2'],
+						'vsini_min2':priors['vsini_min2'],          'vsini_max2':priors['vsini_max2'],
+						'rv_min2':priors['rv_min2'],                'rv_max2':priors['rv_max2'],
+						'flsc_min':priors['flsc_min'],				'flsc_max':priors['flsc_max'],
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
@@ -441,7 +441,7 @@ pos = [np.array([	priors['teff_min']   + (priors['teff_max']   - priors['teff_mi
 					priors['N_min']      + (priors['N_max']      - priors['N_min']     ) * np.random.uniform()]) for i in range(nwalkers)]
 
 ## multiprocessing
-
+"""
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
@@ -462,15 +462,14 @@ print(sampler.acceptance_fraction)
 autocorr_time = sampler.get_autocorr_time(discard=burn, quiet=True)
 print("Mean autocorrelation time: {0:.3f} steps".format(np.mean(autocorr_time)))
 print(autocorr_time)
-
+"""
 # create walker plots
 sampler_chain = np.load(save_to_path + '/sampler_chain.npy')
 samples = np.load(save_to_path + '/samples.npy')
 
-ylabels = [	"$T_{eff} 1 (K)$","$log \, g$1 (dex)","$vsin \, i 1(km/s)$","$RV 1(km/s)$",
-			"$T_{eff} 2 (K)$","$log \, g$2 (dex)","$vsin \, i 2(km/s)$","$RV 2(km/s)$", "$F_{2}$"
+ylabels = [	"$T_{eff} 1 (K)$", "$log \, g$1 (dex)", "$vsin \, i 1(km/s)$", "$RV 1(km/s)$",
+			"$T_{eff} 2 (K)$", "$log \, g$2 (dex)", "$vsin \, i 2(km/s)$", "$RV 2(km/s)$", "$F_{2}$",
 			"$AM$", "pwv (mm)","$C_{F_{\lambda}}$ (cnt/s)","$C_{\lambda}$($\AA$)","$C_{noise}$"]
-
 
 ## create walker plots
 plt.rc('font', family='sans-serif')
@@ -497,8 +496,7 @@ triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
-teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, teff_mcmc2, logg_mcmc2, vsini_mcmc2, rv_mcmc2, 
-flsc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
+teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, teff_mcmc2, logg_mcmc2, vsini_mcmc2, rv_mcmc2, flsc_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
 
 # add the summary to the txt file
