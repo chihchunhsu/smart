@@ -42,12 +42,13 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 	tell_alpha = kwargs.get('tell_alpha', 1.0) # Telluric alpha power
 	binary     = kwargs.get('binary', False) # make a binary model
 
+	# assume the secondary has the same metallicity
 	if binary:
 		teff2       = kwargs.get('teff2')
 		logg2       = kwargs.get('logg2')
 		rv2         = kwargs.get('rv2')
 		vsini2      = kwargs.get('vsini2')
-		flux2_scale = kwargs.get('flux2_scale', 0.8)
+		flux_scale = kwargs.get('flux_scale', 0.8)
 
 	data       = kwargs.get('data', None) # for continuum correction and resampling
 
@@ -95,11 +96,13 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 		model.wave = model.wave[select_wavelength]
 
 		# combine the models together and scale the secondary flux
-		model.flux += flux2_scale * fit(model.wave)
-	
+		model.flux += flux_scale * fit(model.wave)
 
 	if output_stellar_model:
 		stellar_model = copy.deepcopy(model)
+		if binary:
+			model2.flux = flux_scale * fit(model.wave)
+
 	# apply telluric
 	if tell is True:
 		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
@@ -108,8 +111,9 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 		flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	if output_stellar_model:
-		stellar_model.flux = smart.broaden(wave=stellar_model.wave, 
-			flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
+		stellar_model.flux = smart.broaden(wave=stellar_model.wave, flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
+		if binary:
+			model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# add a fringe pattern to the model
 	#model.flux *= (1+amp*np.sin(freq*(model.wave-phase)))
@@ -117,7 +121,10 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 	# wavelength offset
 	model.wave += wave_offset
 
-	if output_stellar_model: stellar_model.wave += wave_offset
+	if output_stellar_model: 
+		stellar_model.wave += wave_offset
+		if binary:
+			model2.wave = stellar_model.wave
 
 	# integral resampling
 	if data is not None:
@@ -125,9 +132,12 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 		model.wave = data.wave
 
 		if output_stellar_model:
-			stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, 
-				yh=stellar_model.flux, xl=data.wave))
+			stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, yh=stellar_model.flux, xl=data.wave))
 			stellar_model.wave = data.wave
+			if binary:
+				model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
+				model2.wave = data.wave
+
 		# contunuum correction
 		if data.instrument == 'nirspec':
 			niter = 5 # continuum iteration
@@ -137,6 +147,8 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 					model, cont_factor2 = smart.continuum(data=data, mdl=model, prop=True)
 					cont_factor *= cont_factor2
 				stellar_model.flux *= cont_factor
+				if binary:
+					model2.flux *= cont_factor
 			else:
 				model = smart.continuum(data=data, mdl=model)
 				for i in range(niter):
@@ -184,11 +196,17 @@ def makeModel(teff,logg=5,z=0,vsini=1,rv=0, tell_alpha=0, airmass=1.0, pwv=0.5,w
 
 	# flux offset
 	model.flux += flux_offset
-	if output_stellar_model: stellar_model.flux += flux_offset
+	if output_stellar_model: 
+		stellar_model.flux += flux_offset
+		if binary:
+			model2.flux += flux_offset
 	#model.flux **= (1 + flux_exponent_offset)
 
 	if output_stellar_model:
-		return model, stellar_model
+		if not binary:
+			return model, stellar_model
+		else:
+			return model, stellar_model, model2
 	else:
 		return model
 
