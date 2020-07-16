@@ -127,9 +127,9 @@ tell_data_name       = tell_sp.name
 tell_path            = tell_sp.path
 order                = tell_sp.order
 ndim                 = 5
-applymask            = False
-pixel_start          = 10
-pixel_end            = -30
+#applymask            = False
+#pixel_start          = 10
+#pixel_end            = -30
 
 ## add a pixel label for plotting
 length1     = len(tell_sp.oriWave)
