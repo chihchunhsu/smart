@@ -38,6 +38,22 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 	instrument = kwargs.get('instrument', 'nirspec')
 	veiling    = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf        = kwargs.get('lsf', 4.5)   # instrumental LSF
+	if instrument == 'apogee':
+		try:
+			import apogee_tools as ap
+		except ImportError:
+			print('Need to install the package "apogee_tools" (https://github.com/jbirky/apogee_tools) \n')
+		xlsf       = kwargs.get('xlsf', np.linspace(-7.,7.,43))   # APOGEE instrumental LSF sampling
+		wave_off1  = kwargs.get('wave_off1') # wavelength offset for chip a
+		wave_off2  = kwargs.get('wave_off2') # wavelength offset for chip b
+		wave_off3  = kwargs.get('wave_off3') # wavelength offset for chip c
+		c0_1       = kwargs.get('c0_1')      # constant flux offset for chip a
+		c0_2       = kwargs.get('c0_2')      # linear flux offset for chip a
+		c1_1       = kwargs.get('c1_1')      # constant flux offset for chip b
+		c1_2       = kwargs.get('c1_2')      # linear flux offset for chip b
+		c2_1       = kwargs.get('c2_1')      # constant flux offset for chip c
+		c2_2       = kwargs.get('c2_2')      # linear flux offset for chip c
+
 	tell       = kwargs.get('tell', True) # apply telluric
 	tell_alpha = kwargs.get('tell_alpha', 1.0) # Telluric alpha power
 	binary     = kwargs.get('binary', False) # make a binary model
@@ -64,6 +80,13 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 	#elif data is not None and instrument == 'apogee':
 	elif instrument == 'apogee':
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, modelset=modelset, instrument=instrument)
+		# Dirty fix here
+		model.wave = model.wave[np.where(model.flux != 0)]
+		model.flux = model.flux[np.where(model.flux != 0)]
+
+		# apply vmicro
+		vmicro = 2.478 - 0.325*logg
+		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vmicro, rotate=False, gaussian=True)
 	
 	elif data is None and instrument == 'nirspec':
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=order, modelset=modelset, instrument=instrument)
@@ -72,8 +95,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 	#model.wave += wave_offset
 
 	# apply vsini
-	model.flux = smart.broaden(wave=model.wave, 
-		flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
+	model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
 	
 	# apply rv (including the barycentric correction)
 	model.wave = rvShift(model.wave, rv=rv)
@@ -107,8 +129,14 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 	if tell is True:
 		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
 	# instrumental LSF
-	model.flux = smart.broaden(wave=model.wave, 
-		flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
+	if instrument == 'nirspec':
+		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
+	elif instrument == 'apogee':
+		model.flux = ap.apogee_hack.spec.lsf.convolve(model.wave, model.flux, lsf=lsf, xlsf=xlsf).flatten()
+		model.wave = ap.apogee_hack.spec.lsf.apStarWavegrid()
+		# Remove the NANs
+		model.wave = model.wave[~np.isnan(model.flux)]
+		model.flux = model.flux[~np.isnan(model.flux)]
 
 	if output_stellar_model:
 		stellar_model.flux = smart.broaden(wave=stellar_model.wave, flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
@@ -161,45 +189,82 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 			data0       = copy.deepcopy(data)
 			model0      = copy.deepcopy(model)
 
+			# wavelength offset
+			model0.wave += wave_off1
+
 			range0      = np.where((data0.wave >= data.oriWave0[0][-1]) & (data0.wave <= data.oriWave0[0][0]))
 			data0.wave  = data0.wave[range0]
 			data0.flux  = data0.flux[range0]
-			data0.noise = data0.noise[range0]
-			model0.wave = model0.wave[range0]
-			model0.flux = model0.flux[range0]
+			if data0.wave[0] > data0.wave[-1]:
+				data0.wave = data0.wave[::-1]
+				data0.flux = data0.flux[::-1]
+			model0.flux = np.array(smart.integralResample(xh=model0.wave, yh=model0.flux, xl=data0.wave))
+			model0.wave = data0.wave
 			model0      = smart.continuum(data=data0, mdl=model0, deg=deg)
+			# flux corrections
+			model0.flux = (model0.flux + c0_1) * np.e**(-c0_2)
 
 			data1       = copy.deepcopy(data)
 			model1      = copy.deepcopy(model)
+
+			# wavelength offset
+			model1.wave += wave_off2
+
 			range1      = np.where((data1.wave >= data.oriWave0[1][-1]) & (data1.wave <= data.oriWave0[1][0]))
 			data1.wave  = data1.wave[range1]
 			data1.flux  = data1.flux[range1]
-			data1.noise = data1.noise[range1]
-			model1.wave = model1.wave[range1]
-			model1.flux = model1.flux[range1]
+			if data1.wave[0] > data1.wave[-1]:
+				data1.wave = data1.wave[::-1]
+				data1.flux = data1.flux[::-1]
+			model1.flux = np.array(smart.integralResample(xh=model1.wave, yh=model1.flux, xl=data1.wave))
+			model1.wave = data1.wave
 			model1      = smart.continuum(data=data1, mdl=model1, deg=deg)
+
+			# flux corrections
+			model1.flux = (model1.flux + c1_1) * np.e**(-c1_2)
 
 			data2       = copy.deepcopy(data)
 			model2      = copy.deepcopy(model)
+
+			# wavelength offset
+			model2.wave += wave_off3
+
 			range2      = np.where((data2.wave >= data.oriWave0[2][-1]) & (data2.wave <= data.oriWave0[2][0]))
 			data2.wave  = data2.wave[range2]
 			data2.flux  = data2.flux[range2]
-			data2.noise = data2.noise[range2]
-			model2.wave = model2.wave[range2]
-			model2.flux = model2.flux[range2]
-			model2      = smart.continuum(data=data2, mdl=model2, deg=deg)
+			if data2.wave[0] > data2.wave[-1]:
+				data2.wave = data2.wave[::-1]
+				data2.flux = data2.flux[::-1]
 
-			model.flux  = np.array( list(model0.flux) + list(model1.flux) + list(model2.flux) )
-			model.wave  = np.array( list(model0.wave) + list(model1.wave) + list(model2.wave) )
+			model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data2.wave))
+			model2.wave = data2.wave
+			model2      = smart.continuum(data=data2, mdl=model2, deg=deg)
+			# flux corrections
+			model2.flux = (model2.flux + c2_1) * np.e**(-c2_2)
+
+			## scale the flux to be the same as the data
+			#model0.flux *= (np.std(data0.flux)/np.std(model0.flux))
+			#model0.flux -= np.median(model0.flux) - np.median(data0.flux)
+
+			#model1.flux *= (np.std(data1.flux)/np.std(model1.flux))
+			#model1.flux -= np.median(model1.flux) - np.median(data1.flux)
+
+			#model2.flux *= (np.std(data2.flux)/np.std(model2.flux))
+			#model2.flux -= np.median(model2.flux) - np.median(data2.flux)
+
+			model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
+			model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
+		
 		elif data.instrument == 'apogee' and data.datatype =='apstar':
 			model = smart.continuum(data=data, mdl=model)
 
-	# flux offset
-	model.flux += flux_offset
-	if output_stellar_model: 
-		stellar_model.flux += flux_offset
-		if binary:
-			model2.flux += flux_offset
+	if instrument == 'nirspec':
+		# flux offset
+		model.flux += flux_offset
+		if output_stellar_model: 
+			stellar_model.flux += flux_offset
+			if binary:
+				model2.flux += flux_offset
 	#model.flux **= (1 + flux_exponent_offset)
 
 	if output_stellar_model:
