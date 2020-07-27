@@ -128,6 +128,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 	# apply telluric
 	if tell is True:
 		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
+
 	# instrumental LSF
 	if instrument == 'nirspec':
 		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
@@ -156,15 +157,16 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 
 	# integral resampling
 	if data is not None:
-		model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
-		model.wave = data.wave
+		if instrument == 'nirspec':
+			model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+			model.wave = data.wave
 
-		if output_stellar_model:
-			stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, yh=stellar_model.flux, xl=data.wave))
-			stellar_model.wave = data.wave
-			if binary:
-				model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
-				model2.wave = data.wave
+			if output_stellar_model:
+				stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, yh=stellar_model.flux, xl=data.wave))
+				stellar_model.wave = data.wave
+				if binary:
+					model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
+					model2.wave = data.wave
 
 		# contunuum correction
 		if data.instrument == 'nirspec':
@@ -181,10 +183,9 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 				model = smart.continuum(data=data, mdl=model)
 				for i in range(niter):
 					model = smart.continuum(data=data, mdl=model)
-		elif data.instrument == 'apogee' and data.datatype =='apvisit':
+		elif data.instrument == 'apogee':
 			## set the order in the continuum fit
 			deg         = 5
-
 			## because of the APOGEE bands, continuum is corrected from three pieces of the spectra
 			data0       = copy.deepcopy(data)
 			model0      = copy.deepcopy(model)
@@ -254,9 +255,6 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 
 			model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
 			model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
-		
-		elif data.instrument == 'apogee' and data.datatype =='apstar':
-			model = smart.continuum(data=data, mdl=model)
 
 	if instrument == 'nirspec':
 		# flux offset
