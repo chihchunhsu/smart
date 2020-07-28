@@ -31,9 +31,7 @@ There are two ways of setting up the code:
 python setup.py install
 ```
 
-<br/>(ii)
-
-Set up the environment variables in the `.bashrc` or `.bash_profile`
+<br/>(ii) Set up the environment variables in the `.bashrc` or `.bash_profile`
 
 ```
 export PYTHONPATH="/path/to/smart:${PYTHONPATH}"
