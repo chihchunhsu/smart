@@ -19,7 +19,7 @@ setuptools.setup(
     description=("The Spectral Modeling Analysis and RV Tool"),
     long_description=open("README.md").read(),
     package_data={"": ["LICENSE", "AUTHORS.rst"]},
-    include_package_data=Fsalse,
+    include_package_data=False,
     install_requires=["numpy", "scipy", "pandas", "matplotlib", "astropy", "emcee"],
     classifiers=[
         "Programming Language :: Python :: 3",
