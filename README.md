@@ -23,13 +23,31 @@ Dependencies. The `smart` has been tested under the following environments:
 
 Download the `smart` and the forked and modified version of the NSDRP to your computer.
 
+There are two ways of setting up the code:
+(i) In the terminal under the `smart` folder, 
+
+```
+python setup.py install
+```
+
+(ii)
+
 Set up the environment variables in the `.bashrc` or `.bash_profile`
 
 ```
 export PYTHONPATH="/path/to/smart:${PYTHONPATH}"
 ```
 
-You will also need to put the associated APOGEE LSF and wavelength fits files under forward_model/apogee
+To model the SDSS/APOGEE spectra, you will also need to put the associated APOGEE LSF and wavelength fits files under `forward_model/apogee/`:
+
+https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-a-05440020.fits
+https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-b-05440020.fits
+https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-c-05440020.fits
+https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-a-02420038.fits
+https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-b-02420038.fits
+https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-c-02420038.fits
+
+The code under apogee folders are from Jo Bovy's `apogee` (https://github.com/jobovy/apogee) package.
 
 ## Reducing the data using NSDRP:
 To add required keywords to the headers before reducing private data using [NSDRP](https://github.com/Keck-DataReductionPipelines/NIRSPEC-Data-Reduction-Pipeline), use the addKeyword function and the [input](https://github.com/chihchunhsu/smart/blob/master/input_reduction.txt) text file:
