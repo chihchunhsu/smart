@@ -10,12 +10,14 @@ Authors:
 * Jessica Birky (UCSD)
 
 ## Code Setup:
-Dependencies:
-* astropy 3.0.4
-* numpy 1.12.1
-* scipy 0.19.0
-* matplotlib 2.2.3
-* pandas 0.20.1
+Dependencies. The `smart` has been tested under the following environments:
+* Python 3.6.10/3.7.3
+* astropy 3.0.4/3.0.5
+* numpy 1.12.1/1.13.3/1.18.1
+* scipy 0.19.0/1.4.1
+* matplotlib 2.2.3/3.1.3
+* pandas 0.20.1/0.23.4/1.0.1
+* emcee 3.0.2/3.0.3.dev4+gc14b212
 * wavelets (for defringeflat)
 
 Download the smart and the forked and modified version of the NSDRP to your computer.
