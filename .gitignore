@@ -136,10 +136,10 @@ dmypy.json
 *.fits
 
 # Ignore these files and folders
-__pycache__/__init__.cpython-37.pyc
-*/__pycache__/*.pyc
-*/.DS_Store
-libraries/.DS_Store
-libraries/*/*/*.txt
-libraries/*/*/*.fits
-forward_model/apogee/*.fits
+smart/__pycache__/__init__.cpython-37.pyc
+smart/*/__pycache__/*.pyc
+smart/*/.DS_Store
+smart/libraries/.DS_Store
+smart/libraries/*/*/*.txt
+smart/libraries/*/*/*.fits
+smart/forward_model/apogee/*.fits
