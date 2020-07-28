@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="smart",
-    version=smart.__version__,
+    version="0.0.1",
     author="Chih-Chun Hsu",
     author_email="chh194@ucsd.edu",
     packages=setuptools.find_packages(),
