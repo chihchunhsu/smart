@@ -1,3 +1,5 @@
+__version__ = "0.0.1"
+
 from .utils.barycorr import barycorr
 from .forward_model.classModel import Model
 from .forward_model.classSpectrum import Spectrum
@@ -14,6 +16,7 @@ try:
 	from .forward_model.apogee.lsf import eval
 except FileNotFoundError:
 	print("You need to put the APOGEE LSF and wavelength fits files under forward_model/apogee. See README.md for more details.")
+	pass
 from .forward_model.apogee.bitmask import bits_set
 from .wavelength_calibration.telluric_wavelength_fit import *
 from .wavelength_calibration.residual import residual
@@ -26,6 +29,6 @@ from .utils.interpolations import bilinear_interpolation, trilinear_interpolatio
 try:
 	from .utils.defringeflat import defringeflat, defringeflatAll
 except ImportError:
-	print("There is an import error for the wavelets package.")
+	print("You need to install the wavelets package (https://github.com/aaren/wavelets) to use defringeflat functions.")
 	pass
 #from .utils.subtractDark import subtractDark

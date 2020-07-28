@@ -5,12 +5,15 @@ import os
 import sys
 import setuptools
 
+import smart
+from smart.__init__ import __version__
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="smart",
-    version="0.0.1",
+    version=__version__,
     author="Chih-Chun Hsu",
     author_email="chh194@ucsd.edu",
     packages=setuptools.find_packages(),
@@ -27,5 +30,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    zip_safe=True,
+    zip_safe=False,
 )

@@ -133,6 +133,7 @@ dmypy.json
 # ignore these files
 *.pyc
 *.DS_Store
+*.fits
 
 # Ignore these files and folders
 __pycache__/__init__.cpython-37.pyc

@@ -18,15 +18,18 @@ Dependencies. The `smart` has been tested under the following environments:
 * matplotlib 2.2.3/3.1.3
 * pandas 0.20.1/0.23.4/1.0.1
 * emcee 3.0.2/3.0.3.dev4+gc14b212
+* corner 2.0.1
 * wavelets (for defringeflat)
 
-Download the smart and the forked and modified version of the NSDRP to your computer.
+Download the `smart` and the forked and modified version of the NSDRP to your computer.
 
 Set up the environment variables in the `.bashrc` or `.bash_profile`
 
 ```
 export PYTHONPATH="/path/to/smart:${PYTHONPATH}"
 ```
+
+You will also need to put the associated APOGEE LSF and wavelength fits files under forward_model/apogee
 
 ## Reducing the data using NSDRP:
 To add required keywords to the headers before reducing private data using [NSDRP](https://github.com/Keck-DataReductionPipelines/NIRSPEC-Data-Reduction-Pipeline), use the addKeyword function and the [input](https://github.com/chihchunhsu/smart/blob/master/input_reduction.txt) text file:
