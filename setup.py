@@ -3,7 +3,7 @@
 
 import os
 import sys
-from setuptools
+import setuptools
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -19,7 +19,7 @@ setuptools.setup(
     description=("The Spectral Modeling Analysis and RV Tool"),
     long_description=open("README.md").read(),
     package_data={"": ["LICENSE", "AUTHORS.rst"]},
-    include_package_data=False,
+    include_package_data=Fsalse,
     install_requires=["numpy", "scipy", "pandas", "matplotlib", "astropy", "emcee"],
     classifiers=[
         "Programming Language :: Python :: 3",
