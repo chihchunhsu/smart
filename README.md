@@ -40,14 +40,14 @@ export PYTHONPATH="/path/to/smart:${PYTHONPATH}"
 
 To model the SDSS/APOGEE spectra, you will also need to put the associated APOGEE LSF and wavelength fits files under `forward_model/apogee/`:
 
-https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-a-05440020.fits
-https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-b-05440020.fits
-https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-c-05440020.fits
-https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-a-02420038.fits
-https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-b-02420038.fits
-https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-c-02420038.fits
+[apLSF-a-05440020.fits](https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-a-05440020.fits)
+[apLSF-b-05440020.fits](https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-b-05440020.fits)
+[apLSF-c-05440020.fits](https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/lsf/apLSF-c-05440020.fits)
+[apWave-a-02420038.fits](https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-a-02420038.fits)
+[apWave-b-02420038.fits](https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-b-02420038.fits)
+[apWave-c-02420038.fits](https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-c-02420038.fits)
 
-The code under apogee folders are from Jo Bovy's `apogee` (https://github.com/jobovy/apogee) package.
+The code under apogee folders are from Jo Bovy's [apogee](https://github.com/jobovy/apogee) package.
 
 ## Reducing the data using NSDRP:
 To add required keywords to the headers before reducing private data using [NSDRP](https://github.com/Keck-DataReductionPipelines/NIRSPEC-Data-Reduction-Pipeline), use the addKeyword function and the [input](https://github.com/chihchunhsu/smart/blob/master/input_reduction.txt) text file:
