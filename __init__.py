@@ -10,7 +10,10 @@ from .forward_model.tellurics import InterpTelluricModel
 from .forward_model.model_fit import *
 from .forward_model.mcmc import run_mcmc, telluric_mcmc, run_mcmc2, run_mcmc3
 from .forward_model.apogee.lsf_function import computeAPLSF, convolveAPLSF
-from .forward_model.apogee.lsf import eval
+try:
+	from .forward_model.apogee.lsf import eval
+except FileNotFoundError:
+	print("You need to put the APOGEE LSF and wavelength fits files under forward_model/apogee. See README.md for more details.")
 from .forward_model.apogee.bitmask import bits_set
 from .wavelength_calibration.telluric_wavelength_fit import *
 from .wavelength_calibration.residual import residual
