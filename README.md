@@ -46,7 +46,7 @@ To model the SDSS/APOGEE spectra, you will also need to put the associated APOGE
 [apWave-b-02420038.fits](https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-b-02420038.fits)<br/>
 [apWave-c-02420038.fits](https://dr13.sdss.org/sas/dr13/apogee/spectro/redux/r6/cal/wave/apWave-c-02420038.fits)<br/>
 
-The code under apogee folders are from Jo Bovy's [apogee](https://github.com/jobovy/apogee) package.
+The codes under the apogee folder are from Jo Bovy's [apogee](https://github.com/jobovy/apogee) package.
 
 ## Reducing the data using NSDRP:
 To add required keywords to the headers before reducing private data using [NSDRP](https://github.com/Keck-DataReductionPipelines/NIRSPEC-Data-Reduction-Pipeline), use the addKeyword function and the [input](https://github.com/chihchunhsu/smart/blob/master/input_reduction.txt) text file:

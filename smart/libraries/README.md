@@ -14,4 +14,6 @@ The library includes
 
 * PHOENIX_BTSETTL_CIFIST2011_2015 (Baraffe et al. 2015, Bibcode: 2015A&A...577A..42B, url: https://ui.adsabs.harvard.edu/abs/2015A%26A...577A..42B/abstract)
 
+* SONORA_2018 (Marley et al. 2019, in prep., url: https://zenodo.org/record/1405206#.XyEWFfhKhTZ)
+
 * high resolution (300k) telluric models (Moehler et al. 2014, Bibcode: 2014A&A...568A...9M, url: https://ui.adsabs.harvard.edu/abs/2014A%26A...568A...9M/abstract)
