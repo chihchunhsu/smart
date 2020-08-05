@@ -261,9 +261,22 @@ else: logg_max = 5.5
 # limit of the flux nuisance parameter: 5 percent of the median flux
 A_const       = 0.05 * abs(np.median(data.flux))
 
-if modelset == 'btsettl08' or modelset == 'sonora-2018':
+if modelset == 'btsettl08':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,500), 'teff_max':min(priors['teff_max']+300,3500),
+						'logg_min':3.5,                             'logg_max':logg_max,
+						'vsini_min':0.0,                            'vsini_max':100.0,
+						'rv_min':-200.0,                            'rv_max':200.0,
+						'am_min':1.0,                               'am_max':3.0,
+						'pwv_min':0.5,                            	'pwv_max':20.0,
+						'A_min':-A_const,							'A_max':A_const,
+						'B_min':-0.6,                              	'B_max':0.6,
+						'N_min':0.10,                               'N_max':5.0 				
+					}
+
+elif modelset == 'sonora-2018':
+	limits         = { 
+						'teff_min':max(priors['teff_min']-300,200), 'teff_max':min(priors['teff_max']+300,2400),
 						'logg_min':3.5,                             'logg_max':logg_max,
 						'vsini_min':0.0,                            'vsini_max':100.0,
 						'rv_min':-200.0,                            'rv_max':200.0,
