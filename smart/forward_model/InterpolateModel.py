@@ -2,6 +2,7 @@ import smart
 import numpy as np
 import sys, os, os.path, time
 from astropy.table import Table
+from astropy.io import fits
 from numpy.linalg import inv, det
 from ..utils.interpolations import trilinear_interpolation
 
@@ -33,7 +34,8 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
             path     = BASE + '/../libraries/PHOENIX_BTSETTL_CIFIST2011_2015/APOGEE-RAW/'
             Gridfile = BASE + '/../libraries/PHOENIX_BTSETTL_CIFIST2011_2015/PHOENIX_BTSETTL_CIFIST2011_2015_gridparams_apogee.csv'
         elif modelset.lower() == 'phoenix-aces-agss-cond-2011' :
-            path     = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-RAW/'
+            #path     = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-RAW/'
+            path     = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-ALL/'
             Gridfile = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/PHOENIX_ACES_AGSS_COND_2011_gridparams_apogee.csv'
         elif modelset.lower() == 'marcs-apogee-dr15' :
             path     = BASE + '/../libraries/MARCS_APOGEE_DR15/APOGEE-RAW/'
@@ -300,7 +302,8 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
             path = BASE + '/../libraries/PHOENIX_BTSETTL_CIFIST2011_2015/APOGEE-RAW/'
         
         elif modelset.lower() == 'phoenix-aces-agss-cond-2011' :
-            path = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-RAW/'
+            #path = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-RAW/'
+            path = BASE + '/../libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-ALL/'
 
         elif modelset.lower() == 'marcs-apogee-dr15' :
             path = BASE + '/../libraries/MARCS_APOGEE_DR15/APOGEE-RAW_3D/'
@@ -345,17 +348,31 @@ def InterpModel_3D(Teff, Logg, Metal, modelset='marcs-apogee-dr15', instrument='
                 filename = 'PHOENIX_BTSETTL_CIFIST2011_2015_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
 
             elif modelset.lower() == 'phoenix-aces-agss-cond-2011':
-                filename = 'PHOENIX_ACES_AGSS_COND_2011_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
+                #filename = 'PHOENIX_ACES_AGSS_COND_2011_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
+                if metal == 0.0:
+                    filename = 'PHOENIX_ACES_AGSS_COND_2011_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z-{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-ALL.fits'
+                else:
+                    filename = 'PHOENIX_ACES_AGSS_COND_2011_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-ALL.fits'
             
             elif modelset.lower() == 'marcs-apogee-dr15':
                 filename = 'MARCS_APOGEE_DR15_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(en)) + '_APOGEE-RAW.txt'
 
-        Tab = Table.read(path+filename, format='ascii.tab', names=['wave', 'flux'])
+        # read fits files
+        if modelset.lower() == 'phoenix-aces-agss-cond-2011' and instrument == 'apogee':
+            with fits.open(path+filename) as hdul:
+                if wave:
+                    return hdul[1].data['wave']
+                else:
+                    return hdul[1].data['flux']
 
-        if wave:
-            return Tab['wave']
+        # read txt files
         else:
-            return Tab['flux']
+            Tab = Table.read(path+filename, format='ascii.tab', names=['wave', 'flux'])
+
+            if wave:
+                return Tab['wave']
+            else:
+                return Tab['flux']
 
     
 

@@ -91,6 +91,7 @@ class Spectrum():
 			self.datatype  = kwargs.get('datatype','aspcap')
 			self.applymask = kwargs.get('applymask',False)
 			self.applytell = kwargs.get('applytell', False)
+			self.chip      = kwargs.get('chip', 'all')
 
 			hdulist        = fits.open(self.path)
 			
@@ -134,47 +135,99 @@ class Spectrum():
 				self.bitmask   = hdulist[3].data
 
 				#import bitmask
-				mask_0 = []
-				for i in range(len(hdulist[3].data[0])):
-					bitmask = smart.bits_set(hdulist[3].data[0][i])
-					if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
-					(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
-					(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
-						mask_0.append(i)
+				# chip a
+				if self.chip == 'all' or self.chip == 'a':
+					mask_0 = []
+					for i in range(len(hdulist[3].data[0])):
+						bitmask = smart.bits_set(hdulist[3].data[0][i])
+						if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
+						(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
+						(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
+							mask_0.append(i)
 				
-				mask_1 = []
-				for i in range(len(hdulist[3].data[1])):
-					bitmask = smart.bits_set(hdulist[3].data[1][i])
-					if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
-					(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
-					(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
-						mask_1.append(i)
+				# chip b
+				if self.chip == 'all' or self.chip == 'b':
+					mask_1 = []
+					for i in range(len(hdulist[3].data[1])):
+						bitmask = smart.bits_set(hdulist[3].data[1][i])
+						if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
+						(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
+						(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
+							mask_1.append(i)
 				
-				mask_2 = []
-				for i in range(len(hdulist[3].data[2])):
-					bitmask = smart.bits_set(hdulist[3].data[2][i])
-					if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
-					(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
-					(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
-						mask_2.append(i)
+				# chip c
+				if self.chip == 'all' or self.chip == 'c':
+					mask_2 = []
+					for i in range(len(hdulist[3].data[2])):
+						bitmask = smart.bits_set(hdulist[3].data[2][i])
+						if (0 in bitmask) or (1 in bitmask) or (2 in bitmask) or \
+						(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
+						(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
+							mask_2.append(i)
 
 
-				self.wave      = np.array(list(np.delete(hdulist[4].data[0], mask_0))+list(np.delete(hdulist[4].data[1], mask_1))+list(np.delete(hdulist[4].data[2], mask_2)))
-				self.flux      = np.array(list(np.delete(hdulist[1].data[0], mask_0))+list(np.delete(hdulist[1].data[1], mask_1))+list(np.delete(hdulist[1].data[2], mask_2)))
-				self.noise     = np.array(list(np.delete(hdulist[2].data[0], mask_0))+list(np.delete(hdulist[2].data[1], mask_1))+list(np.delete(hdulist[2].data[2], mask_2)))
-				self.sky       = np.array(list(hdulist[5].data[0])+list(hdulist[5].data[1])+list(hdulist[5].data[2]))
-				self.skynoise  = np.array(list(hdulist[6].data[0])+list(hdulist[6].data[1])+list(hdulist[6].data[2]))
-				self.tell      = np.array(list(np.delete(hdulist[7].data[0], mask_0))+list(np.delete(hdulist[7].data[1], mask_1))+list(np.delete(hdulist[7].data[2], mask_2)))
-				self.tellnoise = np.array(list(np.delete(hdulist[8].data[0], mask_0))+list(np.delete(hdulist[8].data[1], mask_1))+list(np.delete(hdulist[8].data[2], mask_2)))
+				if self.chip == 'all':
+					self.wave      = np.array(list(np.delete(hdulist[4].data[0], mask_0))+list(np.delete(hdulist[4].data[1], mask_1))+list(np.delete(hdulist[4].data[2], mask_2)))
+					self.flux      = np.array(list(np.delete(hdulist[1].data[0], mask_0))+list(np.delete(hdulist[1].data[1], mask_1))+list(np.delete(hdulist[1].data[2], mask_2)))
+					self.noise     = np.array(list(np.delete(hdulist[2].data[0], mask_0))+list(np.delete(hdulist[2].data[1], mask_1))+list(np.delete(hdulist[2].data[2], mask_2)))
+					self.sky       = np.array(list(hdulist[5].data[0])+list(hdulist[5].data[1])+list(hdulist[5].data[2]))
+					self.skynoise  = np.array(list(hdulist[6].data[0])+list(hdulist[6].data[1])+list(hdulist[6].data[2]))
+					self.tell      = np.array(list(np.delete(hdulist[7].data[0], mask_0))+list(np.delete(hdulist[7].data[1], mask_1))+list(np.delete(hdulist[7].data[2], mask_2)))
+					self.tellnoise = np.array(list(np.delete(hdulist[8].data[0], mask_0))+list(np.delete(hdulist[8].data[1], mask_1))+list(np.delete(hdulist[8].data[2], mask_2)))
+				
+					# store the original parameters
+					self.oriWave   = np.array(list(hdulist[4].data[0])+list(hdulist[4].data[1])+list(hdulist[4].data[2]))
+					self.oriFlux   = np.array(list(hdulist[1].data[0])+list(hdulist[1].data[1])+list(hdulist[1].data[2]))
+					self.oriNoise  = np.array(list(hdulist[2].data[0])+list(hdulist[2].data[1])+list(hdulist[2].data[2]))
+
+				elif self.chip == 'a':
+					self.wave      = np.array(list(np.delete(hdulist[4].data[0], mask_0)))
+					self.flux      = np.array(list(np.delete(hdulist[1].data[0], mask_0)))
+					self.noise     = np.array(list(np.delete(hdulist[2].data[0], mask_0)))
+					self.sky       = np.array(list(hdulist[5].data[0]))
+					self.skynoise  = np.array(list(hdulist[6].data[0]))
+					self.tell      = np.array(list(np.delete(hdulist[7].data[0], mask_0)))
+					self.tellnoise = np.array(list(np.delete(hdulist[8].data[0], mask_0)))
+				
+					# store the original parameters
+					self.oriWave   = np.array(list(hdulist[4].data[0]))
+					self.oriFlux   = np.array(list(hdulist[1].data[0]))
+					self.oriNoise  = np.array(list(hdulist[2].data[0]))
+
+				elif self.chip == 'b':
+					self.wave      = np.array(list(np.delete(hdulist[4].data[1], mask_1)))
+					self.flux      = np.array(list(np.delete(hdulist[1].data[1], mask_1)))
+					self.noise     = np.array(list(np.delete(hdulist[2].data[1], mask_1)))
+					self.sky       = np.array(list(hdulist[5].data[1]))
+					self.skynoise  = np.array(list(hdulist[6].data[1]))
+					self.tell      = np.array(list(np.delete(hdulist[7].data[1], mask_1)))
+					self.tellnoise = np.array(list(np.delete(hdulist[8].data[1], mask_1)))
+				
+					# store the original parameters
+					self.oriWave   = np.array(list(hdulist[4].data[1]))
+					self.oriFlux   = np.array(list(hdulist[1].data[1]))
+					self.oriNoise  = np.array(list(hdulist[2].data[1]))
+
+				elif self.chip == 'c':
+					self.wave      = np.array(list(np.delete(hdulist[4].data[2], mask_2)))
+					self.flux      = np.array(list(np.delete(hdulist[1].data[2], mask_2)))
+					self.noise     = np.array(list(np.delete(hdulist[2].data[2], mask_2)))
+					self.sky       = np.array(list(hdulist[5].data[2]))
+					self.skynoise  = np.array(list(hdulist[6].data[2]))
+					self.tell      = np.array(list(np.delete(hdulist[7].data[2], mask_2)))
+					self.tellnoise = np.array(list(np.delete(hdulist[8].data[2], mask_2)))
+				
+					# store the original parameters
+					self.oriWave   = np.array(list(hdulist[4].data[2]))
+					self.oriFlux   = np.array(list(hdulist[1].data[2]))
+					self.oriNoise  = np.array(list(hdulist[2].data[2]))
+
 				if self.applytell:
 					self.flux *= self.tell
 				self.wavecoeff = hdulist[9].data
 				self.lsfcoeff  = hdulist[10].data
 
-				# store the original parameters
-				self.oriWave   = np.array(list(hdulist[4].data[0])+list(hdulist[4].data[1])+list(hdulist[4].data[2]))
-				self.oriFlux   = np.array(list(hdulist[1].data[0])+list(hdulist[1].data[1])+list(hdulist[1].data[2]))
-				self.oriNoise  = np.array(list(hdulist[2].data[0])+list(hdulist[2].data[1])+list(hdulist[2].data[2]))
+
 
 				if self.wave[0] > self.wave[-1]:
 					self.wave      = self.wave[::-1]

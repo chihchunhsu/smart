@@ -11,6 +11,7 @@ cal_param_nirspec = {
 	'36':{'xcorr_range':10, 'outlier_rej':3., 	'pixel_range_start':0, 	'pixel_range_end':-50 },
 	'37':{'xcorr_range':10, 'outlier_rej':2.5, 	'pixel_range_start':50, 'pixel_range_end':-20 },
 	'38':{'xcorr_range':15, 'outlier_rej':3., 	'pixel_range_start':50, 'pixel_range_end':-20 },
+	'39':{'xcorr_range':15, 'outlier_rej':3., 	'pixel_range_start':50, 'pixel_range_end':-20 },
 	'55':{'xcorr_range':5, 	'outlier_rej':3., 	'pixel_range_start':0, 	'pixel_range_end':-90 },
 	'56':{'xcorr_range':5, 	'outlier_rej':3., 	'pixel_range_start':0, 	'pixel_range_end':-30 },
 	'57':{'xcorr_range':20, 'outlier_rej':3., 	'pixel_range_start':0, 	'pixel_range_end':-1 },
