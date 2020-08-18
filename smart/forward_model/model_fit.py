@@ -55,7 +55,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 		c2_2       = kwargs.get('c2_2')      # linear flux offset for chip c
 
 	tell       = kwargs.get('tell', True) # apply telluric
-	tell_alpha = kwargs.get('tell_alpha', 1.0) # Telluric alpha power
+	#tell_alpha = kwargs.get('tell_alpha', 1.0) # Telluric alpha power
 	binary     = kwargs.get('binary', False) # make a binary model
 
 	# assume the secondary has the same metallicity
@@ -316,7 +316,7 @@ def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5):
 
 	telluric_model = smart.Model()
 	telluric_model.wave, telluric_model.flux = 	smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
-	
+
 	# apply the telluric alpha parameter
 	telluric_model.flux = telluric_model.flux**(tell_alpha)
 
