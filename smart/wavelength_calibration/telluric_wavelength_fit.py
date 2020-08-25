@@ -1087,7 +1087,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		if not applymask:
 			#ax1.plot(new_wave_sol, data.flux[pixel], color='black', linestyle='-', 
 			#		 label='corrected telluric data', alpha=1, linewidth=0.5)
-			ax1.plot(new_wave_sol, data3.flux, color='black', linestyle='-', 
+			ax1.plot(new_wave_sol0, data3.flux, color='black', linestyle='-', 
 					 label='corrected telluric data', alpha=1, linewidth=0.5)
 		else:
 			#ax1.plot(new_wave_sol, data.flux[pixel], color='black', linestyle='-', 
@@ -1473,6 +1473,11 @@ def run_wave_cal(data_name, data_path, order_list,
 		# plotting
 		pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom))
 		pixel       = pixel[pixel_range_start:pixel_range_end]
+		
+		data.wave   = data.wave[pixel_range_start:pixel_range_end]
+		data.flux   = data.flux[pixel_range_start:pixel_range_end]
+		data.noise  = data.noise[pixel_range_start:pixel_range_end]
+		
 		linewidth   = 0.5
 		stdWaveSol  = np.std(residual)
 		stdWaveSolV = np.std(residual)/np.average(new_wave_sol)*299792.458
