@@ -62,14 +62,15 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='marcs-apogee-dr15', in
             if modelset.lower() == 'btsettl08': 
                 filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
             elif modelset.lower() == 'phoenix-aces-agss-cond-2011':
-                filename = 'PHOENIX_ACES_AGSS_COND_2011_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_alpha{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
+                filename = 'PHOENIX_ACES_AGSS_COND_2011_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.fits'
             elif modelset.lower() == 'sonora-2018':
                 filename = 'SONORA_2018_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH{0:.2f}'.format(0) + '_Y{0:.2f}'.format(0.28) + '_CO{0:.2f}'.format(1.00) + '_NIRSPEC-O' + str(order) + '-RAW.txt'
 
         if instrument == 'apogee':
             filename = gridfile['File'][np.where( (gridfile['Temp']==temp) & (gridfile['Logg']==logg) & (gridfile['Metal']==metal) & (gridfile['Alpha']==alpha) )].data[0]
 
-        Tab = Table.read(path+filename, format='ascii.tab', names=['wave', 'flux'])
+        if modelset.lower() == 'phoenix-aces-agss-cond-2011': Tab = Table.read(path+filename)
+        else: Tab = Table.read(path+filename, format='ascii.tab', names=['wave', 'flux'])
 
         if wave:
             return Tab['wave']
