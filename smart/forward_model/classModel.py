@@ -87,12 +87,11 @@ class Model():
             self.en       = kwargs.get('en', 0.00)
             self.modelset = kwargs.get('modelset', 'btsettl08')
 
-            if self.metal == 0.0:
-                wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
-                    modelset=self.modelset, order=self.order, instrument=self.instrument)
-            elif self.metal != 0.0:
-                wave, flux = smart.forward_model.InterpolateModel.InterpModel_3D(Teff=self.teff, Logg=self.logg, Metal=self.metal,
-                modelset=self.modelset, order=self.order, instrument=self.instrument)
+            wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg, self.metal, self.en,
+                                                                          modelset=self.modelset, order=self.order, instrument=self.instrument)
+            #elif self.metal != 0.0:
+            #    wave, flux = smart.forward_model.InterpolateModel.InterpModel(Teff=self.teff, Logg=self.logg, Metal=self.metal,
+            #    modelset=self.modelset, order=self.order, instrument=self.instrument)
             
             if self.modelset == 'btsettl08':
                 self.wave = wave * 10000 #convert to Angstrom
@@ -104,15 +103,15 @@ class Model():
         elif self.instrument == 'apogee':
             self.teff     = kwargs.get('teff', 2500)
             self.logg     = kwargs.get('logg', 5.00)
-            self.metal      = kwargs.get('metal', 0.00)
+            self.metal    = kwargs.get('metal', 0.00)
             self.en       = kwargs.get('en', 0.00)
             self.modelset = kwargs.get('modelset', 'btsettl08')
 
             #wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg,
             #    modelset=self.modelset, order=self.order, instrument=self.instrument)
 
-            wave, flux = smart.forward_model.InterpolateModel.InterpModel_3D(Teff=self.teff, Logg=self.logg, Metal=self.metal,
-                modelset=self.modelset, order=self.order, instrument=self.instrument)
+            wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg, self.metal, self.en,
+                                                                          modelset=self.modelset, order=self.order, instrument=self.instrument)
 
             if self.modelset == 'btsettl08':
                 self.wave = wave * 10000 #convert to Angstrom

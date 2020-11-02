@@ -1,5 +1,6 @@
 __version__ = "0.0.1"
 
+from .initialize import *
 from .utils.barycorr import barycorr
 from .forward_model.classModel import Model
 from .forward_model.classSpectrum import Spectrum
