@@ -33,7 +33,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 	"""
 
 	# read in the parameters
-	order      = kwargs.get('order', 33)
+	order      = kwargs.get('order', '33')
 	modelset   = kwargs.get('modelset', 'btsettl08')
 	instrument = kwargs.get('instrument', 'nirspec')
 	veiling    = kwargs.get('veiling', 0)    # flux veiling parameter
@@ -75,7 +75,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 		# read in a model
 		#print('teff ',teff,'logg ',logg, 'z', z, 'order', order, 'modelset', modelset)
 		#print('teff ',type(teff),'logg ',type(logg), 'z', type(z), 'order', type(order), 'modelset', type(modelset))
-		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=order, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 
 	#elif data is not None and instrument == 'apogee':
 	elif instrument == 'apogee':
@@ -89,7 +89,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vmicro, rotate=False, gaussian=True)
 	
 	elif data is None and instrument == 'nirspec':
-		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=order, modelset=modelset, instrument=instrument)
+		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 	
 	# wavelength offset
 	#model.wave += wave_offset
@@ -105,7 +105,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 
 	## if binary is True: make a binary model
 	if binary:
-		model2      = smart.Model(teff=teff2, logg=logg2, metal=metal, order=order, modelset=modelset, instrument=instrument)
+		model2      = smart.Model(teff=teff2, logg=logg2, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 		# apply vsini
 		model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
 		# apply rv (including the barycentric correction)
@@ -640,7 +640,7 @@ def initModelFit(sci_data, lsf, modelset='btsettl08'):
 				for l, rv in enumerate(rv_array):
 					for m, alpha in enumerate(alpha_array):
 						model = smart.makeModel(teff, logg, 0.0, vsini, rv, alpha, 0, 0,
-							lsf=lsf, order=data.order, data=data, modelset=modelset)
+							lsf=lsf, order=str(data.order), data=data, modelset=modelset)
 						chisquare_array[i,j,k,l,m] = smart.chisquare(data, model)
 	time2 = time.time()
 	print("total time:",time2-time1)

@@ -381,7 +381,7 @@ def lnlike(theta, data, lsf):
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
 	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-		lsf=lsf, order=data.order, data=data, modelset=modelset, airmass=am, pwv=pwv)
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv)
 
 	chisquare = smart.chisquare(data, model)/N**2
 
@@ -565,7 +565,7 @@ N     = N_mcmc[0]
 
 model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
 	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=data.order, data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True)
+	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)
