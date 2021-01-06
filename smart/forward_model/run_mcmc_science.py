@@ -274,7 +274,7 @@ if modelset == 'btsettl08':
 						'N_min':0.10,                               'N_max':5.0 				
 					}
 
-elif modelset == 'sonora-2018':
+elif modelset == 'sonora':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,200), 'teff_max':min(priors['teff_max']+300,2400),
 						'logg_min':3.5,                             'logg_max':logg_max,
