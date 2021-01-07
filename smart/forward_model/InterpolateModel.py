@@ -15,7 +15,10 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
     BASE, NAME = os.path.split(FULL_PATH)
 
     # Check the model set and instrument
-    path     = BASE + '/../libraries/%s/%s-%s/'%(smart.ModelSets[modelset.lower()], instrument.upper(), order.upper())
+    if instrument.lower() == 'nirspec':
+        path     = BASE + '/../libraries/%s/%s-O%s/'%(smart.ModelSets[modelset.lower()], instrument.upper(), order.upper())
+    else:
+        path     = BASE + '/../libraries/%s/%s-%s/'%(smart.ModelSets[modelset.lower()], instrument.upper(), order.upper())
     Gridfile = BASE + '/../libraries/%s/%s_gridparams.csv'%(smart.ModelSets[modelset.lower()], smart.ModelSets[modelset.lower()])
 
     if modelset.lower() == 'btsettl08':
@@ -41,8 +44,11 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
         
         if modelset.lower() == 'btsettl08': 
             filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'    
-        elif modelset.lower() == 'sonora': 
-            filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-%s.fits'%(instrument.upper(), order.upper())
+        elif modelset.lower() == 'sonora':
+            if instrument.lower() == 'nirspec':
+                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-O%s.fits'%(instrument.upper(), order.upper())
+            else:
+                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-%s.fits'%(instrument.upper(), order.upper())
         elif modelset.lower() == 'marcs-apogee-dr15':
             cm      = kwargs.get('cm', 0)
             nm      = kwargs.get('nm', 0) 
