@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 
 class Spectrum():
 	"""
-	The spectrum class for reading the reduced NIRSPEC data by NSDRP.
+	The spectrum class for reading the reduced Keck/NIRSPEC data by NSDRP and SDSS/APOGEE data.
 
 	Parameters
 	----------
@@ -291,6 +291,25 @@ class Spectrum():
 			self.model    = np.array(hdulist[3].data)
 			self.mask     = []
 
+		elif self.instrument == 'igrins':
+			self.name      = kwargs.get('name')
+			self.order     = kwargs.get('order')
+			self.path      = kwargs.get('path')
+			self.applymask = kwargs.get('applymask',False)
+			#self.manaulmask = kwargs('manaulmask', False)
+
+			if self.path == None:
+				self.path = './'
+
+			fullpath = self.path + '/' + self.name + '_' + str(self.order) + '.fits'
+
+			hdulist = fits.open(fullpath, ignore_missing_end=True)
+
+			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
+			self.header = hdulist[0].header
+			self.wave   = hdulist[0].data * 10000.0 # convert to Angstrom
+			self.flux   = hdulist[1].data
+			self.noise  = hdulist[2].data
 
 		if self.applymask:
 			# set up masking criteria
