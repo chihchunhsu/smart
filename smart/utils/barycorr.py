@@ -20,6 +20,12 @@ conf.auto_max_age = None
 # Need to convert the longitude to the definition in pyasl.helcorr
 # obs_long: Longitude of observatory (degrees, **eastern** direction is positive)
 
+# Mcdonald Observatory
+# https://cddis.nasa.gov/site_cat/mcdo.html
+# Latitude: N 30 40' 48.94384"
+# Longitude: W 104 0' 54.67839"
+# Elevation: 2025.960 meters
+
 
 #`~astropy.coordinates.Longitude` or float
 #   Earth East longitude.  Can be anything that initialises an
@@ -69,6 +75,29 @@ def barycorr(header, instrument='nirspec'):
 		ut      = header['UT-MID']
 		ra      = header['RA']
 		dec     = header['DEC']
+		sc      = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, equinox='J2000', frame='fk5')
+
+		#apogee  = EarthLocation.of_site('Apache Point Observatory')
+
+		barycorr = sc.radial_velocity_correction(obstime=Time(ut, scale='utc'), location=apogee)
+
+	elif instrument == 'igrins':
+		# McDonalds Observatory
+		longitude = 360 - (104+0/60+54.67839/3600) # degrees
+		latitude  =  +1*(30+40/60+48.94384/3600) #degrees
+		altitude  = 2025.960
+
+		apogee = EarthLocation.from_geodetic(lat=latitude*u.deg, lon=longitude*u.deg, height=altitude*u.m)
+
+		ut      = header['DATE-OBS']
+		tmp_ra  = header['TELRA'].split('+')[1].split(':')
+		ra      = 15* ( float(tmp_ra[0]) + float(tmp_ra[1])/60 + float(tmp_ra[2])/3600 )
+		if '-' in header['TELDEC']:
+			tmp_dec = header['TELDEC'].split('-')[1].split(':')
+			dec      = -1 * (float(tmp_dec[0]) + float(tmp_dec[1])/60 + float(tmp_dec[2])/3600)
+		else:
+			tmp_dec = header['TELDEC'].split('+')[1].split(':')
+			dec      = +1 * (float(tmp_dec[0]) + float(tmp_dec[1])/60 + float(tmp_dec[2])/3600)
 		sc      = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, equinox='J2000', frame='fk5')
 
 		#apogee  = EarthLocation.of_site('Apache Point Observatory')

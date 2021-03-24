@@ -10,7 +10,7 @@ from ..utils.interpolations import trilinear_interpolation
 
 
 def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond-2011', instrument='nirspec', order='O33'):
-
+    print('Parameters', teff, logg, modelset, instrument, order)
     FULL_PATH  = os.path.realpath(__file__)
     BASE, NAME = os.path.split(FULL_PATH)
 
