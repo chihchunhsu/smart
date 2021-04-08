@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import numpy as np
-from astropy.io import fits
+from astropy.io import fits, ascii
 from astropy.table import Table
 import smart
 import sys, os, os.path, time
 import copy
 
-def GetModel(wavelow, wavehigh, method='pwv', wave=False, **kwargs):
+def GetModel(wavelow, wavehigh, method='pwv', wave=False, tellset='moehler2014', **kwargs):
     """
     Get a telluric spectrum using the atmosphere models in Moehler et al. (2014).
 
@@ -57,23 +57,44 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, **kwargs):
     pwv     = kwargs.get('pwv', 0.5)
     # keyword argument for season
     season  = kwargs.get('season', 0)
+    # keyword argument for altitude
+    altitude = kwargs.get('altitude', 0)
 
-    airmass_str = str(int(10*airmass))
-    pwv_str = str(int(10*pwv)).zfill(3)
+    if tellset == 'moehler2014':
 
-    if method == 'pwv':
-        tfile = BASE + '/../libraries/telluric/pwv_R300k_airmass{}/LBL_A{}_s0_w{}_R0300000_T.fits'.format(airmass, 
-            airmass_str, pwv_str)
+        airmass_str = str(int(10*airmass))
+        pwv_str     = str(int(10*pwv)).zfill(3)
 
-    #elif method == 'season':
-    #   tfile = '/../libraries/telluric/season_R300k_airmass{}/LBL_A{}_s{}_R0300000_T.fits'.format(airmass, 
-    #       airmass_str, season_str)
-    
-    tellurics = fits.open(tfile)
+        if method == 'pwv':
+            tfile = BASE + '/../libraries/telluric/pwv_R300k_airmass{}/LBL_A{}_s0_w{}_R0300000_T.fits'.format(airmass, 
+                airmass_str, pwv_str)
 
-    telluric      = smart.Model()
-    telluric.wave = np.array(tellurics[1].data['lam'] * 10000) # convert to Angstrom
-    telluric.flux = np.array(tellurics[1].data['trans'])**(alpha)
+        #elif method == 'season':
+        #   tfile = '/../libraries/telluric/season_R300k_airmass{}/LBL_A{}_s{}_R0300000_T.fits'.format(airmass, 
+        #       airmass_str, season_str)
+        
+        tellurics = fits.open(tfile)
+
+        telluric      = smart.Model()
+        telluric.wave = np.array(tellurics[1].data['lam'] * 10000) # convert to Angstrom
+        telluric.flux = np.array(tellurics[1].data['trans'])**(alpha)
+
+
+    if tellset == 'psg':
+        
+        alt_key  = {0  :'00', 2600:'01', 4200:'02', 14000:'03', 35000:'04'}
+        pwv_key  = {0.5:'00', 1.5 :'01', 3.5 :'02', 5.0  :'03'}
+
+        altitude_str = alt_key[altitude]
+        pwv_str      = pwv_key[pwv]
+
+        tfile = BASE + '/../libraries/telluric/psg_telluric/tel_3500_10500_{}_{}.txt'.format(altitude_str, pwv_str)
+
+        tellurics     = ascii.read(tfile, format='fast_basic', comment='#', delimiter=' ', names=['col1','col2'])
+ 
+        telluric      = smart.Model()
+        telluric.wave = np.array(tellurics['col1']) # in Angstrom
+        telluric.flux = np.array(tellurics['col2'])**(alpha)
 
     # select the wavelength range
     criteria      = (telluric.wave > wavelow) & (telluric.wave < wavehigh)
@@ -86,43 +107,86 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, **kwargs):
     else:
         return telluric.flux
 
-def InterpTelluricModel(wavelow, wavehigh, airmass, pwv):
+def InterpTelluricModel(wavelow, wavehigh, tellset='moehler2014', **kwargs):
 
     FULL_PATH  = os.path.realpath(__file__)
     BASE, NAME = os.path.split(FULL_PATH)
 
-    Gridfile = BASE + '/../libraries/telluric/pwv_R300k_gridparams.csv'
+    airmass    = kwargs.get('airmass', 1.5)
+    pwv        = kwargs.get('pwv', 1.5)
+    altitude   = kwargs.get('altitude', 1283)
 
-    T1 = Table.read(Gridfile)
+    if tellset == 'moehler2014':
 
-    # Check if the model already exists (grid point)
-    if (airmass, pwv) in zip(T1['airmass'], T1['pwv']):
-        flux2  = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == airmass) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['airmass'] == airmass) & (T1['pwv'] == pwv))][0])
-        waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == airmass) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['airmass'] == airmass) & (T1['pwv'] == pwv))][0], wave=True)
-        return waves2, flux2
+        Gridfile = BASE + '/../libraries/telluric/pwv_R300k_gridparams.csv'
 
-    # Get the nearest models to the gridpoint (airmass)
-    x1 = np.max(T1['airmass'][np.where(T1['airmass'] <= airmass)])
-    x2 = np.min(T1['airmass'][np.where(T1['airmass'] >= airmass)])
-    y1 = np.max(list(set(T1['pwv'][np.where( ( (T1['airmass'] == x1) & (T1['pwv'] <= pwv) ) )]) & set(T1['pwv'][np.where( ( (T1['airmass'] == x2) & (T1['pwv'] <= pwv) ) )])))
-    y2 = np.min(list(set(T1['pwv'][np.where( ( (T1['airmass'] == x1) & (T1['pwv'] >= pwv) ) )]) & set(T1['pwv'][np.where( ( (T1['airmass'] == x2) & (T1['pwv'] >= pwv) ) )])))
+        T1 = Table.read(Gridfile)
 
-    # Check if the gridpoint exists within the model ranges
-    for x in [x1, x2]:
-        for y in [y1, y2]:
-            if (x, y) not in zip(T1['airmass'], T1['pwv']):
-                print('No Model', x, y)
-                return 1
-    
-    # Get the four points
-    Points =  [ 
-                [T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y1))][0]))],
-                [T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y2))][0]))],
-                [T1['airmass'][np.where( (T1['airmass'] == x2) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['airmass'] == x2) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x2) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x2) & (T1['pwv'] == y1))][0]))],
-                [T1['airmass'][np.where( (T1['airmass'] == x2) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['airmass'] == x2) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x2) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x2) & (T1['pwv'] == y2))][0]))],
-              ]
+        # Check if the model already exists (grid point)
+        if (airmass, pwv) in zip(T1['airmass'], T1['pwv']):
+            flux2  = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == airmass) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['airmass'] == airmass) & (T1['pwv'] == pwv))][0])
+            waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == airmass) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['airmass'] == airmass) & (T1['pwv'] == pwv))][0], wave=True)
+            return waves2, flux2
 
-    waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y1))][0], wave=True)
+        # Get the nearest models to the gridpoint (airmass)
+        x1 = np.max(T1['airmass'][np.where(T1['airmass'] <= airmass)])
+        x2 = np.min(T1['airmass'][np.where(T1['airmass'] >= airmass)])
+        y1 = np.max(list(set(T1['pwv'][np.where( ( (T1['airmass'] == x1) & (T1['pwv'] <= pwv) ) )]) & set(T1['pwv'][np.where( ( (T1['airmass'] == x2) & (T1['pwv'] <= pwv) ) )])))
+        y2 = np.min(list(set(T1['pwv'][np.where( ( (T1['airmass'] == x1) & (T1['pwv'] >= pwv) ) )]) & set(T1['pwv'][np.where( ( (T1['airmass'] == x2) & (T1['pwv'] >= pwv) ) )])))
+
+        # Check if the gridpoint exists within the model ranges
+        for x in [x1, x2]:
+            for y in [y1, y2]:
+                if (x, y) not in zip(T1['airmass'], T1['pwv']):
+                    print('No Model', x, y)
+                    return 1
+        
+        # Get the four points
+        Points =  [ 
+                    [T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y1))][0]))],
+                    [T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y2))][0]))],
+                    [T1['airmass'][np.where( (T1['airmass'] == x2) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['airmass'] == x2) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x2) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x2) & (T1['pwv'] == y1))][0]))],
+                    [T1['airmass'][np.where( (T1['airmass'] == x2) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['airmass'] == x2) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x2) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x2) & (T1['pwv'] == y2))][0]))],
+                  ]
+
+        waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['airmass'][np.where( (T1['airmass'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['airmass'] == x1) & (T1['pwv'] == y1))][0], wave=True)
+
+    if tellset == 'psg':
+
+        Gridfile = BASE + '/../libraries/telluric/psg_telluric/psg_telluric_gridparams.csv'
+
+        T1 = Table.read(Gridfile)
+
+        altitude = 1283 # need to make this a keyword for different observatories
+
+        # Check if the model already exists (grid point)
+        if (airmass, pwv) in zip(T1['altitude'], T1['pwv']):
+            flux2  = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], tellset='psg')
+            waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], wave=True, tellset='psg')
+            return waves2, flux2
+
+        # Get the nearest models to the gridpoint (airmass)
+        x1 = np.max(T1['altitude'][np.where(T1['altitude'] <= altitude)])
+        x2 = np.min(T1['altitude'][np.where(T1['altitude'] >= altitude)])
+        y1 = np.max(list(set(T1['pwv'][np.where( ( (T1['altitude'] == x1) & (T1['pwv'] <= pwv) ) )]) & set(T1['pwv'][np.where( ( (T1['altitude'] == x2) & (T1['pwv'] <= pwv) ) )])))
+        y2 = np.min(list(set(T1['pwv'][np.where( ( (T1['altitude'] == x1) & (T1['pwv'] >= pwv) ) )]) & set(T1['pwv'][np.where( ( (T1['altitude'] == x2) & (T1['pwv'] >= pwv) ) )])))
+
+        # Check if the gridpoint exists within the model ranges
+        for x in [x1, x2]:
+            for y in [y1, y2]:
+                if (x, y) not in zip(T1['altitude'], T1['pwv']):
+                    print('No Model', x, y)
+                    return 1
+        
+        # Get the four points
+        Points =  [ 
+                    [T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))][0], tellset=tellset))],
+                    [T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y2))][0], tellset=tellset))],
+                    [T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y1))][0], tellset=tellset))],
+                    [T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y2))][0], tellset=tellset))],
+                  ]
+
+        waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))][0], wave=True, tellset=tellset)
 
     return waves2, smart.utils.interpolations.bilinear_interpolation(airmass, pwv, Points)
 
