@@ -51,14 +51,16 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, tellset='moehler2014',
     FULL_PATH  = os.path.realpath(__file__)
     BASE, NAME = os.path.split(FULL_PATH)
 
-    airmass = kwargs.get('airmass', 1.5)
-    alpha   = kwargs.get('alpha', 1.0)
+    airmass    = kwargs.get('airmass', 1.5)
+    alpha      = kwargs.get('alpha', 1.0)
     # keyword argument for pwv
-    pwv     = kwargs.get('pwv', 0.5)
+    pwv        = kwargs.get('pwv', 0.5)
     # keyword argument for season
-    season  = kwargs.get('season', 0)
+    season     = kwargs.get('season', 0)
     # keyword argument for altitude
-    altitude = kwargs.get('altitude', 0)
+    altitude   = kwargs.get('altitude', 0)
+    instrument = kwargs.get('instrument', 'nirspec')
+    order      = kwargs.get('order', 'O33')
 
     if tellset == 'moehler2014':
 
@@ -73,7 +75,7 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, tellset='moehler2014',
         #   tfile = '/../libraries/telluric/season_R300k_airmass{}/LBL_A{}_s{}_R0300000_T.fits'.format(airmass, 
         #       airmass_str, season_str)
         
-        tellurics = fits.open(tfile)
+        tellurics     = fits.open(tfile)
 
         telluric      = smart.Model()
         telluric.wave = np.array(tellurics[1].data['lam'] * 10000) # convert to Angstrom
@@ -88,13 +90,20 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, tellset='moehler2014',
         altitude_str = alt_key[altitude]
         pwv_str      = pwv_key[pwv]
 
-        tfile = BASE + '/../libraries/telluric/psg_telluric/tel_3500_10500_{}_{}.txt'.format(altitude_str, pwv_str)
+        #tfile = BASE + '/../libraries/telluric/psg_telluric/tel_3500_10500_{}_{}.txt'.format(altitude_str, pwv_str)
 
-        tellurics     = ascii.read(tfile, format='fast_basic', comment='#', delimiter=' ', names=['col1','col2'])
+        if instrument.lower() == 'apf':
+            tfile = BASE + '/../libraries/telluric/psg_telluric/{}/{}/tel_3500_10500_{}_{}.fits'.format(instrument.upper(), order.upper(), altitude_str, pwv_str)
+
+        #tellurics     = ascii.read(tfile, format='fast_basic', comment='#', delimiter=' ', names=['col1','col2'])
+        #tellurics     = Table.read(tfile)
+        tellurics      = fits.open(tfile)
  
-        telluric      = smart.Model()
-        telluric.wave = np.array(tellurics['col1']) # in Angstrom
-        telluric.flux = np.array(tellurics['col2'])**(alpha)
+        telluric       = smart.Model()
+        #telluric.wave  = np.array(tellurics['col1']) # in Angstroms already
+        #telluric.flux  = np.array(tellurics['col2'])**(alpha)
+        telluric.wave  = np.array(tellurics[1].data.field(0)) # in Angstroms already
+        telluric.flux  = np.array(tellurics[1].data.field(1))**(alpha)
 
     # select the wavelength range
     criteria      = (telluric.wave > wavelow) & (telluric.wave < wavehigh)
@@ -115,6 +124,8 @@ def InterpTelluricModel(wavelow, wavehigh, tellset='moehler2014', **kwargs):
     airmass    = kwargs.get('airmass', 1.5)
     pwv        = kwargs.get('pwv', 1.5)
     altitude   = kwargs.get('altitude', 1283)
+    instrument = kwargs.get('instrument', 'nirspec')
+    order      = kwargs.get('order', 'O33')
 
     if tellset == 'moehler2014':
 
@@ -161,8 +172,8 @@ def InterpTelluricModel(wavelow, wavehigh, tellset='moehler2014', **kwargs):
 
         # Check if the model already exists (grid point)
         if (airmass, pwv) in zip(T1['altitude'], T1['pwv']):
-            flux2  = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], tellset='psg')
-            waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], wave=True, tellset='psg')
+            flux2  = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], tellset='psg', instrument=instrument, order=order)
+            waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], pwv=T1['pwv'][np.where((T1['altitude'] == altitude) & (T1['pwv'] == pwv))][0], wave=True, tellset='psg', instrument=instrument, order=order)
             return waves2, flux2
 
         # Get the nearest models to the gridpoint (airmass)
@@ -180,13 +191,13 @@ def InterpTelluricModel(wavelow, wavehigh, tellset='moehler2014', **kwargs):
         
         # Get the four points
         Points =  [ 
-                    [T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))][0], tellset=tellset))],
-                    [T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y2))][0], tellset=tellset))],
-                    [T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y1))][0], tellset=tellset))],
-                    [T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y2))][0], tellset=tellset))],
+                    [T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))][0], tellset=tellset, instrument=instrument, order=order))],
+                    [T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y2))][0], tellset=tellset, instrument=instrument, order=order))],
+                    [T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y1))], T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y1))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y1))][0], tellset=tellset, instrument=instrument, order=order))],
+                    [T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y2))], T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y2))], np.log10(GetModel(wavelow=wavelow, wavehigh=wavehigh, altitude=T1['altitude'][np.where( (T1['altitude'] == x2) & (T1['pwv'] == y2))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x2) & (T1['pwv'] == y2))][0], tellset=tellset, instrument=instrument, order=order))],
                   ]
 
-        waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))][0], wave=True, tellset=tellset)
+        waves2 = GetModel(wavelow=wavelow, wavehigh=wavehigh, airmass=T1['altitude'][np.where( (T1['altitude'] == x1) & (T1['pwv'] == y1))][0], pwv=T1['pwv'][np.where((T1['altitude'] == x1) & (T1['pwv'] == y1))][0], wave=True, tellset=tellset, instrument=instrument, order=order)
 
     return waves2, smart.utils.interpolations.bilinear_interpolation(airmass, pwv, Points)
 

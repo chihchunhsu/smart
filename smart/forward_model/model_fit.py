@@ -133,7 +133,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
     if tell is True:
         if instrument.lower() == 'apf':
             altitude = 1283
-            model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, altitude=altitude, pwv=pwv, instrument=instrument.lower())
+            model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, altitude=altitude, pwv=pwv, instrument=instrument, order=order)
         else:
             model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv,)
 
@@ -300,7 +300,7 @@ def rvShift(wavelength, rv):
     """
     return wavelength * ( 1 + rv / 299792.458)
 
-def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, altitude=1283, instrument='nirspec'):
+def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, altitude=1283, instrument='nirspec', order='33'):
     """
     Apply the telluric model on the science model.
 
@@ -324,7 +324,7 @@ def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, altitude=1283, in
 
     telluric_model = smart.Model()
     if instrument.lower() == 'apf':
-        telluric_model.wave, telluric_model.flux =  smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, altitude=altitude, pwv=pwv, tellset='psg')
+        telluric_model.wave, telluric_model.flux =  smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, altitude=altitude, pwv=pwv, tellset='psg', instrument=instrument, order=order)
     else:
         telluric_model.wave, telluric_model.flux =  smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
 
