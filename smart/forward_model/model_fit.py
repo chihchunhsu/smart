@@ -36,8 +36,9 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
     order      = kwargs.get('order', '33')
     modelset   = kwargs.get('modelset', 'btsettl08')
     instrument = kwargs.get('instrument', 'nirspec')
-    veiling    = kwargs.get('veiling', 0)    # flux veiling parameter
-    lsf        = kwargs.get('lsf', 4.5)   # instrumental LSF
+    en         = kwargs.get('en', 0)       # alpha enhancement for the model (if available)
+    veiling    = kwargs.get('veiling', 0)  # flux veiling parameter
+    lsf        = kwargs.get('lsf', 4.5)    # instrumental LSF
     if instrument == 'apogee':
         try:
             import apogee_tools as ap
@@ -75,7 +76,10 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
         # read in a model
         #print('teff ',teff,'logg ',logg, 'z', z, 'order', order, 'modelset', modelset)
         #print('teff ',type(teff),'logg ',type(logg), 'z', type(z), 'order', type(order), 'modelset', type(modelset))
-        model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
+        if modelset.lower() == 'phoenix-aces-agss-cond-2011': 
+            model    = smart.Model(teff=teff, logg=logg, metal=metal, en=en, order=str(order), modelset=modelset, instrument=instrument)
+        else: 
+            model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 
     #elif data is not None and instrument == 'apogee':
     elif instrument == 'apogee':
@@ -92,7 +96,10 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
         model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 
     else:
-        model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
+        if modelset.lower() == 'phoenix-aces-agss-cond-2011': 
+            model    = smart.Model(teff=teff, logg=logg, metal=metal, en=en, order=str(order), modelset=modelset, instrument=instrument)
+        else:
+            model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 
     
     # wavelength offset
