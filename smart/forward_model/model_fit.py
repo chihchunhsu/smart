@@ -348,6 +348,9 @@ def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, altitude=1283, in
 
     #elif len(model.wave) < len(telluric_model.wave):
     ## This should be always true
+    ind1 = np.where( (model.wave >= np.min(telluric_model.wave)) & (model.wave <= np.max(telluric_model.wave)) )
+    model.wave = model.wave[ind1]
+    model.flux = model.flux[ind1]
     telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, yh=telluric_model.flux, xl=model.wave))
     telluric_model.wave = model.wave
     model.flux         *= telluric_model.flux
