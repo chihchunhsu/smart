@@ -111,7 +111,7 @@ The science spectrum is modeled with the equation:
 You can run the following command on the terminal:
 
 ```
-"python /SMART_BASE/smart/smart/forward_model/run_mcmc_science.py order date_obs sci_data_name tell_data_name data_path tell_path save_to_path lsf -outlier_rejection 3.0 -nwalkers 50 -step 1000 -burn 800 -moves 2.0 -pixel_start 10 -pixel_end -80 -applymask False -modelset btsettl08
+>>> python /SMART_BASE/smart/smart/forward_model/run_mcmc_science.py order date_obs sci_data_name tell_data_name data_path tell_path save_to_path lsf -outlier_rejection 3.0 -nwalkers 50 -step 1000 -burn 800 -moves 2.0 -pixel_start 10 -pixel_end -80 -applymask False -modelset btsettl08
 ```
 
 The required parameters order sorting filter `order`, data of observation `date_obs`, science data name `sci_data_name`, telluric data name `tell_data_name`, science file path `data_path`, telluric file path `tell_path`, saving path `save_to_path`, optional paramters MCMC number of chains/walkers `-nwalkers`, number of steps `-step`, burn-in `-burn`, starting/ending pixels `-pixel_start` and `-pixel_end` are defined the same as the telluric data modeling routine. The NIRSPEC line-spread function `lsf` is obtained from the telluric data modeling (typically 4.8 km/s). The outlier rejection `-outlier_rejection` is to perform a sigma-clipping outlier rejection (in this case sigma=3.0) to remove bad pixels by comparing the resiaudl of the best-fit model and observed data. Finally, the model set to use `-modelset` in this case is the [BT-Settl](https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A/abstract) models. Other model sets are availale and described in detailed [here](https://github.com/chihchunhsu/smart/tree/master/smart/libraries).
