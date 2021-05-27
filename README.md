@@ -86,9 +86,11 @@ To fit the science data, `SMART` provies various self-consistent synthetic model
 
 We perform the MCMC forward-modeling fitting to the high-resolution near-infrared spectroscopic data for both the telluric and science files.
 
-The telluric spectrum is modeled with the equation:
+The telluric spectrum after calibrated with its wavelength solution is modeled with the equation:
 
-<img src="https://render.githubusercontent.com/render/math?math=D[p] = C[p(\lambda)] \times \Big[ T \big[ p^*(\lambda) \big]^{\alpha} \otimes \kappa_G (\Delta \nu_{inst}(p)) \Big] + C_{flux}.">
+<img src="https://render.githubusercontent.com/render/math?math=D[p] = C[p(\lambda)] \times \Big[ T \big[ p^*(\lambda) \big] \otimes \kappa_G (\Delta \nu_{inst}(p)) \Big] + C_{flux}.">
+
+, where <img src="https://render.githubusercontent.com/render/math?math=D[p]"> is the forward-model telluric spectrum, <img src="https://render.githubusercontent.com/render/math?math=C[p(\lambda)]"> is the continuum, <img src="https://render.githubusercontent.com/render/math?math=[ T \big[ p^*(\lambda) \big]"> is the earth atmosphere absorption model as a function of airmass and precipitable water vapor (pwv), <img src="https://render.githubusercontent.com/render/math?math=\Delta \nu_{inst}(p)"> is the instrumental line-spread function, and <img src="https://render.githubusercontent.com/render/math?math=C_{flux}"> is the nuisance parameter accouting for small flux offsets.
 
 You can run the following command on the terminal:
 
@@ -96,14 +98,15 @@ You can run the following command on the terminal:
 >>> python /SMART_BASE/smart/smart/forward_model/run_mcmc_telluric_airmass_pwv.py order date_obs tell_data_name tell_path save_to_path -nwalkers 50 -step 600 -burn 300 -pixel_start 50 -pixel_end -80
 ```
 
-The required parameters are nirspec order sorting filter `order`, data of observation (e.g. 20100101) `date_obs`, telluric data name (e.g. nspec200101_1001) `tell_data_name`, telluric file path `tell_path` (e.g. BASE/data_obs), saving path `save_to_path`, and optional paramters MCMC number of chains/walkers `-nwalkers`, number of steps `-step`, burn-in `-burn`, starting/ending pixels `-pixel_start` and `-pixel_end`.
+The required parameters are nirspec order sorting filter `order` (e.g. 33), data of observation (e.g. 20100101) `date_obs`, telluric data name (e.g. nspec200101_1001) `tell_data_name`, telluric file path `tell_path` (e.g. BASE/data_obs), saving path `save_to_path`, and optional paramters MCMC number of chains/walkers `-nwalkers`, number of steps `-step`, burn-in `-burn`, starting/ending pixels `-pixel_start` and `-pixel_end`.
 
 The most important parameter used as the input in the science modeling is the NIRSPEC instrumental line-spread function `lsf`.
 
 The science spectrum is modeled with the equation:
 
-<img src="https://render.githubusercontent.com/render/math?math=D[p] & = C[p] \times \Bigg[ \bigg(M \Big[p^* \big(\lambda \big[ 1 + \frac{RV^*}{c}\big] \big) , T_{\text{eff}}, \log \, g \Big]  \\ 
-& \otimes \kappa_R (v\sin{i}) \bigg) \times T \big[ p^*(\lambda) \big]^{\alpha} \Bigg] \otimes \kappa_G (\Delta \nu_{inst}) + C_{flux}">
+<img src="https://render.githubusercontent.com/render/math?math=D[p] = C[p] \times \Bigg[ \bigg(M \Big[p^* \big(\lambda \big[ 1 + \frac{RV^*}{c}\big] \big) , T_{\text{eff}}, \log{g} \Big] \otimes \kappa_R (v\sin{i}) \bigg) \times T \big[ p^*(\lambda) \big] \Bigg] \otimes \kappa_G (\Delta \nu_{inst}) + C_{flux}">
+
+, where where <img src="https://render.githubusercontent.com/render/math?math=D[p]"> is the forward-model science spectrum, <img src="https://render.githubusercontent.com/render/math?math=C[p(\lambda)]"> is the continuum, <img src="M \Big[] p^* \Big]"> is the self-consistent synthetic stellar/substellar modeling grids as a function of effective temperature <img src="https://render.githubusercontent.com/render/math?math=T_{\text{eff}"> and surface gravity <img src="https://render.githubusercontent.com/render/math?math=\log{g}">, corrected with radial velocity <img src="https://render.githubusercontent.com/render/math?math=RV"> and projected rotational velocity <img src="https://render.githubusercontent.com/render/math?math=v\sin{i}">, <img src="https://render.githubusercontent.com/render/math?math=[ T \big[ p^*(\lambda) \big]"> is the earth atmosphere absorption model, <img src="https://render.githubusercontent.com/render/math?math=\Delta \nu_{inst}(p)"> is the instrumental line-spread function, <img src="https://render.githubusercontent.com/render/math?math=C_{flux}"> is the nuisance parameter accouting for small flux offsets. There are also two nudge factors for small wavelength offsets and noise scaling factor in the routine.
 
 You can run the following command on the terminal:
 
