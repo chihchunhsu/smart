@@ -1,16 +1,16 @@
-# smart (Spectral Modeling Analysis and RV Tool)
-The `smart` is a Markov Chain Monte Carlo (MCMC) forward-modeling framework for spectroscopic data, currently working for Keck/NIRSPEC and SDSS/APOGEE.
+# SMART (Spectral Modeling Analysis and RV Tool)
+The `SMART` is a Markov Chain Monte Carlo (MCMC) forward-modeling framework for spectroscopic data, currently working for the Keck/NIRSPEC, SDSS/APOGEE, and IGRINS Shigh-resolution near-infrared spectrometers. A slightly modified version that can model the Keck/OSIRIS medium-resolution near-infrared spectrometer is available [here](https://github.com/ctheissen/osiris_fmp).
 
 For NIRSPEC users, required adjustments need to be made before reducing private data using [NIRSPEC-Data-Reduction-Pipeline(NSDRP)](https://github.com/Keck-DataReductionPipelines/NIRSPEC-Data-Reduction-Pipeline), to perform telluric wavelength calibrations, and to forward model spectral data. The code is currently being developed.
 
 Authors:
 * Dino Chih-Chun Hsu (UCSD)
 * Adam Burgasser, PI (UCSD)
-* Chris Theissen (BU, UCSD)
-* Jessica Birky (UCSD)
+* Chris Theissen (UCSD, BU)
+* Jessica Birky (UW, UCSD)
 
 ## Code Setup:
-Dependencies. The `smart` has been tested under the following environments:
+Dependencies. The `SMART` has been tested under the following environments:
 * Python 3.6.10/3.7.3
 * astropy 3.0.4/3.0.5
 * numpy 1.12.1/1.13.3/1.18.1
@@ -21,11 +21,11 @@ Dependencies. The `smart` has been tested under the following environments:
 * corner 2.0.1
 * wavelets (for defringeflat)
 
-Download the `smart` and the forked and modified version of the NSDRP to your computer.
+Download the `SMART` and the forked and modified version of the NSDRP to your computer.
 
 There are two ways of setting up the code:
 
-<br/>(i) In the terminal under the `smart` folder, 
+<br/>(i) In the terminal under the `SMART` folder, 
 
 ```
 python setup.py install
@@ -48,33 +48,6 @@ To model the SDSS/APOGEE spectra, you will also need to put the associated APOGE
 
 The codes under the apogee folder are from Jo Bovy's [apogee](https://github.com/jobovy/apogee) package.
 
-## Reducing the data using NSDRP:
-To add required keywords to the headers before reducing private data using [NSDRP](https://github.com/Keck-DataReductionPipelines/NIRSPEC-Data-Reduction-Pipeline), use the addKeyword function and the [input](https://github.com/chihchunhsu/smart/blob/master/input_reduction.txt) text file:
-```
->>> import smart
->>> smart.addKeyword(file='input_reduction.txt')
-```
-The example txt file is for setting up the data information such as file numbers of darks, flats, arcs, and sources. 
-
-Note that you don't need to perform this task if you download the data directly from the Keck Observatory Archive (KOA).
-
-To reduce the data, use the forked [NSDRP](https://github.com/chihchunhsu/NIRSPEC-Data-Reduction-Pipeline) on the command line:
-
-```
-$ python ~/path/to/NIRSPEC-Data-Reduction-Pipeline/nsdrp.py rawData/ reducedData/ -oh_filename ~/path/to/NIRSPEC-Data-Reduction-Pipeline/ir_ohlines.dat -spatial_jump_override -verbose -debug
-```
-
-, where the directory rawData/ is the path to the raw data is, and reducedData/ is the path where you want to store the reduce data.
-
-You can also perform the command line code run_nsdrp.py to add keywords, defringe flats, and reduce the data all at once:
-
-```
-$ python ~/path/to/smart/utils/run_nsdrp.py -f rawData/
-```
-
-<!---*## Dark Subtraction:
-You can also optionally subtract the dark frames using subtractDark.py before running the NSDRP. This may be put into the NSDRP in the future.---> 
-
 ## Defringe Flats:
 The algorithm follows Rojo & Harrington (2006) to remove fringe patterns from flat files. The example and sample outputs are upder the example folder.
 
@@ -83,12 +56,61 @@ The algorithm follows Rojo & Harrington (2006) to remove fringe patterns from fl
 >>> smart.defringeflatAll(data_folder_path, diagnostic=False)
 ```
 
+## Reducing the data using NSDRP:
+To reduce the data for the whole folder, use the forked [NSDRP](https://github.com/ctheissen/NIRSPEC-Data-Reduction-Pipeline) on the terminal:
+
+```
+$ python ~/path/to/NIRSPEC-Data-Reduction-Pipeline/nsdrp.py rawData/ reducedData/ -oh_filename ~/path/to/NIRSPEC-Data-Reduction-Pipeline/ir_ohlines.dat -spatial_jump_override -verbose -debug
+```
+
+, where the directory rawData/ is the path to the raw data is, and reducedData/ is the path where you want to store the reduce data.
+
+To reduce the data for the for two nodding files with a single flat file, you can run the following command:
+
+```
+$ python ~/path/to/NIRSPEC-Data-Reduction-Pipeline/nsdrp.py flat_file.fits nod_A_file.fits -b nod_B_file.fits -oh_filename ~/path/to/NIRSPEC-Data-Reduction-Pipeline/ir_ohlines.dat -spatial_jump_override -verbose -debug
+```
+
 ## Wavelength Calibration using Telluric Standard Spectra:
-The algorithm follows Blake at el. (2010) to cross-correlate the ESO atmospheric model and an observed telluric spectrum, fit the residual, and iterate the process until the standard deviation of the residual reaches a mininum. The example and sample outputs are upder the "examples" folder.
+To calibrate the most precise wavelength solutions with a given a data, we rely on the telluric spectrum using the algorithm that follows [Blake at el. (2010)](https://ui.adsabs.harvard.edu/abs/2010ApJ...723..684B/abstract) and [Burgasser et al. (2016)](https://ui.adsabs.harvard.edu/abs/2016ApJ...827...25B/abstract) to cross-correlate the [ESO atmospheric model](https://ui.adsabs.harvard.edu/abs/2014A%26A...568A...9M/abstract) and an observed telluric spectrum, fit the residual, and iterate the process until the standard deviation of the residual reaches a mininum.
 
 ```
 >>> import smart
->>> smart.run_wave_cal(data_name, data_path, order_list, save_to_path, test=False, save=True)
+>>> smart.run_wave_cal(data_name, data_path, order_list, save_to_path, test=False, save=True, applymask=True, pwv='0.5')
 ```
 
-<!---*## Forward Modeling Science Spectra:---> 
+The parameters `data_name`, `data_path`, `save_to_path` have the type str, while `order_list` has the type list. Optional parameter `applymask` provides a simple sigma-clipping mask to remove cosmic rays in the telluric spectrum. Optional parameter `pwv` is the precipitable water vapor parameter for users to adjust. Typically, 0.5 mm to 3.0 mm can fit the most cases under different weather conditions. 
+
+## Forward Modeling Science and Telluric Spectra:
+To fit the science data, `SMART` provies various self-consistent synthetic modeling grids to forward-model the data that are available to download [here](https://drive.google.com/drive/folders/1P-NrlxdyX3nphRgN4R-4oS86BKZ4Z9th). Users will need to place the downloaded files to `smart/libraries`.
+
+We perform the MCMC forward-modeling fitting to the high-resolution near-infrared spectroscopic data for both the telluric and science files.
+
+The telluric spectrum is modeled with the equation:
+
+<img src="https://render.githubusercontent.com/render/math?math=D[p] = C[p(\lambda)] \times \Big[ T \big[ p^*(\lambda) \big]^{\alpha} \otimes \kappa_G (\Delta \nu_{inst}(p)) \Big] + C_{flux}.">
+
+You can run the following command on the terminal:
+
+```
+>>> python /SMART_BASE/smart/smart/forward_model/run_mcmc_telluric_airmass_pwv.py order date_obs tell_data_name tell_path save_to_path -nwalkers 50 -step 600 -burn 300 -pixel_start 50 -pixel_end -80
+```
+
+The required parameters are nirspec order sorting filter `order`, data of observation (e.g. 20100101) `date_obs`, telluric data name (e.g. nspec200101_1001) `tell_data_name`, telluric file path `tell_path` (e.g. BASE/data_obs), saving path `save_to_path`, and optional paramters MCMC number of chains/walkers `-nwalkers`, number of steps `-step`, burn-in `-burn`, starting/ending pixels `-pixel_start` and `-pixel_end`.
+
+The most important parameter used as the input in the science modeling is the NIRSPEC instrumental line-spread function `lsf`.
+
+The science spectrum is modeled with the equation:
+
+<img src="https://render.githubusercontent.com/render/math?math=D[p] & = C[p] \times \Bigg[ \bigg(M \Big[p^* \big(\lambda \big[ 1 + \frac{RV^*}{c}\big] \big) , T_{\text{eff}}, \log \, g \Big]  \\ 
+& \otimes \kappa_R (v\sin{i}) \bigg) \times T \big[ p^*(\lambda) \big]^{\alpha} \Bigg] \otimes \kappa_G (\Delta \nu_{inst}) + C_{flux}">
+
+You can run the following command on the terminal:
+
+```
+"python /SMART_BASE/smart/smart/forward_model/run_mcmc_science.py order date_obs sci_data_name tell_data_name data_path tell_path save_to_path lsf -outlier_rejection 3.0 -nwalkers 50 -step 1000 -burn 800 -moves 2.0 -pixel_start 10 -pixel_end -80 -applymask False -modelset btsettl08
+```
+
+The required parameters order sorting filter `order`, data of observation `date_obs`, science data name `sci_data_name`, telluric data name `tell_data_name`, science file path `data_path`, telluric file path `tell_path`, saving path `save_to_path`, optional paramters MCMC number of chains/walkers `-nwalkers`, number of steps `-step`, burn-in `-burn`, starting/ending pixels `-pixel_start` and `-pixel_end` are defined the same as the telluric data modeling routine. The NIRSPEC line-spread function `lsf` is obtained from the telluric data modeling (typically 4.8 km/s). The outlier rejection `-outlier_rejection` is to perform a sigma-clipping outlier rejection (in this case sigma=3.0) to remove bad pixels by comparing the resiaudl of the best-fit model and observed data. Finally, the model set to use `-modelset` in this case is the [BT-Settl](https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A/abstract) models. Other model sets are availale and described in detailed [here](https://github.com/chihchunhsu/smart/tree/master/smart/libraries).
+
+
