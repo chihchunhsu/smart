@@ -54,7 +54,7 @@ class Spectrum():
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
-			self.applymask = kwargs.get('applymask',False)
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
 			#self.manaulmask = kwargs('manaulmask', False)
 
 			if self.path == None:
@@ -89,7 +89,7 @@ class Spectrum():
 			self.name      = kwargs.get('name')
 			self.path      = kwargs.get('path')
 			self.datatype  = kwargs.get('datatype','aspcap')
-			self.applymask = kwargs.get('applymask',False)
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
 			self.applytell = kwargs.get('applytell', False)
 			self.chip      = kwargs.get('chip', 'all')
 
@@ -295,7 +295,7 @@ class Spectrum():
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
-			self.applymask = kwargs.get('applymask',False)
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
 			#self.manaulmask = kwargs('manaulmask', False)
 
 			if self.path == None:
@@ -311,7 +311,7 @@ class Spectrum():
 			self.flux   = hdulist[1].data
 			self.noise  = hdulist[2].data
 
-		if self.applymask:
+		if self.apply_sigma_mask:
 			# set up masking criteria
 			self.avgFlux = np.mean(self.flux)
 			self.stdFlux = np.std(self.flux)
@@ -471,7 +471,7 @@ class Spectrum():
 		#pixel = np.delete(np.arange(1024),list(self.mask))
 		pixel = np.arange(len(self.oriWave))
 		## create the output mask array 0=good; 1=bad
-		if self.applymask:
+		if self.apply_sigma_mask:
 			mask = np.zeros((len(self.oriWave),),dtype=int)
 			np.put(mask,self.mask,int(1))
 		else:
@@ -610,7 +610,7 @@ class Spectrum():
 			self.stdFlux = np.std(self.oriFlux)
 			self.smoothFlux = self.oriFlux
 			## set the outliers as the flux below 
-			if self.applymask:
+			if self.apply_sigma_mask:
 				self.smoothFlux[self.smoothFlux <= self.avgFlux-2*self.stdFlux] = 0
 				self.mask = np.where(self.smoothFlux <= 0)
 			else:

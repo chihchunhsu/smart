@@ -604,7 +604,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	step               = kwargs.get('xcorr_step', 0.05)
 	niter              = kwargs.get('niter', 15)
 	outlier_rej        = kwargs.get('outlier_rej', 3)
-	applymask          = kwargs.get('applymask', False) # apply a simple outlier rejection mask
+	apply_sigma_mask   = kwargs.get('apply_sigma_mask', False) # apply a simple outlier rejection mask
 	mask_custom        = kwargs.get('mask_custom', []) # apply a simple outlier rejection mask
 	test               = kwargs.get('test', False) # output the xcorr plots
 	save               = kwargs.get('save', False) # save the new wavelength solution
@@ -652,7 +652,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	# apply the custom mask
 	#plt.figure()
 	#plt.plot(data2.wave, data2.flux, lw=0.5, alpha=0.5, c='b')
-	#if applymask:
+	#if apply_sigma_mask:
 	#	mask_combined = np.union1d(mask_custom, data.mask)
 	#	print(mask_combined, type(mask_combined))
 	#	for i in mask_combined:
@@ -1084,7 +1084,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		
 		ax1.xaxis.tick_top()
 		#ax1.plot(data.wave, data.flux, color='black',linestyle='-', label='telluric data',alpha=0.5,linewidth=0.8)
-		if not applymask:
+		if not apply_sigma_mask:
 			#ax1.plot(new_wave_sol, data.flux[pixel], color='black', linestyle='-', 
 			#		 label='corrected telluric data', alpha=1, linewidth=0.5)
 			ax1.plot(new_wave_sol0, data3.flux, color='black', linestyle='-', 
@@ -1224,7 +1224,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 
 def run_wave_cal(data_name, data_path, order_list,
 	             save_to_path, test=False, save=False, plot_masked=False,
-	             window_width=40, window_step=5, mask_custom=[], applymask=False, apply_edge_mask=False, pwv='1.5',
+	             window_width=40, window_step=5, mask_custom=[], apply_sigma_mask=False, apply_edge_mask=False, pwv='1.5',
 	             xcorr_step=0.05, niter=20, outlier_rej=None, defringe_list=[62], cal_param=None):
 	"""
 	Run the telluric wavelength calibration.
@@ -1243,7 +1243,7 @@ def run_wave_cal(data_name, data_path, order_list,
 	#airmass       = '1.5'
 	#pwv           = '0.5'
 	#defringe_list = [62]
-	#applymask     = applymask # if True: apply a simple mask
+	#apply_sigma_mask = apply_sigma_mask # if True: apply a simple mask
 	##################################
 	print('mask_custom', mask_custom)
 
@@ -1269,7 +1269,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			if outlier_rej is None:
 				outlier_rej = cal_param_nirspec[str(order)]['outlier_rej']
 
-		if pixel_range_end == -1 and applymask is False:
+		if pixel_range_end == -1 and apply_sigma_mask is False:
 			pixel_range_end   += -25
 
 		directory = save_to_path + '/O{}'.format(order)
@@ -1279,7 +1279,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		os.chdir(directory)
 
 		# use median value to replace the masked values later
-		data     = smart.Spectrum(name=data_name, order=order, path=data_path, applymask=applymask)
+		data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask)
 		length1  = len(data.oriWave) # preserve the length of the array
 
 		# the telluric standard model
@@ -1347,7 +1347,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		data0 = copy.deepcopy(data)
 
 		# this is to apply a sigma clipping mask
-		if applymask:
+		if apply_sigma_mask:
 			#data.flux  = data.oriFlux
 			#data.wave  = data.oriWave
 			#data.noise = data.oriNoise
@@ -1365,7 +1365,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.flux  = data.flux[pixel_range_start:pixel_range_end]
 			data.wave  = data.wave[pixel_range_start:pixel_range_end]
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
-		elif not applymask:
+		elif not apply_sigma_mask:
 			if apply_edge_mask:
 				data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
 				data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
@@ -1453,7 +1453,7 @@ def run_wave_cal(data_name, data_path, order_list,
 								  save_to_path=save_to_path_fits,
 								  data_path=data_path2,
 								  length1 = length1,
-								  applymask=applymask,
+								  apply_sigma_mask=apply_sigma_mask,
 								  mask_custom=mask_custom)
 
 		time2 = time.time()
@@ -1462,7 +1462,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		# convert the flux back to the original data
 		data       = data1
 		data       = smart.continuumTelluric(data=data, model=model)
-		if applymask:
+		if apply_sigma_mask:
 			data.wave  = np.delete(data.wave,data.mask)
 			data.flux  = np.delete(data.flux,data.mask)
 			data.noise = np.delete(data.noise,data.mask)
@@ -1516,7 +1516,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		telluric_new       = smart.continuumTelluric(data=telluric_new, model=model)
 
 		# get an estimate for lsf and telluric alpha
-		#if applymask:
+		#if apply_sigma_mask:
 		lsf   = smart.getLSF(telluric_new, continuum=False)
 		#else:
 		#	lsf   = smart.getLSF(telluric_new)#, continuum=False)
