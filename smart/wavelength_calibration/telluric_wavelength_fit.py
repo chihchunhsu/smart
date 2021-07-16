@@ -614,7 +614,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	# calculation the necessary parameters
 	pixel_range_start  = kwargs.get('pixel_range_start',0)
 	pixel_range_end    = kwargs.get('pixel_range_end',-1)
-	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom))
+	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int))
 	#pixel0             = np.arange(length1)
 	pixel              = pixel0[pixel_range_start:pixel_range_end]
 
@@ -1352,7 +1352,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			#data.wave  = data.oriWave
 			#data.noise = data.oriNoise
 			
-			mask_combined = np.union1d(mask_custom, data.mask)
+			mask_combined = np.union1d(mask_custom, data.mask).astype(int)
 
 			print('mediam-averaging the pixels:', data.mask)
 
