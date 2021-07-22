@@ -210,7 +210,7 @@ def continuumTelluric(data, model=None):
         wavehigh = data.wave[-1] + 20
         model    = smart.getTelluric(wavelow,wavehigh)
 
-    if not data.applymask:
+    if not data.apply_sigma_mask:
         data2 = copy.deepcopy(data)
         data.maskBySigmas(sigma=1.5)
     else:
