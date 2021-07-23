@@ -1471,7 +1471,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
 		
 		# plotting
-		pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom))
+		pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int))
 		pixel       = pixel[pixel_range_start:pixel_range_end]
 		
 		data.wave   = data.wave[pixel_range_start:pixel_range_end]
