@@ -256,20 +256,8 @@ def pixelWaveShift(data, model, start_pixel, window_width=40, delta_wave_range=2
 		ax1.get_xaxis().get_major_formatter().set_scientific(False)
 		ax1.legend()
 		ax1t = ax1.twiny()
-		ax1t.set_xlim(data.wave[0], data.wave[-1])
-		try:
-			ax1t.set_xticks([data.wave[np.where(pixel==200)],
-							 data.wave[np.where(pixel==400)],
-							 data.wave[np.where(pixel==600)],
-							 data.wave[np.where(pixel==800)],
-							 data.wave[np.where(pixel==1000)]])
-			ax1t.set_xticklabels(['200','400','600','800','1000'])
-			ax1t.set_xlabel("Pixel")
-		except ValueError:
-			# pass if some pixels are masked
-			pass
-		except IndexError:
-			pass
+		ax1t.set_xlim(0, len(data.oriWave)-1)
+		ax1t.set_xlabel("Pixel")
 
 		ax2.plot(data.wave, data.flux, color='black', linestyle='-', 
 				 label='telluric data', alpha=0.5, linewidth=linewidth)
@@ -614,9 +602,12 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	# calculation the necessary parameters
 	pixel_range_start  = kwargs.get('pixel_range_start',0)
 	pixel_range_end    = kwargs.get('pixel_range_end',-1)
-	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int))
+	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
 	#pixel0             = np.arange(length1)
-	pixel              = pixel0[pixel_range_start:pixel_range_end]
+	#if mask_custom != []:
+	pixel              = pixel0
+	#else:
+	#	pixel              = pixel0[pixel_range_start:pixel_range_end]
 
 	## Ultimately this should be removed by the airmass parameter
 	# increase the telluric model strength for N3
@@ -861,10 +852,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			#print(len(best_shift_list))
 
 			time4 = time.time()
-		if test is True:
-			print("Total X correlation time for loop {}: {} s".format(i+1, round(time4-time1,4)))
-		print("Total X correlation time for loop {}: {} s".format(i+1, round(time4-time1, 4)))
 		
+		print("Total X correlation time for loop {}: {} s".format(i+1, round(time4-time1, 4)))
+
 		# fit a new wavelength solution
 		def waveSolutionFn0(orderNum):
 			def fitFn(pixel, wfit0, wfit1, wfit2, wfit3, wfit4, wfit5):
@@ -938,7 +928,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		                                         (abs(original_fit - best_shift_array) < m*fit_sigma)]
 		
 		best_shift_array2   = best_shift_array[np.where \
-		                                       (abs(original_fit - best_shift_array) < m*fit_sigma)]		
+		                                       (abs(original_fit - best_shift_array) < m*fit_sigma)]
 
 		if len(width_range_center2) < 8:
 			print("Number of selected pixel < number of fits parameters (8)")
@@ -1032,7 +1022,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		#	print("fitted p0: ",p0)
 		
 		# update the fits header keywords WFIT0-5, c3, c4
-		data2.header['COMMENT']  = 'Below are the keywords added by NIRSPEC_PIP...'
+		data2.header['COMMENT']  = 'WFITNEW and C3 C4 are the keywords added by SMART.'
 		data2.header['WFIT0NEW'] = wfit0
 		data2.header['WFIT1NEW'] = wfit1
 		data2.header['WFIT2NEW'] = wfit2
@@ -1062,6 +1052,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		time5 = time.time()
 		if test:
 			print("Pixel wavelength fit time for loop {}: {} s".format(i+1, round(time5-time4, 4)))
+
 		## plot for analysis
 		data3       = copy.deepcopy(data)
 		#data3.wave  = new_wave_sol0
@@ -1182,7 +1173,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			data_path = save_to_path + '_' + str(order) + '_all.fits'
 		save_name = save_to_path + "_calibrated_{}_all.fits".format(order)
 		with fits.open(data_path) as hdulist:
-			hdulist[0].header['COMMENT']  = 'Below are the keywords added by NIRSPEC_PIP...'
+			hdulist[0].header['COMMENT']  = 'Below are the keywords added by SMART...'
 			hdulist[0].header['WFIT0NEW'] = wfit0
 			hdulist[0].header['WFIT1NEW'] = wfit1
 			hdulist[0].header['WFIT2NEW'] = wfit2
@@ -1354,7 +1345,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			
 			mask_combined = np.union1d(mask_custom, data.mask).astype(int)
 
-			print('mediam-averaging the pixels:', data.mask)
+			print('median-averaging the pixels:', data.mask)
 
 			#for i in mask_combined:
 			#	if (int(i) > pixel_range_start) and (int(i) < length1 + pixel_range_end -1): 
@@ -1374,7 +1365,6 @@ def run_wave_cal(data_name, data_path, order_list,
 				data.flux  = np.delete(data.oriFlux, mask_custom)
 				data.wave  = np.delete(data.oriWave, mask_custom)
 				data.noise = np.delete(data.oriNoise, mask_custom)
-			print(len(data.wave), len(data.flux), len(data.noise))
 		
 		if plot_masked:
 			plt.plot(data0.wave, data0.flux, 'k-', alpha=0.5, label='original data')
@@ -1471,7 +1461,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
 		
 		# plotting
-		pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int))
+		pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
 		pixel       = pixel[pixel_range_start:pixel_range_end]
 		
 		data.wave   = data.wave[pixel_range_start:pixel_range_end]
