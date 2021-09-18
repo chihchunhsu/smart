@@ -15,6 +15,7 @@ import os
 import sys
 import time
 import copy
+import json
 import argparse
 import warnings
 warnings.filterwarnings("ignore")
@@ -87,6 +88,9 @@ applymask              = args.applymask
 pixel_start, pixel_end = int(args.pixel_start), int(args.pixel_end)
 save                   = args.save
 
+lines                  = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
+custom_mask            = json.loads(lines[3].split('custom_mask')[1])
+
 if order == 35: applymask = True
 
 tell_data_name2 = tell_data_name + '_calibrated'
@@ -130,6 +134,10 @@ ndim                 = 5
 #applymask            = False
 #pixel_start          = 10
 #pixel_end            = -30
+
+## apply a custom mask
+print('masking pixels:', custom_mask)
+tell_sp.mask_custom(custom_mask=custom_mask)
 
 ## add a pixel label for plotting
 length1     = len(tell_sp.oriWave)
@@ -241,10 +249,11 @@ data = copy.deepcopy(tell_sp)
 ## log file
 log_path = save_to_path + '/mcmc_parameters.txt'
 
-file_log = open(log_path,"w+")
-file_log.write("tell_path {} \n".format(tell_path))
-file_log.write("tell_name {} \n".format(tell_data_name))
-file_log.write("order {} \n".format(order))
+file_log = open(log_path,"a+")
+#file_log = open(log_path,"w+")
+#file_log.write("tell_path {} \n".format(tell_path))
+#file_log.write("tell_name {} \n".format(tell_data_name))
+#file_log.write("order {} \n".format(order))
 file_log.write("ndim {} \n".format(ndim))
 file_log.write("nwalkers {} \n".format(nwalkers))
 file_log.write("step {} \n".format(step))
