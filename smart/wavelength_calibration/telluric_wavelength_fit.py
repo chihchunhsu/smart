@@ -256,20 +256,8 @@ def pixelWaveShift(data, model, start_pixel, window_width=40, delta_wave_range=2
 		ax1.get_xaxis().get_major_formatter().set_scientific(False)
 		ax1.legend()
 		ax1t = ax1.twiny()
-		ax1t.set_xlim(data.wave[0], data.wave[-1])
-		try:
-			ax1t.set_xticks([data.wave[np.where(pixel==200)],
-							 data.wave[np.where(pixel==400)],
-							 data.wave[np.where(pixel==600)],
-							 data.wave[np.where(pixel==800)],
-							 data.wave[np.where(pixel==1000)]])
-			ax1t.set_xticklabels(['200','400','600','800','1000'])
-			ax1t.set_xlabel("Pixel")
-		except ValueError:
-			# pass if some pixels are masked
-			pass
-		except IndexError:
-			pass
+		ax1t.set_xlim(0, len(data.oriWave)-1)
+		ax1t.set_xlabel("Pixel")
 
 		ax2.plot(data.wave, data.flux, color='black', linestyle='-', 
 				 label='telluric data', alpha=0.5, linewidth=linewidth)
@@ -604,7 +592,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	step               = kwargs.get('xcorr_step', 0.05)
 	niter              = kwargs.get('niter', 15)
 	outlier_rej        = kwargs.get('outlier_rej', 3)
-	applymask          = kwargs.get('applymask', False) # apply a simple outlier rejection mask
+	apply_sigma_mask   = kwargs.get('apply_sigma_mask', False) # apply a simple outlier rejection mask
 	mask_custom        = kwargs.get('mask_custom', []) # apply a simple outlier rejection mask
 	test               = kwargs.get('test', False) # output the xcorr plots
 	save               = kwargs.get('save', False) # save the new wavelength solution
@@ -614,9 +602,12 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	# calculation the necessary parameters
 	pixel_range_start  = kwargs.get('pixel_range_start',0)
 	pixel_range_end    = kwargs.get('pixel_range_end',-1)
-	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom))
+	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
 	#pixel0             = np.arange(length1)
-	pixel              = pixel0[pixel_range_start:pixel_range_end]
+	if mask_custom != []:
+		pixel              = pixel0
+	else:
+		pixel              = pixel0[pixel_range_start:pixel_range_end]
 
 	## Ultimately this should be removed by the airmass parameter
 	# increase the telluric model strength for N3
@@ -652,7 +643,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	# apply the custom mask
 	#plt.figure()
 	#plt.plot(data2.wave, data2.flux, lw=0.5, alpha=0.5, c='b')
-	#if applymask:
+	#if apply_sigma_mask:
 	#	mask_combined = np.union1d(mask_custom, data.mask)
 	#	print(mask_combined, type(mask_combined))
 	#	for i in mask_combined:
@@ -861,10 +852,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			#print(len(best_shift_list))
 
 			time4 = time.time()
-		if test is True:
-			print("Total X correlation time for loop {}: {} s".format(i+1, round(time4-time1,4)))
-		print("Total X correlation time for loop {}: {} s".format(i+1, round(time4-time1, 4)))
 		
+		print("Total X correlation time for loop {}: {} s".format(i+1, round(time4-time1, 4)))
+
 		# fit a new wavelength solution
 		def waveSolutionFn0(orderNum):
 			def fitFn(pixel, wfit0, wfit1, wfit2, wfit3, wfit4, wfit5):
@@ -938,7 +928,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		                                         (abs(original_fit - best_shift_array) < m*fit_sigma)]
 		
 		best_shift_array2   = best_shift_array[np.where \
-		                                       (abs(original_fit - best_shift_array) < m*fit_sigma)]		
+		                                       (abs(original_fit - best_shift_array) < m*fit_sigma)]
 
 		if len(width_range_center2) < 8:
 			print("Number of selected pixel < number of fits parameters (8)")
@@ -1062,6 +1052,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		time5 = time.time()
 		if test:
 			print("Pixel wavelength fit time for loop {}: {} s".format(i+1, round(time5-time4, 4)))
+
 		## plot for analysis
 		data3       = copy.deepcopy(data)
 		#data3.wave  = new_wave_sol0
@@ -1084,7 +1075,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		
 		ax1.xaxis.tick_top()
 		#ax1.plot(data.wave, data.flux, color='black',linestyle='-', label='telluric data',alpha=0.5,linewidth=0.8)
-		if not applymask:
+		if not apply_sigma_mask:
 			#ax1.plot(new_wave_sol, data.flux[pixel], color='black', linestyle='-', 
 			#		 label='corrected telluric data', alpha=1, linewidth=0.5)
 			ax1.plot(new_wave_sol0, data3.flux, color='black', linestyle='-', 
@@ -1224,7 +1215,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 
 def run_wave_cal(data_name, data_path, order_list,
 	             save_to_path, test=False, save=False, plot_masked=False,
-	             window_width=40, window_step=5, mask_custom=[], applymask=False, apply_edge_mask=False, pwv='1.5',
+	             window_width=40, window_step=5, mask_custom=[], apply_sigma_mask=False, apply_edge_mask=False, pwv='1.5',
 	             xcorr_step=0.05, niter=20, outlier_rej=None, defringe_list=[62], cal_param=None):
 	"""
 	Run the telluric wavelength calibration.
@@ -1243,7 +1234,7 @@ def run_wave_cal(data_name, data_path, order_list,
 	#airmass       = '1.5'
 	#pwv           = '0.5'
 	#defringe_list = [62]
-	#applymask     = applymask # if True: apply a simple mask
+	#apply_sigma_mask = apply_sigma_mask # if True: apply a simple mask
 	##################################
 	print('mask_custom', mask_custom)
 
@@ -1269,7 +1260,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			if outlier_rej is None:
 				outlier_rej = cal_param_nirspec[str(order)]['outlier_rej']
 
-		if pixel_range_end == -1 and applymask is False:
+		if pixel_range_end == -1 and apply_sigma_mask is False:
 			pixel_range_end   += -25
 
 		directory = save_to_path + '/O{}'.format(order)
@@ -1279,7 +1270,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		os.chdir(directory)
 
 		# use median value to replace the masked values later
-		data     = smart.Spectrum(name=data_name, order=order, path=data_path, applymask=applymask)
+		data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask)
 		length1  = len(data.oriWave) # preserve the length of the array
 
 		# the telluric standard model
@@ -1347,14 +1338,14 @@ def run_wave_cal(data_name, data_path, order_list,
 		data0 = copy.deepcopy(data)
 
 		# this is to apply a sigma clipping mask
-		if applymask:
+		if apply_sigma_mask:
 			#data.flux  = data.oriFlux
 			#data.wave  = data.oriWave
 			#data.noise = data.oriNoise
 			
-			mask_combined = np.union1d(mask_custom, data.mask)
+			mask_combined = np.union1d(mask_custom, data.mask).astype(int)
 
-			print('mediam-averaging the pixels:', data.mask)
+			print('median-averaging the pixels:', data.mask)
 
 			#for i in mask_combined:
 			#	if (int(i) > pixel_range_start) and (int(i) < length1 + pixel_range_end -1): 
@@ -1365,7 +1356,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.flux  = data.flux[pixel_range_start:pixel_range_end]
 			data.wave  = data.wave[pixel_range_start:pixel_range_end]
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
-		elif not applymask:
+		elif not apply_sigma_mask:
 			if apply_edge_mask:
 				data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
 				data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
@@ -1374,7 +1365,6 @@ def run_wave_cal(data_name, data_path, order_list,
 				data.flux  = np.delete(data.oriFlux, mask_custom)
 				data.wave  = np.delete(data.oriWave, mask_custom)
 				data.noise = np.delete(data.oriNoise, mask_custom)
-			print(len(data.wave), len(data.flux), len(data.noise))
 		
 		if plot_masked:
 			plt.plot(data0.wave, data0.flux, 'k-', alpha=0.5, label='original data')
@@ -1453,7 +1443,7 @@ def run_wave_cal(data_name, data_path, order_list,
 								  save_to_path=save_to_path_fits,
 								  data_path=data_path2,
 								  length1 = length1,
-								  applymask=applymask,
+								  apply_sigma_mask=apply_sigma_mask,
 								  mask_custom=mask_custom)
 
 		time2 = time.time()
@@ -1462,7 +1452,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		# convert the flux back to the original data
 		data       = data1
 		data       = smart.continuumTelluric(data=data, model=model)
-		if applymask:
+		if apply_sigma_mask:
 			data.wave  = np.delete(data.wave,data.mask)
 			data.flux  = np.delete(data.flux,data.mask)
 			data.noise = np.delete(data.noise,data.mask)
@@ -1471,7 +1461,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
 		
 		# plotting
-		pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom))
+		pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
 		pixel       = pixel[pixel_range_start:pixel_range_end]
 		
 		data.wave   = data.wave[pixel_range_start:pixel_range_end]
@@ -1516,7 +1506,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		telluric_new       = smart.continuumTelluric(data=telluric_new, model=model)
 
 		# get an estimate for lsf and telluric alpha
-		#if applymask:
+		#if apply_sigma_mask:
 		lsf   = smart.getLSF(telluric_new, continuum=False)
 		#else:
 		#	lsf   = smart.getLSF(telluric_new)#, continuum=False)
