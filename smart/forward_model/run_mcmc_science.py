@@ -21,6 +21,7 @@ import argparse
 import json
 import ast
 import warnings
+from datetime import date, datetime
 warnings.filterwarnings("ignore")
 
 ##############################################################################################
@@ -138,7 +139,11 @@ if final_mcmc:
 
 else:
 	save_to_path   = save_to_path_base + '/init_mcmc'
-	
+
+# date
+today     = date.today()
+now       = datetime.now()
+dt_string = now.strftime("%H:%M:%S")	
 
 #####################################
 
@@ -644,3 +649,37 @@ plt.savefig(save_to_path + '/spectrum.png', dpi=300, bbox_inches='tight')
 if plot_show:
 	plt.show()
 plt.close()
+
+# excel summary file
+cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
+							'model_date','model_time','data_mask','order','coadd','med_snr','lsf',
+							'barycorr','modelset','priors','limits','ndim','nwalkers','step','burn',
+							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
+							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
+							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
+							'cflux','e_cflux','ue_cflux','le_cflux','cwave','e_cwave','ue_cwave','le_cwave',
+							'cnoise','e_cnoise','ue_cnoise','le_cnoise','wave_cal_err'])
+
+
+med_snr      = np.nanmedian(data.flux/data.noise)
+wave_cal_err = tell_sp.header['STD']
+
+cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
+					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
+					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':custom_mask,
+					'order':order,'coadd':coadd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
+					'modelset':modelset, 'priors':priors, 'limits':limits, 
+					'ndim':ndim, 'nwalkers':nwalkers,'step':step, 'burn':burn,
+					'rv':rv_mcmc[0]+barycorr, 'e_rv':max(rv_mcmc[1], rv_mcmc[2]), 'ue_rv':rv_mcmc[1], 'le_rv':rv_mcmc[2],
+					'vsini':vsini_mcmc[0], 'e_vsini':max(vsini_mcmc[1], vsini_mcmc[2]), 'ue_vsini':vsini_mcmc[1], 'le_vsini':vsini_mcmc[2],
+					'teff':teff_mcmc[0], 'e_teff':max(teff_mcmc[1],teff_mcmc[2]), 'ue_teff':teff_mcmc[1], 'le_teff':teff_mcmc[2],
+					'logg':logg_mcmc[0], 'e_logg':max(logg_mcmc[1], logg_mcmc[2]), 'ue_logg':logg_mcmc[1], 'le_logg':logg_mcmc[2],
+					'am':am_mcmc[0], 'e_am':max(am_mcmc[1], am_mcmc[2]), 'ue_am':am_mcmc[1], 'le_am':am_mcmc[2], 
+					'pwv':pwv_mcmc[0], 'e_pwv':max(pwv_mcmc[1], pwv_mcmc[2]), 'ue_pwv':pwv_mcmc[1], 'le_pwv':pwv_mcmc[2],
+					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
+					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2], 
+					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
+					'wave_cal_err':wave_cal_err}, ignore_index=True)
+
+cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
+

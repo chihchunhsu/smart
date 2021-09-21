@@ -458,6 +458,28 @@ plt.savefig(save_to_path+'/telluric_spectrum.png',dpi=300, bbox_inches='tight')
 #plt.show()
 plt.close()
 
+# excel summary file
+cat = pd.DataFrame(columns=[	'date_obs', 'tell_name', 'tell_path', 'snr_tell', 'tell_mask', 'order',
+								'ndim_tell', 'ndim_walker', 'step_tell', 'burn_tell', 'lsf_tell', 
+								'lsf_tell_ue', 'lsf_tell_le', 
+								'am_tell', 'am_tell_ue', 'am_tell_le', 
+								'pwv_tell', 'pwv_tell_ue', 'pwv_tell_le',
+								'A_tell', 'A_tell_ue', 'A_tell_le', 'B_tell', 'B_tell_ue', 'B_tell_le'])
+
+snr_tell = np.nanmedian(tell_sp.flux/tell_sp.noise)
+
+cat = cat.append({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
+					'tell_mask':custom_mask, 'order':order,
+					'ndim_tell':ndim, 'ndim_walker':nwalkers, 'step_tell':step, 'burn_tell':burn,
+					'lsf_tell':lsf_mcmc[0], 'lsf_tell_ue':lsf_mcmc[1], 'lsf_tell_le':lsf_mcmc[2], 
+					'am_tell':airmass_mcmc[0], 'am_tell_ue':airmass_mcmc[1], 'am_tell_le':airmass_mcmc[2], 
+					'pwv_tell':pwv_mcmc[0], 'pwv_tell_ue':pwv_mcmc[1], 'pwv_tell_le':pwv_mcmc[2],
+					'A_tell':A_mcmc[0], 'A_tell_ue':A_mcmc[1], 'A_tell_le':A_mcmc[2], 
+					'B_tell':B_mcmc[0], 'B_tell_ue':B_mcmc[1], 'B_tell_le':B_mcmc[2]}, ignore_index=True)
+
+cat.to_excel(save_to_path+'/mcmc_summary.xlsx', index=False)
+
+# save the best fit parameters in the fits header
 if save is True:
 	data_path = tell_sp.path + '/' + tell_sp.name + '_' + str(tell_sp.order) + '_all.fits'
 	with fits.open(data_path) as hdulist:
