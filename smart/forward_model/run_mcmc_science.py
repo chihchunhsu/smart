@@ -275,7 +275,7 @@ if modelset == 'btsettl08':
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,                              	'B_max':0.6,
+						'B_min':-1.0,                              	'B_max':1.0,
 						'N_min':0.10,                               'N_max':5.0 				
 					}
 
@@ -288,7 +288,7 @@ elif modelset == 'sonora':
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,                              	'B_max':0.6,
+						'B_min':-1.0,                              	'B_max':1.0,
 						'N_min':0.10,                               'N_max':5.0 				
 					}
 
@@ -301,7 +301,7 @@ elif modelset == 'phoenixaces':
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,								'B_max':0.6,
+						'B_min':-1.0,								'B_max':1.0,
 						'N_min':0.10,                               'N_max':5.50 				
 					}
 
