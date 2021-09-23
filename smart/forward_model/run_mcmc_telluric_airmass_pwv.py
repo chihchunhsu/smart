@@ -477,7 +477,7 @@ cat = cat.append({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':
 					'A_tell':A_mcmc[0], 'A_tell_ue':A_mcmc[1], 'A_tell_le':A_mcmc[2], 
 					'B_tell':B_mcmc[0], 'B_tell_ue':B_mcmc[1], 'B_tell_le':B_mcmc[2]}, ignore_index=True)
 
-cat.to_excel(save_to_path+'/mcmc_summary.xlsx', index=False)
+cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 
 # save the best fit parameters in the fits header
 if save is True:

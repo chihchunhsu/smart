@@ -586,6 +586,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	# set up the initial parameters
 	#spec_range = kwargs.get('spec_range',900)
 	#order = kwargs.get('order', None)
+	pwv                = kwargs.get('pwv', None) # for logging and used to generate a mask
 	width              = kwargs.get('window_width', 40)
 	step_size          = kwargs.get('window_step', 5)
 	delta_wave_range   = kwargs.get('xcorr_range', 15)
@@ -1173,7 +1174,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			data_path = save_to_path + '_' + str(order) + '_all.fits'
 		save_name = save_to_path + "_calibrated_{}_all.fits".format(order)
 		with fits.open(data_path) as hdulist:
-			hdulist[0].header['COMMENT']  = 'Below are the keywords added by SMART...'
+			hdulist[0].header['COMMENT']  = 'SMART Calibrated Wavelength Solutions'
+			hdulist[0].header['PWV']      = pwv
 			hdulist[0].header['WFIT0NEW'] = wfit0
 			hdulist[0].header['WFIT1NEW'] = wfit1
 			hdulist[0].header['WFIT2NEW'] = wfit2
@@ -1444,7 +1446,8 @@ def run_wave_cal(data_name, data_path, order_list,
 								  data_path=data_path2,
 								  length1 = length1,
 								  apply_sigma_mask=apply_sigma_mask,
-								  mask_custom=mask_custom)
+								  mask_custom=mask_custom,
+								  pwv=pwv)
 
 		time2 = time.time()
 		print("Total X correlation time: {} min".format((time2-time1)/60))
