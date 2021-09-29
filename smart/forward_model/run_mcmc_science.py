@@ -154,6 +154,14 @@ tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_p
 
 data.updateWaveSol(tell_sp)
 
+# MJD for logging
+# upgraded NIRSPEC
+if len(data.oriWave) == 2048:
+	mjd = data.header['MJD']
+# old NIRSPEC
+else:
+	mjd = data.header['MJD-OBS']
+
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
 	if not os.path.exists(save_to_path):
@@ -652,7 +660,7 @@ plt.close()
 
 # excel summary file
 cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
-							'model_date','model_time','data_mask','order','coadd','med_snr','lsf',
+							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
 							'barycorr','modelset','priors','limits','ndim','nwalkers','step','burn',
 							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
 							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
@@ -667,7 +675,7 @@ wave_cal_err = tell_sp.header['STD']
 cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
 					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':custom_mask,
-					'order':order,'coadd':coadd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
+					'order':order,'coadd':coadd,'mjd':mjd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
 					'modelset':modelset, 'priors':priors, 'limits':limits, 
 					'ndim':ndim, 'nwalkers':nwalkers,'step':step, 'burn':burn,
 					'rv':rv_mcmc[0]+barycorr, 'e_rv':max(rv_mcmc[1], rv_mcmc[2]), 'ue_rv':rv_mcmc[1], 'le_rv':rv_mcmc[2],

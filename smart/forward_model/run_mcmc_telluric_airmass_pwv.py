@@ -96,6 +96,14 @@ if order == 35: applymask = True
 tell_data_name2 = tell_data_name + '_calibrated'
 tell_sp         = smart.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
 
+# MJD for logging
+# upgraded NIRSPEC
+if len(tell_sp.oriWave) == 2048:
+	mjd = tell_sp.header['MJD']
+# old NIRSPEC
+else:
+	mjd = tell_sp.header['MJD-OBS']
+
 ###########################################################################################################
 """
 MCMC routine for telluric standard stars to obtain the LSF and alpha. This function utilizes the emcee package.
@@ -460,8 +468,8 @@ plt.close()
 
 # excel summary file
 cat = pd.DataFrame(columns=[	'date_obs', 'tell_name', 'tell_path', 'snr_tell', 'tell_mask', 'order',
-								'ndim_tell', 'ndim_walker', 'step_tell', 'burn_tell', 'lsf_tell', 
-								'lsf_tell_ue', 'lsf_tell_le', 
+								'mjd_tell', 'ndim_tell', 'ndim_walker', 'step_tell', 'burn_tell', 
+								'lsf_tell', 'lsf_tell_ue', 'lsf_tell_le', 
 								'am_tell', 'am_tell_ue', 'am_tell_le', 
 								'pwv_tell', 'pwv_tell_ue', 'pwv_tell_le',
 								'A_tell', 'A_tell_ue', 'A_tell_le', 'B_tell', 'B_tell_ue', 'B_tell_le'])
@@ -469,7 +477,7 @@ cat = pd.DataFrame(columns=[	'date_obs', 'tell_name', 'tell_path', 'snr_tell', '
 snr_tell = np.nanmedian(tell_sp.flux/tell_sp.noise)
 
 cat = cat.append({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
-					'tell_mask':custom_mask, 'order':order,
+					'tell_mask':custom_mask, 'order':order, 'mjd_tell':mjd, 
 					'ndim_tell':ndim, 'ndim_walker':nwalkers, 'step_tell':step, 'burn_tell':burn,
 					'lsf_tell':lsf_mcmc[0], 'lsf_tell_ue':lsf_mcmc[1], 'lsf_tell_le':lsf_mcmc[2], 
 					'am_tell':airmass_mcmc[0], 'am_tell_ue':airmass_mcmc[1], 'am_tell_le':airmass_mcmc[2], 
