@@ -63,7 +63,7 @@ def generate_telluric_mask(name, order, path, pixel_start=10, pixel_end=None, si
 	tell_data  = smart.continuumTelluric(data=tell_data, model=model_tmp)
 
 	tell_data_original = copy.deepcopy(tell_data)
-	pixel_all  = np.arange(len(tell_data_original.wave))
+	pixel_all  = np.arange(len(tell_data_original.oriWave))
 
 	tell_model = smart.convolveTelluric(vbroad, tell_data, alpha=alpha, airmass=airmass, pwv=pwv)
 
@@ -153,6 +153,7 @@ def generate_telluric_mask(name, order, path, pixel_start=10, pixel_end=None, si
 	mask1 = mask1.tolist()
 	mask  = mask.tolist()
 
+	#mask_final = mask
 	mask_final = mask0 + mask + mask1
 
 	if guess_pwv:
