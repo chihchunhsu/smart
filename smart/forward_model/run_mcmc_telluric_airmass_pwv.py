@@ -41,7 +41,7 @@ parser.add_argument("save_to_path",type=str,
     default=None, help="output path", nargs="+")
 
 parser.add_argument("-ndim",type=int,
-    default=4, help="number of dimension; default 4")
+    default=5, help="number of dimension; default 5")
 
 parser.add_argument("-nwalkers",type=int,
     default=50, help="number of walkers of MCMC; default 50")
@@ -468,7 +468,8 @@ plt.close()
 
 # excel summary file
 cat = pd.DataFrame(columns=[	'date_obs', 'tell_name', 'tell_path', 'snr_tell', 'tell_mask', 'order',
-								'mjd_tell', 'ndim_tell', 'ndim_walker', 'step_tell', 'burn_tell', 
+								'mjd_tell', 'ndim_tell', 'nwalker_tell', 'step_tell', 'burn_tell', 
+								'pixel_start_tell', 'pixel_end_tell',
 								'lsf_tell', 'lsf_tell_ue', 'lsf_tell_le', 
 								'am_tell', 'am_tell_ue', 'am_tell_le', 
 								'pwv_tell', 'pwv_tell_ue', 'pwv_tell_le',
@@ -478,7 +479,8 @@ snr_tell = np.nanmedian(tell_sp.flux/tell_sp.noise)
 
 cat = cat.append({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
 					'tell_mask':custom_mask, 'order':order, 'mjd_tell':mjd, 
-					'ndim_tell':ndim, 'ndim_walker':nwalkers, 'step_tell':step, 'burn_tell':burn,
+					'ndim_tell':ndim, 'nwalker_tell':nwalkers, 'step_tell':step, 'burn_tell':burn,
+					'pixel_start_tell':pixel_start, 'pixel_end_tell':pixel_end,
 					'lsf_tell':lsf_mcmc[0], 'lsf_tell_ue':lsf_mcmc[1], 'lsf_tell_le':lsf_mcmc[2], 
 					'am_tell':airmass_mcmc[0], 'am_tell_ue':airmass_mcmc[1], 'am_tell_le':airmass_mcmc[2], 
 					'pwv_tell':pwv_mcmc[0], 'pwv_tell_ue':pwv_mcmc[1], 'pwv_tell_le':pwv_mcmc[2],
