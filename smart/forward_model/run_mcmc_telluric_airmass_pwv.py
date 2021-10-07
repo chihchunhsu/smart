@@ -494,7 +494,7 @@ if save is True:
 	data_path = tell_sp.path + '/' + tell_sp.name + '_' + str(tell_sp.order) + '_all.fits'
 	with fits.open(data_path) as hdulist:
 		hdulist[0].header['LSF']          = lsf_mcmc[0]
-		hdulist[0].header['AIRMASS_FIT']  = airmass_mcmc[0]
+		hdulist[0].header['AM_FIT']       = airmass_mcmc[0]
 		hdulist[0].header['PWV_FIT']      = pwv_mcmc[0]
 		try:
 			hdulist.writeto(data_path, overwrite=True)
