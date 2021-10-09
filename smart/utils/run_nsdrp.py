@@ -51,7 +51,7 @@ path = originalpath + '/' + datadir[0] + '/'
 mylist = glob.glob1(path,'*.fits')
 
 if args.check_format:
-    print("Checking the keyword formats...")
+    print("Checking the keyword formats: {}".format(datadir[0]))
     for filename in mylist:
         #print(filename)
         file_path = path + filename
@@ -74,11 +74,11 @@ if args.check_format:
 if args.nodefringe:
     pass
 else:
-    print("Defringing flat files...")
+    print("Defringe flat lamp files: {}".format(datadir[0]))
     smart.defringeflatAll(datadir[0], wbin=10, start_col=10, end_col=980, diagnostic=False, movefiles=True)
 
     defringe_list = glob.glob1(path,'*defringe.fits')
-    originalflat_list = glob.glob1(path+'defringeflat_diagnostic/','*.fits')
+    originalflat_list = glob.glob1(path+'defringeflat/','*.fits')
 
 ## reduce the data using NSDRP
 if args.spatial_rect_flat:
@@ -88,7 +88,7 @@ else:
     action = "python" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
        + "-oh_filename" + " " + BASE + "/ir_ohlines.dat -debug -dgn"
 
-print("Start execution:", action)
+print("Executing:", action)
 os.system(action)
 
 ## move the original flat files back
@@ -96,8 +96,8 @@ if args.nodefringe:
     pass
 else:
     for defringeflatfile in defringe_list:
-        shutil.move(path+defringeflatfile, path+'defringeflat_diagnostic/'+defringeflatfile)
+        shutil.move(path+defringeflatfile, path+'defringeflat/'+defringeflatfile)
     for originalflat in originalflat_list:    
-        shutil.move(path+'defringeflat_diagnostic/'+originalflat, path+originalflat)
+        shutil.move(path+'defringeflat/'+originalflat, path+originalflat)
 
-print("Finish execution: {}".format(action))
+#print("Finish execution: {}".format(action))
