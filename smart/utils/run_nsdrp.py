@@ -36,7 +36,7 @@ parser.add_argument("--check_format", help="check if the format satisfies KOA co
 args = parser.parse_args()
 datadir  = args.files
 
-if len(datadir) is 1:
+if len(datadir) == 1:
     save_to_path = datadir[0] + '/reduced'
     #save_to_path = 'reduced'
     datadir.append(save_to_path)
@@ -82,10 +82,10 @@ else:
 
 ## reduce the data using NSDRP
 if args.spatial_rect_flat:
-    action = "python" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
+    action = "python3" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
         + "-oh_filename" + " " + BASE + "/ir_ohlines.dat -spatial_rect_flat -debug -dgn" #-spatial_jump_override
 else:
-    action = "python" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
+    action = "python3" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
        + "-oh_filename" + " " + BASE + "/ir_ohlines.dat -debug -dgn"
 
 print("Executing:", action)
