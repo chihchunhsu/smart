@@ -385,7 +385,7 @@ def defringeflat(flat_file, wbin=10, start_col=10, end_col=980, clip1=0,
 	return hdu
 
 def defringeflatAll(data_folder_path, wbin=10, start_col=10, 
-	                end_col=980 ,diagnostic=True, movefiles=False):
+	                end_col=980, diagnostic=True, movefiles=False):
 	"""
 	Perform the defringe flat function and save the 
 	efringed flat files under the data folder and 
@@ -448,7 +448,8 @@ def defringeflatAll(data_folder_path, wbin=10, start_col=10,
 		data = fits.open(file_path, ignore_missing_end=True)
 
 		if ('flat' in str(data[0].header['COMMENT']).lower()) is True or \
-		('flatlamp' in str(data[0].header['IMTYPE']).lower()) is True:
+		('flatlamp' in str(data[0].header['IMAGETYP']).lower()) is True: # IMTYPE
+			if ('flatlampoff' in str(data[0].header['IMAGETYP']).lower()) is True: continue
 			if ('flat lamp off' in str(data[0].header['COMMENT']).lower()) is True: continue # dirty fix
 			if ('dark for flat' in str(data[0].header['COMMENT']).lower()) is True: continue # dirty fix
 
