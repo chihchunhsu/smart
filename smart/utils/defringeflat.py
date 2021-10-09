@@ -435,7 +435,7 @@ def defringeflatAll(data_folder_path, wbin=10, start_col=10,
 	"""
 	originalpath = os.getcwd()
 
-	save_to_path = data_folder_path + '/defringeflat_diagnostic/'
+	save_to_path = data_folder_path + '/defringeflat/'
 	if not os.path.exists(save_to_path):
 		os.makedirs(save_to_path)
 

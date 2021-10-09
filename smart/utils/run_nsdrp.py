@@ -18,14 +18,19 @@ BASE       = os.path.split(os.path.split(os.path.split(FULL_PATH)[0])[0])[0]
 BASE       = BASE.split('smart')[0] + 'NIRSPEC-Data-Reduction-Pipeline/'
 #BASE = BASE.split('smart')[0] + 'nsdrp_20180925/' #original NSDRP
 
-parser = argparse.ArgumentParser(description="Reduce the NIRSPEC data using NIRSPEC-Data-Reduction-Pipeline",\
-	usage="run_nsdrp.py input_dir (output_dir)")
+parser = argparse.ArgumentParser(description="Reduce the NIRSPEC data using NIRSPEC-Data-Reduction-Pipeline",
+	usage="python run_nsdrp.py input_dir (output_dir)")
 
 parser.add_argument("files",metavar='f',type=str,
     default=None, help="input_dir (output_dir)", nargs="+")
 
-parser.add_argument("--nodefringe", 
-    help="not apply the defringe algorithm", 
+parser.add_argument("--nodefringe", help="not apply the defringe algorithm", 
+    action='store_true')
+
+parser.add_argument("--spatial_rect_flat", help="using median order trace from flat frame to perform spatial rectification", 
+    action='store_true')
+
+parser.add_argument("--check_format", help="check if the format satisfies KOA convention keywords", 
     action='store_true')
 
 args = parser.parse_args()
@@ -45,24 +50,25 @@ path = originalpath + '/' + datadir[0] + '/'
 ## store the fits file names
 mylist = glob.glob1(path,'*.fits')
 
-print("Checking the keyword formats...")
-for filename in mylist:
-    #print(filename)
-    file_path = path + filename
-    data, header = fits.getdata(file_path, header=True, ignore_missing_end=True)
-    if ('IMAGETYP' in header) is False:
-        if ('flat lamp off     ' in str(header['COMMENT'])) is True:
-            header['IMAGETYP'] = 'dark'
-        elif ('flat field' in str(header['COMMENT'])) is True:
-        	header['IMAGETYP'] = 'flatlamp'
-        elif ('NeArXeKr' in str(header['COMMENT'])) is True :
-        	header['IMAGETYP'] = 'arclamp'
-        else:
-        	header['IMAGETYP'] = 'object'
-    if ('DISPERS' in header) is False:
-        header['DISPERS'] = 'high'
-
-    fits.writeto(file_path, data, header, overwrite=True, output_verify='ignore')
+if args.check_format:
+    print("Checking the keyword formats...")
+    for filename in mylist:
+        #print(filename)
+        file_path = path + filename
+        data, header = fits.getdata(file_path, header=True, ignore_missing_end=True)
+        if ('IMAGETYP' in header) is False:
+            if ('flat lamp off     ' in str(header['COMMENT'])) is True:
+                header['IMAGETYP'] = 'dark'
+            elif ('flat field' in str(header['COMMENT'])) is True:
+            	header['IMAGETYP'] = 'flatlamp'
+            elif ('NeArXeKr' in str(header['COMMENT'])) is True :
+            	header['IMAGETYP'] = 'arclamp'
+            else:
+            	header['IMAGETYP'] = 'object'
+        if ('DISPERS' in header) is False:
+            header['DISPERS'] = 'high'
+    
+        fits.writeto(file_path, data, header, overwrite=True, output_verify='ignore')
 
 ## defringe flat
 if args.nodefringe:
@@ -75,9 +81,15 @@ else:
     originalflat_list = glob.glob1(path+'defringeflat_diagnostic/','*.fits')
 
 ## reduce the data using NSDRP
-print("Start reducing the data by the NSDRP...")
-os.system("python" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
-	+ "-oh_filename" + " " + BASE + "/ir_ohlines.dat -spatial_jump_override -debug -dgn")
+if args.spatial_rect_flat:
+    action = "python" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
+        + "-oh_filename" + " " + BASE + "/ir_ohlines.dat -spatial_rect_flat -debug -dgn" #-spatial_jump_override
+else:
+    action = "python" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
+       + "-oh_filename" + " " + BASE + "/ir_ohlines.dat -debug -dgn"
+
+print("Start execution:", action)
+os.system(action)
 
 ## move the original flat files back
 if args.nodefringe:
@@ -87,7 +99,5 @@ else:
         shutil.move(path+defringeflatfile, path+'defringeflat_diagnostic/'+defringeflatfile)
     for originalflat in originalflat_list:    
         shutil.move(path+'defringeflat_diagnostic/'+originalflat, path+originalflat)
-## remove the intermediate products
-#os.system("rm *.npy")
 
-print("The NIRSPEC data are reduced successfully by using NSDRP.")
+print("Finish execution: {}".format(action))
