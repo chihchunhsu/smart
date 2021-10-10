@@ -3,7 +3,7 @@
 
 import smart
 from astropy.io import fits
-import os
+import os, sys
 import warnings
 from subprocess import call
 import subprocess
@@ -51,7 +51,7 @@ path = originalpath + '/' + datadir[0] + '/'
 mylist = glob.glob1(path,'*.fits')
 
 if args.check_format:
-    print("Checking the keyword formats: {}".format(datadir[0]))
+    #print("Checking the keyword formats: {}".format(datadir[0]))
     for filename in mylist:
         #print(filename)
         file_path = path + filename
@@ -65,15 +65,38 @@ if args.check_format:
             	header['IMAGETYP'] = 'arclamp'
             else:
             	header['IMAGETYP'] = 'object'
-        if ('DISPERS' in header) is False:
-            header['DISPERS'] = 'high'
+            if ('DISPERS' in header) is False:
+                header['DISPERS'] = 'high'
     
-        fits.writeto(file_path, data, header, overwrite=True, output_verify='ignore')
+            fits.writeto(file_path, data, header, overwrite=True, output_verify='ignore')
 
 ## defringe flat
 if args.nodefringe:
-    pass
+    # check if some non-defringe flat files are under the raw data folder
+    if os.path.exists(datadir[0]+'/defringeflat_diagnostic/'):
+        for data_name in glob.glob1(datadir[0]+'/defringeflat_diagnostic/', '*.fits'):
+            if '_defringe.fits' not in data_name:
+                shutil.move(datadir[0]+'/defringeflat_diagnostic/'+data_name, datadir[0]+data_name)
+    if os.path.exists(datadir[0]+'/defringeflat/'):
+        for data_name in glob.glob1(datadir[0]+'/defringeflat/', '*.fits'):
+            if '_defringe.fits' not in data_name:
+                shutil.move(datadir[0]+'/defringeflat/'+data_name, datadir[0]+data_name)
+    # remove the defringe flat files in the current folder
+    for data_name in glob.glob1(datadir[0], '*_defringe.fits'):
+        os.system('rm {}/{}'.format(datadir[0], data_name))
+
 else:
+    # remove the defringe flat files in the previous reduction
+    if os.path.exists(datadir[0]+'/defringeflat_diagnostic/'):
+        for data_name in glob.glob1(datadir[0]+'/defringeflat_diagnostic/', '*.fits'):
+            shutil.move(datadir[0]+'/defringeflat_diagnostic/'+data_name, datadir[0]+'/'+data_name)
+    if os.path.exists(datadir[0]+'/defringeflat/'):
+        for data_name in glob.glob1(datadir[0]+'/defringeflat/', '*.fits'):
+            shutil.move(datadir[0]+'/defringeflat/'+data_name, datadir[0]+'/'+data_name)
+    for data_name in glob.glob1(datadir[0], '*_defringe.fits'):
+        os.system('rm {}/{}'.format(datadir[0], data_name))
+
+    # run the defringe flat algorithm
     print("Defringe flat lamp files: {}".format(datadir[0]))
     smart.defringeflatAll(datadir[0], wbin=10, start_col=10, end_col=980, diagnostic=False, movefiles=True)
 

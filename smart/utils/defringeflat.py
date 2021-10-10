@@ -390,7 +390,7 @@ def defringeflatAll(data_folder_path, wbin=10, start_col=10,
 	Perform the defringe flat function and save the 
 	efringed flat files under the data folder and 
 	move the raw flat files under anotehr folder 
-	called "defringefalt_diagnostics" with optional 
+	called "defringeflat" with optional 
 	diagnostic plots.
 
 	Parameters
