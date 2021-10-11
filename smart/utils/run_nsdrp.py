@@ -57,7 +57,7 @@ if args.check_format:
         file_path = path + filename
         data, header = fits.getdata(file_path, header=True, ignore_missing_end=True)
         if ('IMAGETYP' in header) is False:
-            if ('flat lamp off     ' in str(header['COMMENT'])) is True:
+            if ('flat lamp off' in str(header['COMMENT'])) is True:
                 header['IMAGETYP'] = 'dark'
             elif ('flat field' in str(header['COMMENT'])) is True:
             	header['IMAGETYP'] = 'flatlamp'
