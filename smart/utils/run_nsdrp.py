@@ -36,6 +36,9 @@ parser.add_argument("--check_format", help="check if the format satisfies KOA co
 parser.add_argument("--sowc", help="simple order width calculation", 
     action='store_true')
 
+parser.add_argument("--verbose", help="enables additional logging for debugging", 
+    action='store_true')
+
 args = parser.parse_args()
 datadir  = args.files
 
@@ -113,6 +116,8 @@ if args.spatial_rect_flat:
     action += ' -spatial_rect_flat' #-spatial_jump_override
 if args.sowc:
     action += ' -sowc'
+if args.verbose:
+    action += ' -verbose'
 
 print("Executing:", action)
 os.system(action)
