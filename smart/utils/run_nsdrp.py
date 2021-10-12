@@ -33,6 +33,9 @@ parser.add_argument("--spatial_rect_flat", help="using median order trace from f
 parser.add_argument("--check_format", help="check if the format satisfies KOA convention keywords", 
     action='store_true')
 
+parser.add_argument("--sowc", help="simple order width calculation", 
+    action='store_true')
+
 args = parser.parse_args()
 datadir  = args.files
 
@@ -104,12 +107,12 @@ else:
     originalflat_list = glob.glob1(path+'defringeflat/','*.fits')
 
 ## reduce the data using NSDRP
-if args.spatial_rect_flat:
-    action = "python3" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
-        + "-oh_filename" + " " + BASE + "/ir_ohlines.dat -spatial_rect_flat -debug -dgn" #-spatial_jump_override
-else:
-    action = "python3" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
+action = "python3" + " " + BASE + "nsdrp.py" + " " + datadir[0] + " " + datadir[1] + " " \
        + "-oh_filename" + " " + BASE + "/ir_ohlines.dat -debug -dgn"
+if args.spatial_rect_flat:
+    action += ' -spatial_rect_flat' #-spatial_jump_override
+if args.sowc:
+    action += ' -sowc'
 
 print("Executing:", action)
 os.system(action)
