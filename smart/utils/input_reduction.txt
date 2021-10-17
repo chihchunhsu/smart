@@ -1,5 +1,0 @@
-DATAFOLDER	/Users/path/to/rawData/
-DATE	18feb08
-DARKS	1-20
-FLATS	21-40
-SOURCE	41-60
