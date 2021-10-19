@@ -44,6 +44,12 @@ def update_wfits_param(filename_A:str, filename_B:str, order:int, data_path:str,
 	order:		int; NIRSPEC order
 	data_path:	str; path of the file A, if data_path2 is None, the file B is assumed to have the same file path as file A
 	data_path2:	str; path of the file B
+
+	Example
+	-------
+	>>> from smart.utils import data_reduction_utils
+	>>> data_reduction_utils.update_wfits_param(filename_A='jan01s0097', filename_B='jan01s0090', order=33, 
+		data_path='nirspec/data/20180101/redux_rectobj_defringeflat/fits/all', verbose=True)
 	
 	"""
 
