@@ -447,9 +447,16 @@ def defringeflatAll(data_folder_path, wbin=10, start_col=10,
 
 		data = fits.open(file_path, ignore_missing_end=True)
 
+		date = Time(data[0].header['DATE-OBS'], scale='utc')
+		jd   = date.jd
+		if jd >= 2458401.500000: # upgraded NIRSPEC
+			image_type = 'IMTYPE'
+		else:
+			image_type = 'IMAGETYP'
+
 		if ('flat' in str(data[0].header['COMMENT']).lower()) is True or \
-		('flatlamp' in str(data[0].header['IMAGETYP']).lower()) is True: # IMTYPE
-			if ('flatlampoff' in str(data[0].header['IMAGETYP']).lower()) is True: continue
+		('flatlamp' in str(data[0].header[image_type]).lower()) is True: # IMTYPE
+			if ('flatlampoff' in str(data[0].header[image_type]).lower()) is True: continue
 			if ('flat lamp off' in str(data[0].header['COMMENT']).lower()) is True: continue # dirty fix
 			if ('dark for flat' in str(data[0].header['COMMENT']).lower()) is True: continue # dirty fix
 
