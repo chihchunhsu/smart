@@ -451,6 +451,8 @@ def defringeflatAll(data_folder_path, wbin=10, start_col=10,
 		jd   = date.jd
 		if jd >= 2458401.500000: # upgraded NIRSPEC
 			image_type = 'IMTYPE'
+			if end_col is None:
+				end_col = 2000
 		else:
 			image_type = 'IMAGETYP'
 
