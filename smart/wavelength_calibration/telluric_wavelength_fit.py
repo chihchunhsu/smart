@@ -46,7 +46,7 @@ def waveSolution(pixel, wfit0, wfit1, wfit2, wfit3, wfit4, wfit5, c3, c4, **kwar
 
     """
     order = kwargs.get('order', None)
-
+    
     wave_sol = wfit0 + wfit1*pixel + wfit2*pixel**2 + \
                (wfit3 + wfit4*pixel + wfit5*pixel**2)/order + \
                c3*pixel**3 + c4*pixel**4

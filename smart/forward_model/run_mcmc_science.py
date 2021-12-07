@@ -313,6 +313,19 @@ elif modelset == 'phoenixaces':
 						'N_min':0.10,                               'N_max':5.50 				
 					}
 
+elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
+	limits         = { 
+						'teff_min':max(priors['teff_min']-300,2300), 'teff_max':min(priors['teff_max']+300,7000),
+						'logg_min':3.5,                             'logg_max':logg_max,
+						'vsini_min':0.0,                            'vsini_max':100.0,
+						'rv_min':-200.0,                            'rv_max':200.0,
+						'am_min':1.0,                               'am_max':3.0,
+						'pwv_min':0.5,                            	'pwv_max':20.0,
+						'A_min':-A_const,							'A_max':A_const,
+						'B_min':-0.6,								'B_max':0.6,
+						'N_min':0.10,                               'N_max':5.50 				
+					}
+
 if final_mcmc:
 	limits['rv_min'] = priors['rv_min'] - 10
 	limits['rv_max'] = priors['rv_max'] + 10
