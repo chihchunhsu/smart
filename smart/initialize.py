@@ -24,7 +24,7 @@ def getModelgrid(modelset = 'phoenix-aces-agss-cond-2011'):
     # Get the gridfile for the requested modelset    
     FULL_PATH  = os.path.realpath(__file__)
     BASE, NAME = os.path.split(FULL_PATH)
-    Gridfile = BASE + '/libraries/%s/%s_gridparams.csv'%(smart.ModelSets[modelset.lower()], smart.ModelSets[modelset.lower()])
+    Gridfile = BASE + '/libraries/%s/%s_gridparams.csv'%(smart.ModelSets[modelset.upper()], smart.ModelSets[modelset.upper()])
     # Read the grid file
     T1 = Table.read(Gridfile)
 
