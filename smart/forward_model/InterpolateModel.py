@@ -16,7 +16,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
 
     # Check the model set and instrument
     if instrument.lower() == 'nirspec':
-        path     = BASE + '/../libraries/%s/%s-O%s/'%(smart.ModelSets[modelset.upper()], instrument.upper(), order.upper())
+        path     = BASE + '/../libraries/%s/%s-O%s/'%(smart.ModelSets[modelset.lower()], instrument.upper(), order.upper())
     else:
         path     = BASE + '/../libraries/%s/%s-%s/'%(smart.ModelSets[modelset.lower()], instrument.upper(), order.upper())
     Gridfile = BASE + '/../libraries/%s/%s_gridparams.csv'%(smart.ModelSets[modelset.lower()], smart.ModelSets[modelset.lower()])
