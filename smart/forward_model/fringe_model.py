@@ -6,6 +6,7 @@
 import copy
 import numpy as np
 import scipy.signal as signal
+from scipy.optimize import curve_fit
 import smart
 
 def get_peak_fringe_frequency(fringe_object, pixel_start, pixel_end):
