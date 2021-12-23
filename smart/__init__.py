@@ -1,4 +1,4 @@
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 from .initialize import *
 from .utils.barycorr import barycorr
@@ -11,6 +11,7 @@ from .forward_model.rotation_broaden import lsf_rotate, broaden
 from .forward_model.continuum import *
 from .forward_model.tellurics import InterpTelluricModel
 from .forward_model.model_fit import *
+from .forward_model.fringe_model import *
 from .forward_model.mcmc import run_mcmc, telluric_mcmc, run_mcmc2, run_mcmc3
 from .forward_model.apogee.lsf_function import computeAPLSF, convolveAPLSF
 try:
