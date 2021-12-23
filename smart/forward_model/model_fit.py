@@ -38,7 +38,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	instrument   = kwargs.get('instrument', 'nirspec')
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
-	include_fringe_model = kwargs.get('fringe_model', False)
+	include_fringe_model = kwargs.get('include_fringe_model', False)
 
 	if instrument == 'apogee':
 		try:
