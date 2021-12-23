@@ -389,6 +389,8 @@ file_log.close()
 ## for multiprocessing
 #########################################################################################
 
+print('include_fringe_model', include_fringe_model)
+
 def lnlike(theta, data, lsf):
 	"""
 	Log-likelihood, computed from chi-squared.
