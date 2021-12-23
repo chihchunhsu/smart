@@ -12,7 +12,7 @@ import time
 import os
 import sys
 import smart
-from .forward_model import fringe_model
+from . import fringe_model
 
 def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, flux_offset=0,**kwargs):
 	"""
