@@ -6,6 +6,7 @@
 import copy
 import numpy as np
 import scipy.signal as signal
+import smart
 
 def get_peak_fringe_frequency(fringe_object, pixel_start, pixel_end):
 	"""
@@ -39,7 +40,7 @@ def double_sine(wave, a1, k1, a2, k2):
 def double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset):
 
 	# make a model without the fringe
-	model_tmp = smart.model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
+	model_tmp = smart.makeModel(teff=teff, logg=logg, metal=0.0, 
 		vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=wave_offset, flux_offset=flux_offset,
 		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=airmass, pwv=pwv, output_stellar_model=False)
 
