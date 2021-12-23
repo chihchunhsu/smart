@@ -67,10 +67,14 @@ def double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, r
 		bounds = (	[0.0, 0.0, 0.0, 0.0], 
 					[2.0*amp, 100*best_frequency1, 2.0*amp, 100*best_frequency2])
 
-		popt, pcov = curve_fit(double_sine, tmp.wave, tmp.flux, maxfev=10000, p0=p0, bounds=bounds)
+		try:
+			popt, pcov = curve_fit(double_sine, tmp.wave, tmp.flux, maxfev=10000, p0=p0, bounds=bounds)
 
-		# replace the model with the fringe pattern; note that this has to be the model wavelength at the current forward-modeling step before resampling
-		model.flux[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])] *= (1 + double_sine(model.wave[[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])]], *popt))
+			# replace the model with the fringe pattern; note that this has to be the model wavelength at the current forward-modeling step before resampling
+			model.flux[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])] *= (1 + double_sine(model.wave[[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])]], *popt))
+
+		except:
+			pass
 
 	return model.flux
 
