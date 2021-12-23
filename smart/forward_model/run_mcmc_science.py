@@ -617,7 +617,7 @@ N     = N_mcmc[0]
 
 model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
 	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True)
+	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, include_fringe_model=include_fringe_model)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)

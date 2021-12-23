@@ -62,7 +62,8 @@ def double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, r
 		#best_frequency1, best_frequency2 = get_peak_fringe_frequency(tmp, pixel_start, pixel_end)
 		best_frequency1, best_frequency2 = 2.10, 0.85
 
-		amp = max(tmp.flux)
+		#amp = max(tmp.flux)
+		amp = 0.01
 		p0  = [amp, best_frequency1, amp, best_frequency2]
 		bounds = (	[0.0, 0.0, 0.0, 0.0], 
 					[2.0*amp, 100*best_frequency1, 2.0*amp, 100*best_frequency2])
