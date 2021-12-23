@@ -12,7 +12,6 @@ import time
 import os
 import sys
 import smart
-import fringe_model
 
 def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, flux_offset=0,**kwargs):
 	"""
@@ -137,7 +136,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		print('adding the fringe model')
 		s1, s2, s3, s4, s5 = 0, 150, 400, 600, -1
 		piecewise_fringe_model = [s1, s2, s3, s4, s5]
-		model.flux *= fringe_model.double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset)
+		model.flux *= smart.fringe_model.double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset)
 
 	# instrumental LSF
 	if instrument == 'nirspec':
