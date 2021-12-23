@@ -5,13 +5,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from astropy.io import fits
-import smart
 import emcee
 import corner
 import copy
 import time
 import os
 import sys
+import smart
+from . import fringe_model
 
 def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, flux_offset=0,**kwargs):
 	"""
