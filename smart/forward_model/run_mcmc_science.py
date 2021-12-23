@@ -107,7 +107,7 @@ parser.add_argument("-modelset",type=str,
 
 parser.add_argument("-final_mcmc", action='store_true', help="run final mcmc; default False")
 
-parser.add_argument("-fringe_model", action='store_true', help="model the fringe pattern; default False")
+parser.add_argument("-include_fringe_model", action='store_true', help="model the fringe pattern; default False")
 
 args = parser.parse_args()
 
@@ -134,7 +134,7 @@ coadd                  = args.coadd
 outlier_rejection      = float(args.outlier_rejection)
 modelset               = str(args.modelset)
 final_mcmc             = args.final_mcmc
-fringe_model           = args.fringe_model
+include_fringe_model   = args.include_fringe_model
 
 if final_mcmc:
 	#save_to_path1  = save_to_path_base + '/init_mcmc'
@@ -410,7 +410,7 @@ def lnlike(theta, data, lsf):
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
 	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, fringe_model=fringe_model)
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model)
 
 	chisquare = smart.chisquare(data, model)/N**2
 

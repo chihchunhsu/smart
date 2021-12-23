@@ -38,7 +38,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	instrument   = kwargs.get('instrument', 'nirspec')
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
-	fringe_model = kwargs.get('fringe_model', False)
+	include_fringe_model = kwargs.get('fringe_model', False)
 
 	if instrument == 'apogee':
 		try:
@@ -132,7 +132,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
 
 	# fringe 
-	if fringe_model is True:
+	if include_fringe_model is True:
 		print('adding the fringe model')
 		s1, s2, s3, s4, s5 = 0, 150, 400, 600, -1
 		piecewise_fringe_model = [s1, s2, s3, s4, s5]
