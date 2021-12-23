@@ -6,7 +6,7 @@
 import copy
 import numpy as np
 import scipy.signal as signal
-from . import model_fit
+import model_fit
 
 def get_peak_fringe_frequency(fringe_object, pixel_start, pixel_end):
 	"""
