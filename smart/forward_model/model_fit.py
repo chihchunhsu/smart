@@ -13,7 +13,7 @@ import time
 import os
 import sys
 
-def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, flux_offset=0,**kwargs):
+def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, flux_offset=0,**kwargs):
 	"""
 	Return a forward model.
 
@@ -33,11 +33,13 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 	"""
 
 	# read in the parameters
-	order      = kwargs.get('order', '33')
-	modelset   = kwargs.get('modelset', 'btsettl08')
-	instrument = kwargs.get('instrument', 'nirspec')
-	veiling    = kwargs.get('veiling', 0)    # flux veiling parameter
-	lsf        = kwargs.get('lsf', 4.5)   # instrumental LSF
+	order        = kwargs.get('order', '33')
+	modelset     = kwargs.get('modelset', 'btsettl08')
+	instrument   = kwargs.get('instrument', 'nirspec')
+	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
+	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
+	fringe_model = kwargs.get('fringe_model', False)
+
 	if instrument == 'apogee':
 		try:
 			import apogee_tools as ap
@@ -129,6 +131,13 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 	if tell is True:
 		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
 
+	# fringe 
+	if fringe_model is True:
+		print('adding the fringe model')
+		s1, s2, s3, s4, s5 = 0, 150, 400, 600, -1
+		piecewise_fringe_model = [s1, s2, s3, s4, s5]
+		model.flux *= fringe_model.double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset)
+
 	# instrumental LSF
 	if instrument == 'nirspec':
 		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
@@ -143,9 +152,6 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
 		stellar_model.flux = smart.broaden(wave=stellar_model.wave, flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
 		if binary:
 			model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=lsf, rotate=False, gaussian=True)
-
-	# add a fringe pattern to the model
-	#model.flux *= (1+amp*np.sin(freq*(model.wave-phase)))
 
 	# wavelength offset
 	model.wave += wave_offset

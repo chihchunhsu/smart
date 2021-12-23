@@ -471,7 +471,7 @@ class Spectrum():
 		#pixel = np.delete(np.arange(1024),list(self.mask))
 		pixel = np.arange(len(self.oriWave))
 		## create the output mask array 0=good; 1=bad
-		if self.apply_sigma_mask:
+		if (self.apply_sigma_mask) or (self.mask != []):
 			mask = np.zeros((len(self.oriWave),),dtype=int)
 			np.put(mask,self.mask,int(1))
 		else:
@@ -533,12 +533,15 @@ class Spectrum():
 				
 
 		elif method == 'ascii':
-			if self.header['NAXIS1'] == 1024:
-				save_to_path2 = save_to_path + self.header['FILENAME'].split('.')[0]\
-				+ '_O' + str(self.order) + '.txt'
+			if '.txt' not in save_to_path:
+				if self.header['NAXIS1'] == 1024:
+					save_to_path2 = save_to_path + self.header['FILENAME'].split('.')[0]\
+					+ '_O' + str(self.order) + '.txt'
+				else:
+					save_to_path2 = save_to_path + self.header['OFNAME'].split('.')[0]\
+					+ '_O' + str(self.order) + '.txt'
 			else:
-				save_to_path2 = save_to_path + self.header['OFNAME'].split('.')[0]\
-				+ '_O' + str(self.order) + '.txt'
+				save_to_path2 = save_to_path
 
 			if tell_sp is None:
 				df = pd.DataFrame(data={'wavelength':list(self.oriWave/10000),
