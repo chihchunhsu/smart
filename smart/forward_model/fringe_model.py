@@ -3,8 +3,9 @@
 #	Fringe Model Functions
 #
 #########################################################
-import copy
+import sys, copy
 import numpy as np
+import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy.optimize import curve_fit
 import smart
@@ -49,17 +50,17 @@ def double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, r
 	residual      = copy.deepcopy(data)
 	residual.flux = (data.flux - model_tmp.flux)/model_tmp.flux
 
-	tmp = copy.deepcopy(residual)
-
 	end = len(piecewise_fringe_model)-1
 
-	for i in range(len(piecewise_fringe_model)):
+	for i in range(len(piecewise_fringe_model)-1):
 		pixel_start, pixel_end = piecewise_fringe_model[i], piecewise_fringe_model[i+1]
 
+		tmp = copy.deepcopy(residual)
 		tmp.flux = tmp.flux[pixel_start: pixel_end]
 		tmp.wave = tmp.wave[pixel_start: pixel_end]
 
-		best_frequency1, best_frequency2 = get_peak_fringe_frequency(tmp, pixel_start, pixel_end)
+		#best_frequency1, best_frequency2 = get_peak_fringe_frequency(tmp, pixel_start, pixel_end)
+		best_frequency1, best_frequency2 = 2.10, 0.85
 
 		amp = max(tmp.flux)
 		p0  = [amp, best_frequency1, amp, best_frequency2]
@@ -70,10 +71,6 @@ def double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, r
 
 		# replace the model with the fringe pattern; note that this has to be the model wavelength at the current forward-modeling step before resampling
 		model.flux[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])] *= (1 + double_sine(model.wave[[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])]], *popt))
-
-		# skip the last number
-		if i == end:
-			break
 
 	return model.flux
 
