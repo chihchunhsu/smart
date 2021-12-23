@@ -133,7 +133,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	# fringe 
 	if include_fringe_model is True:
-		print('adding the fringe model')
+		#print('adding the fringe model')
 		s1, s2, s3, s4, s5 = 0, 150, 400, 600, -1
 		piecewise_fringe_model = [s1, s2, s3, s4, s5]
 		model.flux *= smart.double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset)
