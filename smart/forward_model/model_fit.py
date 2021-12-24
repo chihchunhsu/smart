@@ -285,7 +285,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 def doub_sine(wave, a1, k1, a2, k2):
     # the initial guess is determined from the best frequency
     # wave (i.e. kx) multiplicative effects
-    return (1 + a1**2 + 2 * a1*np.sin( k1*wave )) * ( 1 + a2**2 + 2 * a2*np.sin( k2*wave )) - 1
+    return (1 + a1**2 + 2 * a1*np.sin( k1 * wave )) * ( 1 + a2**2 + 2 * a2 * np.sin( k2*wave ))
 
 def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, flux_offset=0, 
 	a1_1=0.01, k1_1=2.10, a2_1=0.01, k2_1=0.85, a1_2=0.01, k1_2=2.10, a2_2=0.01, k2_2=0.85, 
@@ -314,7 +314,6 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 	instrument   = kwargs.get('instrument', 'nirspec')
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
-	include_fringe_model = kwargs.get('include_fringe_model', False)
 
 	if instrument == 'apogee':
 		try:
@@ -407,13 +406,6 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 	if tell is True:
 		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
 
-	# fringe 
-	if include_fringe_model is True:
-		#print('adding the fringe model')
-		s1, s2, s3, s4, s5 = 0, 150, 400, 600, -1
-		piecewise_fringe_model = [s1, s2, s3, s4, s5]
-		model.flux *= smart.double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset)
-
 	# instrumental LSF
 	if instrument == 'nirspec':
 		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
@@ -450,6 +442,22 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 					model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
 					model2.wave = data.wave
 
+		# fringe modeling
+		if instrument == 'nirspec':
+			# Define the four piece-wise fringe model to include the k(wavelength) variation.
+			s1, s2, s3, s4, s5 = 0, 200, 400, 600, -1
+	
+			model.flux[s1:s2] = model.flux[s1:s2] * doub_sine(wave=model.wave[s1:s2], a1=a1_1, k1=k1_1, a2=a2_1, k2=k2_1)
+			model.flux[s2:s3] = model.flux[s2:s3] * doub_sine(wave=model.wave[s2:s3], a1=a1_2, k1=k1_2, a2=a2_2, k2=k2_2)
+			model.flux[s3:s4] = model.flux[s3:s4] * doub_sine(wave=model.wave[s3:s4], a1=a1_3, k1=k1_3, a2=a2_3, k2=k2_3)
+			model.flux[s4:s5] = model.flux[s4:s5] * doub_sine(wave=model.wave[s4:s5], a1=a1_4, k1=k1_4, a2=a2_4, k2=k2_4)
+	
+			if output_stellar_model:
+				stellar_model.flux[s1:s2] = stellar_model.flux[s1:s2] * doub_sine(wave=model.wave[s1:s2], a1=a1_1, k1=k1_1, a2=a2_1, k2=k2_1)
+				stellar_model.flux[s2:s3] = stellar_model.flux[s2:s3] * doub_sine(wave=model.wave[s2:s3], a1=a1_2, k1=k1_2, a2=a2_2, k2=k2_2)
+				stellar_model.flux[s3:s4] = stellar_model.flux[s3:s4] * doub_sine(wave=model.wave[s3:s4], a1=a1_3, k1=k1_3, a2=a2_3, k2=k2_3)
+				stellar_model.flux[s4:s5] = stellar_model.flux[s4:s5] * doub_sine(wave=model.wave[s4:s5], a1=a1_4, k1=k1_4, a2=a2_4, k2=k2_4)
+
 		# contunuum correction
 		if data.instrument == 'nirspec':
 			niter = 5 # continuum iteration
@@ -465,6 +473,7 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 				model = smart.continuum(data=data, mdl=model)
 				for i in range(niter):
 					model = smart.continuum(data=data, mdl=model)
+
 		elif data.instrument == 'apogee':
 			## set the order in the continuum fit
 			deg         = 5
@@ -546,25 +555,6 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 			if binary:
 				model2.flux += flux_offset
 	#model.flux **= (1 + flux_exponent_offset)
-
-	# fringe modeling
-	if instrument == 'nirspec':
-		# compute the residual (data-model)/model
-		residual      = copy.deepcopy(data)
-		residual.flux = (data.flux - model.flux)/model.flux
-		# Define the four piece-wise fringe model to include the k(wavelength) variation.
-		s1, s2, s3, s4, s5 = 0, 200, 400, 600, -1
-
-		model.flux[s1:s2] = model.flux[s1:s2]*(1+doub_sine(wave=model.wave[s1:s2], a1=a1_1, k1=k1_1, a2=a2_1, k2=k2_1))
-		model.flux[s2:s3] = model.flux[s2:s3]*(1+doub_sine(wave=model.wave[s2:s3], a1=a1_2, k1=k1_2, a2=a2_2, k2=k2_2))
-		model.flux[s3:s4] = model.flux[s3:s4]*(1+doub_sine(wave=model.wave[s3:s4], a1=a1_3, k1=k1_3, a2=a2_3, k2=k2_3))
-		model.flux[s4:s5] = model.flux[s4:s5]*(1+doub_sine(wave=model.wave[s4:s5], a1=a1_4, k1=k1_4, a2=a2_4, k2=k2_4))
-
-		if output_stellar_model:
-			stellar_model.flux[s1:s2] = stellar_model.flux[s1:s2]*(1+doub_sine(wave=model.wave[s1:s2], a1=a1_1, k1=k1_1, a2=a2_1, k2=k2_1))
-			stellar_model.flux[s2:s3] = stellar_model.flux[s2:s3]*(1+doub_sine(wave=model.wave[s2:s3], a1=a1_2, k1=k1_2, a2=a2_2, k2=k2_2))
-			stellar_model.flux[s3:s4] = stellar_model.flux[s3:s4]*(1+doub_sine(wave=model.wave[s3:s4], a1=a1_3, k1=k1_3, a2=a2_3, k2=k2_3))
-			stellar_model.flux[s4:s5] = stellar_model.flux[s4:s5]*(1+doub_sine(wave=model.wave[s4:s5], a1=a1_4, k1=k1_4, a2=a2_4, k2=k2_4))
 
 	if output_stellar_model:
 		if not binary:

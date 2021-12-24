@@ -415,11 +415,11 @@ def lnlike(theta, data, lsf):
 
 	"""
 
-	## Parameters MCMC
-	teff, logg, vsini, rv, am, pwv, A, B, N, a1_1, k1_1, \
-	a2_1, k2_1, a1_2, k1_2, a2_2, k2_2, a1_3, k1_3, a2_3, k2_3, a1_4, k1_4, a2_4, k2_4 = theta #N noise prefactor
+	## Parameters MCMC; no wave offset A
+	teff, logg, vsini, rv, am, pwv, B, N, a1_1, k1_1, a2_1, k2_1, \
+	a1_2, k1_2, a2_2, k2_2, a1_3, k1_3, a2_3, k2_3, a1_4, k1_4, a2_4, k2_4 = theta #N noise prefactor
 
-	model = model_fit.makeModelFringe(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+	model = model_fit.makeModelFringe(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=0,
 		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv,
 		a1_1=a1_1, k1_1=k1_1, a2_1=a2_1, k2_1=k2_1, a1_2=a1_2, k1_2=k1_2, a2_2=a2_2, k2_2=k2_2, 
 		a1_3=a1_3, k1_3=k1_3, a2_3=a2_3, k2_3=k2_3, a1_4=a1_4, k1_4=k1_4, a2_4=a2_4, k2_4=k2_4)
@@ -433,8 +433,8 @@ def lnprior(theta, limits=limits):
 	Specifies a flat prior
 	"""
 	## Parameters for theta
-	teff, logg, vsini, rv, am, pwv, A, B, N, a1_1, k1_1, \
-	a2_1, k2_1, a1_2, k1_2, a2_2, k2_2, a1_3, k1_3, a2_3, k2_3, a1_4, k1_4, a2_4, k2_4 = theta
+	teff, logg, vsini, rv, am, pwv, B, N, a1_1, k1_1, a2_1, k2_1, \
+	a1_2, k1_2, a2_2, k2_2, a1_3, k1_3, a2_3, k2_3, a1_4, k1_4, a2_4, k2_4 = theta
 
 	if  limits['teff_min']  < teff  < limits['teff_max'] \
 	and limits['logg_min']  < logg  < limits['logg_max'] \
@@ -442,24 +442,23 @@ def lnprior(theta, limits=limits):
 	and limits['rv_min']    < rv    < limits['rv_max']   \
 	and limits['am_min']    < am    < limits['am_max']\
 	and limits['pwv_min']   < pwv   < limits['pwv_max']\
-	and limits['A_min']     < A     < limits['A_max']\
 	and limits['B_min']     < B     < limits['B_max']\
 	and limits['N_min']     < N     < limits['N_max']\
 	and limits['a1_1_min']  < a1_1  < limits['a1_1_max']\
 	and limits['k1_1_min']  < k1_1  < limits['k1_1_max']\
-	and limits['a2_1_min']  < a1_1  < limits['a2_1_max']\
+	and limits['a2_1_min']  < a2_1  < limits['a2_1_max']\
 	and limits['k2_1_min']  < k2_1  < limits['k2_1_max']\
 	and limits['a1_2_min']  < a1_2  < limits['a1_2_max']\
 	and limits['k1_2_min']  < k1_2  < limits['k1_2_max']\
-	and limits['a2_2_min']  < a1_2  < limits['a2_2_max']\
+	and limits['a2_2_min']  < a2_2  < limits['a2_2_max']\
 	and limits['k2_2_min']  < k2_2  < limits['k2_2_max']\
 	and limits['a1_3_min']  < a1_3  < limits['a1_3_max']\
 	and limits['k1_3_min']  < k1_3  < limits['k1_3_max']\
-	and limits['a2_3_min']  < a1_3  < limits['a2_3_max']\
+	and limits['a2_3_min']  < a2_3  < limits['a2_3_max']\
 	and limits['k2_3_min']  < k2_3  < limits['k2_3_max']\
 	and limits['a1_4_min']  < a1_4  < limits['a1_4_max']\
 	and limits['k1_4_min']  < k1_4  < limits['k1_4_max']\
-	and limits['a2_4_min']  < a1_4  < limits['a2_4_max']\
+	and limits['a2_4_min']  < a2_4  < limits['a2_4_max']\
 	and limits['k2_4_min']  < k2_4  < limits['k2_4_max']:
 		return 0.0
 
@@ -480,7 +479,6 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 					priors['rv_min']    + (priors['rv_max']     - priors['rv_min']   ) * np.random.uniform(), 
 					priors['am_min']    + (priors['am_max']     - priors['am_min'])    * np.random.uniform(),
 					priors['pwv_min']   + (priors['pwv_max']    - priors['pwv_min'])   * np.random.uniform(),
-					priors['A_min']     + (priors['A_max']      - priors['A_min'])     * np.random.uniform(),
 					priors['B_min']     + (priors['B_max']      - priors['B_min'])     * np.random.uniform(),
 					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform(),
 					priors['a1_1_min']  + (priors['a1_1_max']   - priors['a1_1_min'])  * np.random.uniform(),
@@ -503,9 +501,9 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 ## multiprocessing
 
 with Pool() as pool:
-	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool)
-	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
-	#		moves=emcee.moves.KDEMove())
+	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool)
+	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
+			moves=emcee.moves.KDEMove())
 	time1 = time.time()
 	sampler.run_mcmc(pos, step, progress=True)
 	time2 = time.time()
@@ -527,17 +525,17 @@ print(autocorr_time)
 sampler_chain = np.load(save_to_path + '/sampler_chain.npy')
 samples = np.load(save_to_path + '/samples.npy')
 
-ylabels = [	"$T_{eff} (K)$","$log \, g$(dex)","$vsin \, i(km/s)$","$RV(km/s)$","$AM$", "pwv (mm)","$C_{F_{\lambda}}$ (cnt/s)","$C_{\lambda}$($\AA$)","$C_{noise}$",
-			"$A_{1, 1}$", "$\phi_{1, 1}$(rad)", "$A_{2, 1}$", "$\phi_{2, 1}$(rad)",
-			"$A_{1, 2}$", "$\phi_{1, 2}$(rad)", "$A_{2, 2}$", "$\phi_{2, 2}$(rad)",
-			"$A_{1, 3}$", "$\phi_{1, 3}$(rad)", "$A_{2, 3}$", "$\phi_{2, 3}$(rad)",
-			"$A_{1, 4}$", "$\phi_{1, 4}$(rad)", "$A_{2, 4}$", "$\phi_{2, 4}$(rad)"]
+ylabels = [	"$T_{eff} (K)$","$log \, g$(dex)","$vsin \, i(km/s)$","$RV(km/s)$","$AM$", "pwv (mm)","$C_{\lambda}$($\AA$)","$C_{noise}$",
+			"$A_{1, 1}$", "$k_{1, 1}$($\AA^{-1}$)", "$A_{2, 1}$", "$k_{2, 1}$($\AA^{-1}$)",
+			"$A_{1, 2}$", "$k_{1, 2}$($\AA^{-1}$)", "$A_{2, 2}$", "$k_{2, 2}$($\AA^{-1}$)",
+			"$A_{1, 3}$", "$k_{1, 3}$($\AA^{-1}$)", "$A_{2, 3}$", "$k_{2, 3}$($\AA^{-1}$)",
+			"$A_{1, 4}$", "$k_{1, 4}$($\AA^{-1}$)", "$A_{2, 4}$", "$k_{2, 4}$($\AA^{-1}$)"]
 
 
 ## create walker plots
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=30)
-fig = plt.figure(tight_layout=True)
+fig = plt.figure(tight_layout=True, figsize=(6, len(ylabels)))
 gs  = gridspec.GridSpec(ndim, 1)
 gs.update(hspace=0.1)
 
@@ -559,7 +557,7 @@ triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
-teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc, \
+teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, B_mcmc, N_mcmc, \
 	a1_1_mcmc, k1_1_mcmc, a2_1_mcmc, k2_1_mcmc, a1_2_mcmc, k1_2_mcmc, a2_2_mcmc, k2_2_mcmc, \
 	a1_3_mcmc, k1_3_mcmc, a2_3_mcmc, k2_3_mcmc, a1_4_mcmc, k1_4_mcmc, a2_4_mcmc, k2_4_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
@@ -577,7 +575,7 @@ file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
 file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
 file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
 file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
-file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
+#file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
 file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
 file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
 file_log.write("a1_1_mcmc {}\n".format(str(a1_1_mcmc)))
@@ -610,7 +608,7 @@ for key in index_dic.keys():
 	file_log2.write("rv_{} {}\n".format(key, str(rv_mcmc[index_dic[key]]+barycorr)))
 	file_log2.write("am_{} {}\n".format(key, str(am_mcmc[index_dic[key]])))
 	file_log2.write("pwv_{} {}\n".format(key, str(pwv_mcmc[index_dic[key]])))
-	file_log2.write("A_{} {}\n".format(key, str(A_mcmc[index_dic[key]])))
+	#file_log2.write("A_{} {}\n".format(key, str(A_mcmc[index_dic[key]])))
 	file_log2.write("B_{} {}\n".format(key, str(B_mcmc[index_dic[key]])))
 	file_log2.write("N_{} {}\n".format(key, str(N_mcmc[index_dic[key]])))
 	file_log2.write("a1_1_{} {}\n".format(key, str(a1_1_mcmc[index_dic[key]])))
@@ -636,7 +634,7 @@ file_log2.write("vsini_mcmc_e {}\n".format(str(max(abs(vsini_mcmc[1]), abs(vsini
 file_log2.write("rv_mcmc_e {}\n".format(str(max(abs(rv_mcmc[1]), abs(rv_mcmc[2])))))
 file_log2.write("am_mcmc_e {}\n".format(str(max(abs(am_mcmc[1]), abs(am_mcmc[2])))))
 file_log2.write("pwv_mcmc_e {}\n".format(str(max(abs(pwv_mcmc[1]), abs(pwv_mcmc[2])))))
-file_log2.write("A_mcmc_e {}\n".format(str(max(abs(A_mcmc[1]), abs(A_mcmc[2])))))
+#file_log2.write("A_mcmc_e {}\n".format(str(max(abs(A_mcmc[1]), abs(A_mcmc[2])))))
 file_log2.write("B_mcmc_e {}\n".format(str(max(abs(B_mcmc[1]), abs(B_mcmc[2])))))
 file_log2.write("N_mcmc_e {}\n".format(str(max(abs(N_mcmc[1]), abs(N_mcmc[2])))))
 file_log2.write("a1_1_mcmc_e {}\n".format(str(max(abs(a1_1_mcmc[1]), abs(a1_1_mcmc[2])))))
@@ -671,7 +669,6 @@ fig = corner.corner(triangle_samples,
 	rv_mcmc[0]+barycorr, 
 	am_mcmc[0],
 	pwv_mcmc[0],
-	A_mcmc[0],
 	B_mcmc[0],
 	N_mcmc[0],
 	a1_1_mcmc[0], k1_1_mcmc[0], a2_1_mcmc[0], k2_1_mcmc[0], 
@@ -693,7 +690,7 @@ vsini = vsini_mcmc[0]
 rv    = rv_mcmc[0]
 am    = am_mcmc[0]
 pwv   = pwv_mcmc[0]
-A     = A_mcmc[0]
+A     = 0 #A_mcmc[0]
 B     = B_mcmc[0]
 N     = N_mcmc[0]
 a1_1, k1_1, a2_1, k2_1 = a1_1_mcmc[0], k1_1_mcmc[0], a2_1_mcmc[0], k2_1_mcmc[0]
@@ -780,7 +777,8 @@ cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell
 							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
 							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
 							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
-							'cflux','e_cflux','ue_cflux','le_cflux','cwave','e_cwave','ue_cwave','le_cwave',
+							#'cflux','e_cflux','ue_cflux','le_cflux',
+							'cwave','e_cwave','ue_cwave','le_cwave',
 							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
 							'a1_1', 'e_a1_1', 'ue_a1_1', 'le_a1_1', 
 							'k1_1', 'e_k1_1', 'ue_k1_1', 'le_k1_1', 
@@ -816,7 +814,7 @@ cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tel
 					'logg':logg_mcmc[0], 'e_logg':max(logg_mcmc[1], logg_mcmc[2]), 'ue_logg':logg_mcmc[1], 'le_logg':logg_mcmc[2],
 					'am':am_mcmc[0], 'e_am':max(am_mcmc[1], am_mcmc[2]), 'ue_am':am_mcmc[1], 'le_am':am_mcmc[2], 
 					'pwv':pwv_mcmc[0], 'e_pwv':max(pwv_mcmc[1], pwv_mcmc[2]), 'ue_pwv':pwv_mcmc[1], 'le_pwv':pwv_mcmc[2],
-					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
+					#'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
 					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2], 
 					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
 					'a1_1':a1_1_mcmc[0], 'e_a1_1':max(a1_1_mcmc[1], a1_1_mcmc[2]), 'ue_a1_1':a1_1_mcmc[1], 'le_a1_1':a1_1_mcmc[2], 
