@@ -328,11 +328,12 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 					}
 
 # definition of slices
-s1, s2, s3, s4, s5 = 0, 400, 1000, -300, -1
-a1_1, k1_1, a2_1, k2_1 = 0.00823479, 2.13007061, 0.00604103, 0.85318542
-a1_2, k1_2, a2_2, k2_2 = 0.00711908, 2.10406247, 0.00672382, 0.89811313
-a1_3, k1_3, a2_3, k2_3 = 0.01348733, 2.07407643, 0.00915492, 0.83526088
-a1_4, k1_4, a2_4, k2_4 = 0.00702735, 2.36886565, 0.00642253, 0.82219434
+piecewise_fringe_model = [0, 400, 1000, -300, -1]
+#s1, s2, s3, s4, s5 = 0, 400, 1000, -300, -1
+#a1_1, k1_1, a2_1, k2_1 = 0.00823479, 2.13007061, 0.00604103, 0.85318542
+#a1_2, k1_2, a2_2, k2_2 = 0.00711908, 2.10406247, 0.00672382, 0.89811313
+#a1_3, k1_3, a2_3, k2_3 = 0.01348733, 2.07407643, 0.00915492, 0.83526088
+#a1_4, k1_4, a2_4, k2_4 = 0.00702735, 2.36886565, 0.00642253, 0.82219434
 
 
 if final_mcmc:
@@ -417,7 +418,7 @@ def lnlike(theta, data, lsf):
 	#model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
 	#	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv)
 
-	model = fringe_model.double_sine_fringe(data=data, piecewise_fringe_model=[0, 400, 1000, -300, -1], 
+	model = fringe_model.double_sine_fringe(data=data, piecewise_fringe_model=piecewise_fringe_model, 
 		teff=teff, logg=logg, vsini=vsini, rv=rv, airmass=am, pwv=pwv, wave_offset=B, flux_offset=A, lsf=lsf, modelset=modelset)
 
 	# construct the residual
@@ -627,12 +628,14 @@ model_nofringe, model_notell_nofringe = model_fit.makeModel(teff=teff, logg=logg
 	output_stellar_model=True)
 
 # model with a fringe model
-model, model_notell = model_fit.makeModelFringe(teff=teff, logg=logg, metal=0.0, 
-	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, 
-	a1_1=a1_1, k1_1=k1_1, a2_1=a2_1, k2_1=k2_1, a1_2=a1_2, k1_2=k1_2, a2_2=a2_2, k2_2=k2_2, 
-	a1_3=a1_3, k1_3=k1_3, a2_3=a2_3, k2_3=k2_3, a1_4=a1_4, k1_4=k1_4, a2_4=a2_4, k2_4=k2_4,
-	output_stellar_model=True)
+#model, model_notell = model_fit.makeModelFringe(teff=teff, logg=logg, metal=0.0, 
+#	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+#	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, 
+#	a1_1=a1_1, k1_1=k1_1, a2_1=a2_1, k2_1=k2_1, a1_2=a1_2, k1_2=k1_2, a2_2=a2_2, k2_2=k2_2, 
+#	a1_3=a1_3, k1_3=k1_3, a2_3=a2_3, k2_3=k2_3, a1_4=a1_4, k1_4=k1_4, a2_4=a2_4, k2_4=k2_4,
+#	output_stellar_model=True)
+model, model_notell = fringe_model.double_sine_fringe(data=data, piecewise_fringe_model=piecewise_fringe_model, 
+		teff=teff, logg=logg, vsini=vsini, rv=rv, airmass=am, pwv=pwv, wave_offset=B, flux_offset=A, lsf=lsf, modelset=modelset, output_stellar_model=True)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)

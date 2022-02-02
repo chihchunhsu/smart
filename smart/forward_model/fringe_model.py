@@ -62,16 +62,22 @@ def fit_fringe_model_parameter(fringe_object, pixel_start, pixel_end):
 
 	pass
 
-def double_sine_fringe(data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset):
+def double_sine_fringe(data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset, output_stellar_model=False):
 	"""
 	***CURRENTLY STILL UNDERDEVELOPEMENT*** 
 	Make a peice-wise double sine fringe model for a stellar spectrum, with each fringe model having 6 parameters.
 	"""
 
 	# make a model without the fringe
-	model_tmp = smart.makeModel(teff=teff, logg=logg, metal=0.0, 
-		vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=wave_offset, flux_offset=flux_offset,
-		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=airmass, pwv=pwv, output_stellar_model=False)
+	if not output_stellar_model:
+		model_tmp = smart.makeModel(teff=teff, logg=logg, metal=0.0, 
+			vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=wave_offset, flux_offset=flux_offset,
+			lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=airmass, pwv=pwv, output_stellar_model=False)
+	else:
+		model_tmp, model_tmp_notell = smart.makeModel(teff=teff, logg=logg, metal=0.0, 
+			vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=wave_offset, flux_offset=flux_offset,
+			lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=airmass, pwv=pwv, output_stellar_model=True)
+
 
 	# construct the fringe model
 	residual      = copy.deepcopy(data)
@@ -107,6 +113,12 @@ def double_sine_fringe(data, piecewise_fringe_model, teff, logg, vsini, rv, airm
 		#	pass
 		model_tmp.flux[pixel_start: pixel_end] = model_tmp.flux[pixel_start: pixel_end]*(1 + double_sine2(residual.wave[pixel_start: pixel_end], *popt))
 
+		if output_stellar_model:
+			model_tmp_notell.flux[pixel_start: pixel_end] = model_tmp_notell.flux[pixel_start: pixel_end]*(1 + double_sine2(residual.wave[pixel_start: pixel_end], *popt))
 
-	return model_tmp
+
+	if not output_stellar_model:
+		return model_tmp
+	else:
+		return model_tmp, model_tmp_notell
 
