@@ -103,18 +103,19 @@ def double_sine_fringe(data, piecewise_fringe_model, teff, logg, vsini, rv, airm
 		bounds = ([0.0, 0.0, -np.pi, 0.0, 0.0, -np.pi], 
 			[1.1*amp, 100*best_frequency1, np.pi, 1.1*amp, 100*best_frequency2, np.pi])
 
-		#try:
-		popt, pcov = curve_fit(double_sine2, tmp.wave, tmp.flux, maxfev=10000, p0=p0, bounds=bounds)
+		try:
+			popt, pcov = curve_fit(double_sine2, tmp.wave, tmp.flux, maxfev=10000, p0=p0, bounds=bounds)
 
 		# replace the model with the fringe pattern; note that this has to be the model wavelength at the current forward-modeling step before resampling
 		#model.flux[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])] *= (1 + double_sine(model.wave[[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])]], *popt))
 
-		#except:
-		#	pass
-		model_tmp.flux[pixel_start: pixel_end] = model_tmp.flux[pixel_start: pixel_end]*(1 + double_sine2(residual.wave[pixel_start: pixel_end], *popt))
+			model_tmp.flux[pixel_start: pixel_end] = model_tmp.flux[pixel_start: pixel_end]*(1 + double_sine2(residual.wave[pixel_start: pixel_end], *popt))
+			if output_stellar_model:
+				model_tmp_notell.flux[pixel_start: pixel_end] = model_tmp_notell.flux[pixel_start: pixel_end]*(1 + double_sine2(residual.wave[pixel_start: pixel_end], *popt))
 
-		if output_stellar_model:
-			model_tmp_notell.flux[pixel_start: pixel_end] = model_tmp_notell.flux[pixel_start: pixel_end]*(1 + double_sine2(residual.wave[pixel_start: pixel_end], *popt))
+		except:
+			print(f'Warning: cannot obtain the optimal fringe parameters between {piecewise_fringe_model[i]} and {piecewise_fringe_model[i+1]}.')
+			pass
 
 
 	if not output_stellar_model:
