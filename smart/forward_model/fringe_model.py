@@ -47,6 +47,21 @@ def double_sine2(wave, a1, k1, p1, a2, k2, p2):
 	"""
 	return (1 + a1**2 + 2 * a1*np.sin( k1*wave + p1 )) * ( 1 + a2**2 + 2 * a2*np.sin( k2*wave + p2 )) - 1
 
+def doub_sine_wave_dependent(wave, a1_1, a1_0, k1_1, k1_0, p1, a2_1, a2_0, k2_2, k2_1, k2_0, p2):
+	"""
+	Double sine function for the fringe pattern with an inclusion of wavelength dependent amplitude and wavenumber and constant phase.
+
+	The model has a total of 12 parameters, including the wavelength "wave".
+	Amplitudes "a1" and "a2" are modeled as a linear function of wavelength. 
+	The wavenumbers "k1" (~2.1 Angstrom) is best described as a lienar function and 
+	"k2" (~0.85 Angstrom) is best modeled as a second order polynomial.
+	"""
+	# the initial guess is determined from the best frequency
+	# wave (i.e. kx) multiplicative effects
+
+	sine_1 = ( 1 + ( a1_1 * wave + a1_0 )**2 + ( a1_1 * wave + a1_0 ) * np.sin( ( k1_1 * wave + k1_0 ) * wave + p1 ))
+	sine_2 = ( 1 + ( a2_1 * wave + a2_0 )**2 + ( a2_1 * wave + a2_0 ) * np.sin( ( k2_2 * wave**2 + k2_1 * wave + k2_0 ) * wave + p2 ))
+	return  sine_1 * sine_2 - 1
 
 def fit_fringe_model_parameter(fringe_object, pixel_start, pixel_end):
 	"""
