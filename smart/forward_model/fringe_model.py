@@ -120,16 +120,16 @@ def double_sine_fringe_telluric(lsf, airmass, pwv, flux_offset, wave_offset, dat
             [1.1*amp, 100*best_frequency1, np.pi, 1.1*amp, 100*best_frequency2, np.pi])
         try:
         	popt, pcov = curve_fit(double_sine2, tmp.wave, tmp.flux, maxfev=10000, p0=p0, bounds=bounds)
-            if verbose:
-        	    print('popt', popt)
-            # replace the model with the fringe pattern; note that this has to be the model wavelength at the current forward-modeling step before resampling
-            #model.flux[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])] *= (1 + double_sine(model.wave[[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])]], *popt))
+
+        	if verbose:
+            	print('popt', popt)
+            	# replace the model with the fringe pattern; note that this has to be the model wavelength at the current forward-modeling step before resampling
+            	#model.flux[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])] *= (1 + double_sine(model.wave[[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])]], *popt))
 
             model.flux[pixel_start: pixel_end] = model.flux[pixel_start: pixel_end]*(1 + double_sine2(residual.wave[pixel_start: pixel_end], *popt))
-
         except:
-            print(f'Warning: cannot obtain the optimal fringe parameters between {piecewise_fringe_model[i]} and {piecewise_fringe_model[i+1]}.')
-            pass
+        	print(f'Warning: cannot obtain the optimal fringe parameters between {piecewise_fringe_model[i]} and {piecewise_fringe_model[i+1]}.')
+        	pass
 
     return model
 
