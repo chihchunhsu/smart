@@ -201,11 +201,11 @@ if priors is None:
 	#pwv_min_index = np.where(pwv_chi2_array == np.min(pwv_chi2_array))[0][0]
 	#pwv_0         = pwv_list[pwv_min_index]
 
-	priors      =	{	'lsf_min':4.9  		,  'lsf_max':5.0,
-						'airmass_min':1.02  ,  'airmass_max':1.03,		
-						'pwv_min':1.48      ,  'pwv_max':1.49,
-						'A_min':0.0297 		,  'A_max':0.0298,
-						'B_min':0.0135  	,  'B_max':0.0136   
+	priors      =	{	'lsf_min':4.9  		,  'lsf_max':5.1,
+						'airmass_min':1.00  ,  'airmass_max':1.05,		
+						'pwv_min':1.45      ,  'pwv_max':1.55,
+						'A_min':-0.03 		,  'A_max':0.03,
+						'B_min':0.01    	,  'B_max':0.02   
 					}
 
 	#priors      =	{	'lsf_min':4.0  		,  'lsf_max':5.5,
