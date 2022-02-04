@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import scipy.signal as signal
 from scipy.optimize import curve_fit
 import smart
+#import tellurics
 
 def get_peak_fringe_frequency(fringe_object, pixel_start, pixel_end):
 	"""
@@ -76,6 +77,61 @@ def fit_fringe_model_parameter(fringe_object, pixel_start, pixel_end):
 		maxfev=10000, p0=p0, bounds=bounds)
 
 	pass
+
+def double_sine_fringe_telluric(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, niter=None, piecewise_fringe_model=[0, 200, -100, -1], verbose=False):
+    """
+    Make a continuum-corrected telluric model as a function of LSF, airmass, pwv, and flux and wavelength offsets,
+    with the fringe model defined as a peice-wise double sine function corrected at the end of each telluric model
+    using the least-squares fit method.
+
+    The model assumes a second-order polynomail for the continuum.
+    """
+    data2               = copy.deepcopy(data)
+    data2.wave          = data2.wave + wave_offset
+    telluric_model      = smart.convolveTelluric(lsf, airmass, pwv, data2)
+    
+    model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
+    if niter is not None:
+        for i in range(niter):
+            model               = smart.continuum(data=data2, mdl=model, deg=deg)
+    
+    model.flux         += flux_offset
+
+    # construct the fringe model
+    residual      = copy.deepcopy(data)
+    residual.flux = (data.flux - model.flux)/model.flux
+
+    end = len(piecewise_fringe_model)-1
+
+    for i in range(len(piecewise_fringe_model)-1):
+        pixel_start, pixel_end = piecewise_fringe_model[i], piecewise_fringe_model[i+1]
+
+        tmp = copy.deepcopy(residual)
+        tmp.flux = tmp.flux[pixel_start: pixel_end]
+        tmp.wave = tmp.wave[pixel_start: pixel_end]
+
+        #best_frequency1, best_frequency2 = get_peak_fringe_frequency(tmp, pixel_start, pixel_end)
+        best_frequency1, best_frequency2 = 2.07, 0.84
+        #print(best_frequency1, best_frequency2)
+
+        amp = max(tmp.flux)
+        p0 = [amp, best_frequency1, 0.0, amp, best_frequency2, 0.0]
+        bounds = ([0.0, 0.0, -np.pi, 0.0, 0.0, -np.pi], 
+            [1.1*amp, 100*best_frequency1, np.pi, 1.1*amp, 100*best_frequency2, np.pi])
+
+        popt, pcov = curve_fit(double_sine2, tmp.wave, tmp.flux, maxfev=10000, p0=p0, bounds=bounds)
+        if verbose:
+        	print('popt', popt)
+        # replace the model with the fringe pattern; note that this has to be the model wavelength at the current forward-modeling step before resampling
+        #model.flux[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])] *= (1 + double_sine(model.wave[[(model.wave>residual.wave[pixel_start]) & (model.wave<residual.wave[pixel_end])]], *popt))
+
+        model.flux[pixel_start: pixel_end] = model.flux[pixel_start: pixel_end]*(1 + double_sine2(residual.wave[pixel_start: pixel_end], *popt))
+
+        #except:
+        #    print(f'Warning: cannot obtain the optimal fringe parameters between {piecewise_fringe_model[i]} and {piecewise_fringe_model[i+1]}.')
+        #    pass
+
+    return model
 
 def double_sine_fringe(data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset, output_stellar_model=False):
 	"""

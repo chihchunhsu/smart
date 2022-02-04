@@ -245,7 +245,6 @@ def convolveTelluricFringe(lsf, airmass, pwv, telluric_data,
     return telluric_model
 
 
-
 def makeTelluricModelFringe(lsf, airmass, pwv, flux_offset, wave_offset, 
     a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
     a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 

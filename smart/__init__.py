@@ -1,4 +1,4 @@
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 from .initialize import *
 from .utils.barycorr import barycorr
@@ -9,9 +9,9 @@ from .forward_model.integralResample import integralResample
 from .forward_model.InterpolateModel import InterpModel
 from .forward_model.rotation_broaden import lsf_rotate, broaden
 from .forward_model.continuum import *
-from .forward_model.tellurics import InterpTelluricModel
+from .forward_model.tellurics import InterpTelluricModel, convolveTelluric
 from .forward_model.model_fit import *
-from .forward_model.fringe_model import double_sine, doub_sine_wave_dependent, double_sine_fringe
+from .forward_model.fringe_model import double_sine, doub_sine_wave_dependent, double_sine_fringe, double_sine_fringe_telluric
 from .forward_model.mcmc import run_mcmc, telluric_mcmc, run_mcmc2, run_mcmc3
 from .forward_model.apogee.lsf_function import computeAPLSF, convolveAPLSF
 try:

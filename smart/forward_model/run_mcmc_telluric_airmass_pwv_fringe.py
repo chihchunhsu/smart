@@ -9,6 +9,7 @@ from astropy.io import fits
 import emcee
 import tellurics
 import smart
+import fringe_model
 from multiprocessing import Pool
 import corner
 import os
@@ -152,9 +153,10 @@ length1     = len(tell_sp.oriWave)
 pixel       = np.delete(np.arange(length1),tell_sp.mask)
 pixel       = pixel[pixel_start:pixel_end]
 
-a1_1, k1_1, p1_1, a2_1, k2_1, p2_1 = 0.0174107, 2.10231814, -3.14150313, 0.00484561, 0.86503406, 3.14156183
-a1_2, k1_2, p1_2, a2_2, k2_2, p2_2 = 0.0144445, 2.0740762, -0.00275613, 0.00224659, 0.84935461, -0.00915833
-a1_3, k1_3, p1_3, a2_3, k2_3, p2_3 = 0.01452451, 2.07021129, 0.82740255, 0.00826017, 0.82431895, -3.14154979
+piecewise_fringe_model = [0, 200, -100, -1]
+#a1_1, k1_1, p1_1, a2_1, k2_1, p2_1 = 0.0174107, 2.10231814, -3.14150313, 0.00484561, 0.86503406, 3.14156183
+#a1_2, k1_2, p1_2, a2_2, k2_2, p2_2 = 0.0144445, 2.0740762, -0.00275613, 0.00224659, 0.84935461, -0.00915833
+#a1_3, k1_3, p1_3, a2_3, k2_3, p2_3 = 0.01452451, 2.07021129, 0.82740255, 0.00826017, 0.82431895, -3.14154979
 
 if save_to_path is None:
 	save_to_path = './mcmc'
@@ -298,11 +300,14 @@ def lnlike(theta, data=data):
 
 	lsf, airmass, pwv, A, B  = theta
 
-	model = tellurics.makeTelluricModelFringe(	lsf, airmass, pwv, A, B, 
-												a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
-												a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 
-												a1_3, k1_3, p1_3, a2_3, k2_3, p2_3,
-												data=data, deg=2, niter=None)
+	#model = tellurics.makeTelluricModelFringe(	lsf, airmass, pwv, A, B, 
+	#											a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
+	#											a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 
+	#											a1_3, k1_3, p1_3, a2_3, k2_3, p2_3,
+	#											data=data, deg=2, niter=None)
+
+	model = fringe_model.double_sine_fringe_telluric( lsf, airmass, pwv, A, B, data=data, deg=2, niter=None, 
+		piecewise_fringe_model=piecewise_fringe_model, verbose=False)
 
 	chisquare = smart.chisquare(data, model)
 
@@ -432,11 +437,14 @@ model.flux         += A_mcmc[0]
 
 model_nofringe = tellurics.makeTelluricModel(lsf_mcmc[0], airmass_mcmc[0], pwv_mcmc[0], A_mcmc[0], B_mcmc[0], data=data, deg=2, niter=None)
 
-model = tellurics.makeTelluricModelFringe(	lsf_mcmc[0], airmass_mcmc[0], pwv_mcmc[0], A_mcmc[0], B_mcmc[0], 
-											a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
-											a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 
-											a1_3, k1_3, p1_3, a2_3, k2_3, p2_3,
-											data=data, deg=2, niter=None)
+model = fringe_model.double_sine_fringe_telluric( lsf_mcmc[0], airmass_mcmc[0], pwv_mcmc[0], A_mcmc[0], B_mcmc[0], data=data, deg=2, niter=None, 
+	piecewise_fringe_model=piecewise_fringe_model, verbose=False)
+
+#model = tellurics.makeTelluricModelFringe(	lsf_mcmc[0], airmass_mcmc[0], pwv_mcmc[0], A_mcmc[0], B_mcmc[0], 
+#											a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
+#											a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 
+#											a1_3, k1_3, p1_3, a2_3, k2_3, p2_3,
+#											data=data, deg=2, niter=None)
 
 plt.tick_params(labelsize=20)
 fig = plt.figure(figsize=(20,8))

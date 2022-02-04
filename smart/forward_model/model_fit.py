@@ -632,23 +632,23 @@ def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5):
 		
 	return model
 
-def convolveTelluric(lsf, telluric_data, alpha=1.0, airmass='1.0', pwv='1.5'):
-	"""
-	Return a convolved telluric transmission model given a telluric data and lsf.
-	"""
-	# get a telluric standard model
-	wavelow               = telluric_data.wave[0]  - 50
-	wavehigh              = telluric_data.wave[-1] + 50
-	telluric_model        = smart.getTelluric(wavelow=wavelow,wavehigh=wavehigh, airmass=airmass, pwv=pwv)
-	telluric_model.flux **= alpha
-	# lsf
-	telluric_model.flux = smart.broaden(wave=telluric_model.wave, flux=telluric_model.flux, 
-		vbroad=lsf, rotate=False, gaussian=True)
-	# resample
-	telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, 
-		yh=telluric_model.flux, xl=telluric_data.wave))
-	telluric_model.wave = telluric_data.wave
-	return telluric_model
+#def convolveTelluric(lsf, telluric_data, alpha=1.0, airmass='1.0', pwv='1.5'):
+#	"""
+#	Return a convolved telluric transmission model given a telluric data and lsf.
+#	"""
+#	# get a telluric standard model
+#	wavelow               = telluric_data.wave[0]  - 50
+#	wavehigh              = telluric_data.wave[-1] + 50
+#	telluric_model        = smart.getTelluric(wavelow=wavelow,wavehigh=wavehigh, airmass=airmass, pwv=pwv)
+#	telluric_model.flux **= alpha
+#	# lsf
+#	telluric_model.flux = smart.broaden(wave=telluric_model.wave, flux=telluric_model.flux, 
+#		vbroad=lsf, rotate=False, gaussian=True)
+#	# resample
+#	telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, 
+#		yh=telluric_model.flux, xl=telluric_data.wave))
+#	telluric_model.wave = telluric_data.wave
+#	return telluric_model
 
 def getLSF2(telluric_data, continuum=True, test=False, save_path=None):
 	"""
