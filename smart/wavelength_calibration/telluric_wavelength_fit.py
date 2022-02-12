@@ -610,10 +610,11 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	#else:
 	#	pixel              = pixel0[pixel_range_start:pixel_range_end]
 
+	"""
 	## Ultimately this should be removed by the airmass parameter
 	# increase the telluric model strength for N3
 	if order == 63 or order == 64 or order == 65 or order == 66:
-		model.flux **= 6
+		model.flux **= 1 # was 6
 	elif order == 62:
 		model.flux **= 4
 	elif order == 59:
@@ -626,6 +627,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		model.flux **= 3
 	elif order == 37:
 		model.flux **= 1.2
+	"""
 
 	# LSF of the intrument
 	vbroad = (299792.458)*np.mean(np.diff(data.wave))/np.mean(data.wave)
@@ -1378,12 +1380,11 @@ def run_wave_cal(data_name, data_path, order_list,
 			plt.close()
 			#sys.exit()
 		
-
 		# continuum correction for the data
 		data1    = copy.deepcopy(data)
 		data     = smart.continuumTelluric(data=data, model=model)
 		## constant offset correction
-		const    = np.mean(data.flux) - np.mean(model.flux)
+		const    = np.median(data.flux) - np.median(model.flux)
 		data.flux -= const
 
 		#print(len(data.wave),len(data.flux),len(data.noise))
