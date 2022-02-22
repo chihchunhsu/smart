@@ -676,6 +676,14 @@ if plot_show:
 	plt.show()
 plt.close()
 
+# chi2 and dof in the log
+log_path = save_to_path + '/mcmc_parameters.txt'
+file_log = open(log_path,"a")
+file_log.write("chi2 {} \n".format(round(smart.chisquare(data,model))))
+file_log.write("dof {} \n".format(round(len(data.wave-ndim)/3)))
+file_log.close()
+
+
 # excel summary file
 cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
 							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
@@ -684,7 +692,7 @@ cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell
 							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
 							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
 							'cflux','e_cflux','ue_cflux','le_cflux','cwave','e_cwave','ue_cwave','le_cwave',
-							'cnoise','e_cnoise','ue_cnoise','le_cnoise','wave_cal_err'])
+							'cnoise','e_cnoise','ue_cnoise','le_cnoise','wave_cal_err','chi2','dof','acceptance_fraction','autocorr_time'])
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
@@ -705,7 +713,7 @@ cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tel
 					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
 					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2], 
 					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
-					'wave_cal_err':wave_cal_err}, ignore_index=True)
+					'wave_cal_err':wave_cal_err, }, ignore_index=True)
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 
