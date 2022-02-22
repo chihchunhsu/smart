@@ -516,22 +516,6 @@ teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
 
 # add the summary to the txt file
-log_path = save_to_path + '/mcmc_parameters.txt'
-file_log = open(log_path,"a")
-file_log.write("*** Below is the summary *** \n")
-file_log.write("total_time {} min\n".format(str((time2-time1)/60)))
-file_log.write("mean_acceptance_fraction {0:.3f} \n".format(np.mean(sampler.acceptance_fraction)))
-file_log.write("mean_autocorrelation_time {0:.3f} \n".format(np.mean(autocorr_time)))
-file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
-file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
-file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
-file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
-file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
-file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
-file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
-file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
-file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
-file_log.close()
 
 # log file
 log_path2 = save_to_path + '/mcmc_result.txt'
@@ -679,8 +663,21 @@ plt.close()
 # chi2 and dof in the log
 log_path = save_to_path + '/mcmc_parameters.txt'
 file_log = open(log_path,"a")
+file_log.write("*** Below is the summary *** \n")
+file_log.write("total_time {} min\n".format(str((time2-time1)/60)))
+file_log.write("mean_acceptance_fraction {0:.3f} \n".format(np.mean(sampler.acceptance_fraction)))
+file_log.write("mean_autocorrelation_time {0:.3f} \n".format(np.mean(autocorr_time)))
 file_log.write("chi2 {} \n".format(round(smart.chisquare(data,model))))
 file_log.write("dof {} \n".format(round(len(data.wave-ndim)/3)))
+file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
+file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
+file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
+file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
+file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
+file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
+file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
+file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
+file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
 file_log.close()
 
 
