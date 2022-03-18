@@ -21,6 +21,7 @@ import argparse
 import json
 import ast
 import warnings
+from datetime import date, datetime
 warnings.filterwarnings("ignore")
 
 ##############################################################################################
@@ -106,6 +107,8 @@ parser.add_argument("-modelset",type=str,
 
 parser.add_argument("-final_mcmc", action='store_true', help="run final mcmc; default False")
 
+parser.add_argument("-include_fringe_model", action='store_true', help="model the fringe pattern; default False")
+
 args = parser.parse_args()
 
 ######################################################################################################
@@ -131,6 +134,7 @@ coadd                  = args.coadd
 outlier_rejection      = float(args.outlier_rejection)
 modelset               = str(args.modelset)
 final_mcmc             = args.final_mcmc
+include_fringe_model   = args.include_fringe_model
 
 if final_mcmc:
 	#save_to_path1  = save_to_path_base + '/init_mcmc'
@@ -138,7 +142,11 @@ if final_mcmc:
 
 else:
 	save_to_path   = save_to_path_base + '/init_mcmc'
-	
+
+# date
+today     = date.today()
+now       = datetime.now()
+dt_string = now.strftime("%H:%M:%S")	
 
 #####################################
 
@@ -148,6 +156,14 @@ tell_data_name2 = tell_data_name + '_calibrated'
 tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask)
 
 data.updateWaveSol(tell_sp)
+
+# MJD for logging
+# upgraded NIRSPEC
+if len(data.oriWave) == 2048:
+	mjd = data.header['MJD']
+# old NIRSPEC
+else:
+	mjd = data.header['MJD-OBS']
 
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
@@ -256,54 +272,85 @@ barycorr       = json.loads(lines[13].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
 if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
-elif modelset == 'btsettl08' and priors['teff_min2'] < 900: logg_max = 5.0
 else: logg_max = 5.5
 
 # limit of the flux nuisance parameter: 5 percent of the median flux
 A_const       = 0.05 * abs(np.median(data.flux))
 
-if modelset == 'btsettl08' or modelset == 'sonora-2018':
-	# assume teff lower limit = 900 K to avoid logg ceiling issue
+if modelset == 'btsettl08':
 	limits         = { 
-						'teff_min':max(priors['teff_min']-300,900), 'teff_max':min(priors['teff_max']+300,3500),
-						'logg_min':priors['logg_min'],              'logg_max':priors['logg_max'],
-						'vsini_min':priors['vsini_min'],            'vsini_max':priors['vsini_max'],
-						'rv_min':priors['rv_min'],                  'rv_max':priors['rv_max'],
-						'teff_min2':max(priors['teff_min2']-300,500),'teff_max2':min(priors['teff_max2'],3500),
-						'logg_min2':priors['logg_min2'],            'logg_max2':priors['logg_max2'],
-						'vsini_min2':priors['vsini_min2'],          'vsini_max2':priors['vsini_max2'],
-						'rv_min2':priors['rv_min2'],                'rv_max2':priors['rv_max2'],
-						'flsc_min':priors['flsc_min'],				'flsc_max':priors['flsc_max'],
-						'am_min':1.0,                               'am_max':3.0,
-						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,                              	'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.0 				
+						'teff_min':max(priors['teff_min']-300,500),  'teff_max':min(priors['teff_max']+300,3500),
+						'logg_min':3.5,                              'logg_max':logg_max,
+						'vsini_min':0.0,                             'vsini_max':100.0,
+						'rv_min':-200.0,                             'rv_max':200.0,
+						'am_min':1.0,                                'am_max':3.0,
+						'pwv_min':0.5,                            	 'pwv_max':20.0,
+						'A_min':-A_const,							 'A_max':A_const,
+						'B_min':-0.6,                              	 'B_max':0.6,
+						'N_min':0.10,                                'N_max':5.0,
+						'teff2_min':max(priors['teff2_min']-300,500), 'teff2_max':min(priors['teff2_max']+300,3500),
+						'logg2_min':3.5,                             'logg2_max':logg_max,
+						'vsini2_min':0.0,                            'vsini2_max':100.0,
+						'rv2_min':-200.0,                            'rv2_max':200.0,	
+						'flux_scale_min':0.1,                        'flux_scale_max':1.0,		
+					}
+
+elif modelset == 'sonora':
+	limits         = { 
+						'teff_min':max(priors['teff_min']-300,200),  'teff_max':min(priors['teff_max']+300,2400),
+						'logg_min':3.5,                              'logg_max':logg_max,
+						'vsini_min':0.0,                             'vsini_max':100.0,
+						'rv_min':-200.0,                             'rv_max':200.0,
+						'am_min':1.0,                                'am_max':3.0,
+						'pwv_min':0.5,                            	 'pwv_max':20.0,
+						'A_min':-A_const,							 'A_max':A_const,
+						'B_min':-0.6,                              	 'B_max':0.6,
+						'N_min':0.10,                                'N_max':5.0,
+						'teff2_min':max(priors['teff2_min']-300,200), 'teff2_max':min(priors['teff2_max']+300,2400),
+						'vsini2_min':0.0,                            'vsini2_max':100.0,
+						'rv2_min':-200.0,                            'rv2_max':200.0,	
+						'flux_scale_min':0.1,                        'flux_scale_max':1.0,
 					}
 
 elif modelset == 'phoenixaces':
 	limits         = { 
-						'teff_min':max(priors['teff_min']-300,2300), 'teff_max':min(priors['teff_max']+300,10000),
-						'logg_min':3.5,                             'logg_max':logg_max,
-						'vsini_min':0.0,                            'vsini_max':100.0,
-						'rv_min':-200.0,                            'rv_max':200.0,
-						'teff_min2':max(priors['teff_min2']-300,2300),'teff_max2':min(priors['teff_max2'],3500),
-						'logg_min2':3.5,                            'logg_max2':logg_max,
-						'vsini_min2':0.0,                           'vsini_max2':100.0,
-						'rv_min2':-200.0,                           'rv_max2':200.0,
-						'flsc_min':0.1,								'flsc_max':0.8,
-						'am_min':1.0,                               'am_max':3.0,
-						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,								'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.50 				
+						'teff_min':max(priors['teff_min']-300,2300),  'teff_max':min(priors['teff_max']+300,10000),
+						'logg_min':3.5,                               'logg_max':logg_max,
+						'vsini_min':0.0,                              'vsini_max':100.0,
+						'rv_min':-200.0,                              'rv_max':200.0,
+						'am_min':1.0,                                 'am_max':3.0,
+						'pwv_min':0.5,                            	  'pwv_max':20.0,
+						'A_min':-A_const,							  'A_max':A_const,
+						'B_min':-0.6,								  'B_max':0.6,
+						'N_min':0.10,                                 'N_max':5.50,
+						'teff2_min':max(priors['teff2_min']-300,2300), 'teff2_max':min(priors['teff2_max']+300,10000),
+						'vsini2_min':0.0,                            'vsini2_max':100.0,
+						'rv2_min':-200.0,                            'rv2_max':200.0,	
+						'flux_scale_min':0.1,                        'flux_scale_max':1.0,
+					}
+
+elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
+	limits         = { 
+						'teff_min':max(priors['teff_min']-300,2300),  'teff_max':min(priors['teff_max']+300,7000),
+						'logg_min':3.5,                               'logg_max':logg_max,
+						'vsini_min':0.0,                              'vsini_max':100.0,
+						'rv_min':-200.0,                              'rv_max':200.0,
+						'am_min':1.0,                                 'am_max':3.0,
+						'pwv_min':0.5,                            	  'pwv_max':20.0,
+						'A_min':-A_const,							  'A_max':A_const,
+						'B_min':-0.6,								  'B_max':0.6,
+						'N_min':0.10,                                 'N_max':5.50,
+						'teff2_min':max(priors['teff2_min']-300,2300), 'teff2_max':min(priors['teff2_max']+300,7000),
+						'vsini2_min':0.0,                             'vsini2_max':100.0,
+						'rv2_min':-200.0,                             'rv2_max':200.0,	
+						'flux_scale_min':0.1,                         'flux_scale_max':1.0,
 					}
 
 if final_mcmc:
 	limits['rv_min']  = priors['rv_min'] - 10
 	limits['rv_max']  = priors['rv_max'] + 10
-	limits['rv_min2'] = priors['rv_min2'] - 10
-	limits['rv_max2'] = priors['rv_max2'] + 10
+	limits['rv2_min'] = priors['rv2_min'] - 10
+	limits['rv2_max'] = priors['rv2_max'] + 10
 
 ## apply a custom mask
 data.mask_custom(custom_mask=custom_mask)
@@ -361,6 +408,8 @@ file_log.close()
 ## for multiprocessing
 #########################################################################################
 
+print('include_fringe_model', include_fringe_model)
+
 def lnlike(theta, data, lsf):
 	"""
 	Log-likelihood, computed from chi-squared.
@@ -378,14 +427,12 @@ def lnlike(theta, data, lsf):
 	"""
 
 	## Parameters MCMC
-	teff, logg, vsini, rv, teff2, logg2, vsini2, rv2, flsc, am, pwv, A, B, N = theta #N noise prefactor
+	teff, logg, vsini, rv, teff2, logg2, vsini2, rv2, am, pwv, A, B, N, flux_scale = theta #N noise prefactor
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
-	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, 
-		teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flsc,
-		tell_alpha=1.0, wave_offset=B, flux_offset=A,
-		lsf=lsf, order=data.order, data=data, modelset=modelset, airmass=am, pwv=pwv,
-		binary=True)
+	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model,
+		binary=True, teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flux_scale)
 
 	chisquare = smart.chisquare(data, model)/N**2
 
@@ -396,22 +443,22 @@ def lnprior(theta, limits=limits):
 	Specifies a flat prior
 	"""
 	## Parameters for theta
-	teff, logg, vsini, rv, teff2, logg2, vsini2, rv2, flsc, am, pwv, A, B, N = theta #N=noise prefactor; flsc= flux scale
+	teff, logg, vsini, rv, teff2, logg2, vsini2, rv2, am, pwv, A, B, N, flux_scale = theta
 
-	if  limits['teff_min']   < teff   < limits['teff_max'] \
-	and limits['logg_min']   < logg   < limits['logg_max'] \
-	and limits['vsini_min']  < vsini  < limits['vsini_max']\
-	and limits['rv_min']     < rv     < limits['rv_max']   \
-	and limits['teff_min2']  < teff2  < limits['teff_max2'] \
-	and limits['logg_min2']  < logg2  < limits['logg_max2'] \
-	and limits['vsini_min2'] < vsini2 < limits['vsini_max2']\
-	and limits['rv_min2']    < rv2    < limits['rv_max2']   \
-	and limits['flsc_min']   < flsc   < limits['flsc_max']   \
-	and limits['am_min']     < am     < limits['am_max']\
-	and limits['pwv_min']    < pwv    < limits['pwv_max']\
-	and limits['A_min']      < A      < limits['A_max']\
-	and limits['B_min']      < B      < limits['B_max']\
-	and limits['N_min']      < N      < limits['N_max']:
+	if  limits['teff_min']       < teff       < limits['teff_max'] \
+	and limits['logg_min']       < logg       < limits['logg_max'] \
+	and limits['vsini_min']      < vsini      < limits['vsini_max']\
+	and limits['rv_min']         < rv         < limits['rv_max']   \
+	and limits['teff2_min']      < teff2      < limits['teff2_max']\
+	and limits['logg2_min']      < logg2      < limits['logg2_max']\
+	and limits['vsini2_min']     < vsini2     < limits['vsini2_max']\
+	and limits['rv2_min']        < rv2        < limits['rv2_max']\
+	and limits['am_min']         < am         < limits['am_max']\
+	and limits['pwv_min']        < pwv        < limits['pwv_max']\
+	and limits['A_min']          < A          < limits['A_max']\
+	and limits['B_min']          < B          < limits['B_max']\
+	and limits['N_min']          < N          < limits['N_max']\
+	and limits['flux_scale_min'] < flux_scale < limits['flux_scale_max']:
 		return 0.0
 
 	return -np.inf
@@ -425,20 +472,20 @@ def lnprob(theta, data, lsf):
 		
 	return lnp + lnlike(theta, data, lsf)
 
-pos = [np.array([	priors['teff_min']   + (priors['teff_max']   - priors['teff_min']  ) * np.random.uniform(), 
-					priors['logg_min']   + (priors['logg_max']   - priors['logg_min']  ) * np.random.uniform(), 
-					priors['vsini_min']  + (priors['vsini_max']  - priors['vsini_min'] ) * np.random.uniform(),
-					priors['rv_min']     + (priors['rv_max']     - priors['rv_min']    ) * np.random.uniform(), 
-					priors['teff_min2']  + (priors['teff_max2']  - priors['teff_min2'] ) * np.random.uniform(), 
-					priors['logg_min2']  + (priors['logg_max2']  - priors['logg_min2'] ) * np.random.uniform(), 
-					priors['vsini_min2'] + (priors['vsini_max2'] - priors['vsini_min2']) * np.random.uniform(),
-					priors['rv_min2']    + (priors['rv_max2']    - priors['rv_min2']   ) * np.random.uniform(), 
-					priors['flsc_min']   + (priors['flsc_max']  - priors['flsc_min'] ) * np.random.uniform(), 
-					priors['am_min']     + (priors['am_max']     - priors['am_min']    ) * np.random.uniform(),
-					priors['pwv_min']    + (priors['pwv_max']    - priors['pwv_min']   ) * np.random.uniform(),
-					priors['A_min']      + (priors['A_max']      - priors['A_min']     ) * np.random.uniform(),
-					priors['B_min']      + (priors['B_max']      - priors['B_min']     ) * np.random.uniform(),
-					priors['N_min']      + (priors['N_max']      - priors['N_min']     ) * np.random.uniform()]) for i in range(nwalkers)]
+pos = [np.array([	priors['teff_min']       + (priors['teff_max']       - priors['teff_min'] )      * np.random.uniform(), 
+					priors['logg_min']       + (priors['logg_max']       - priors['logg_min'] )      * np.random.uniform(), 
+					priors['vsini_min']      + (priors['vsini_max']      - priors['vsini_min'])      * np.random.uniform(),
+					priors['rv_min']         + (priors['rv_max']         - priors['rv_min']   )      * np.random.uniform(),
+					priors['teff2_min']      + (priors['teff2_max']      - priors['teff2_min'])      * np.random.uniform(),
+					priors['logg2_min']      + (priors['logg2_max']      - priors['logg2_min'])      * np.random.uniform(),
+					priors['vsini2_min']     + (priors['vsini2_max']     - priors['vsini2_min'])     * np.random.uniform(),
+					priors['rv2_min']        + (priors['rv2_max']        - priors['rv2_min'])        * np.random.uniform(), 
+					priors['am_min']         + (priors['am_max']         - priors['am_min'])         * np.random.uniform(),
+					priors['pwv_min']        + (priors['pwv_max']        - priors['pwv_min'])        * np.random.uniform(),
+					priors['A_min']          + (priors['A_max']          - priors['A_min'])          * np.random.uniform(),
+					priors['B_min']          + (priors['B_max']          - priors['B_min'])          * np.random.uniform(),
+					priors['N_min']          + (priors['N_max']          - priors['N_min'])          * np.random.uniform(),
+					priors['flux_scale_min'] + (priors['flux_scale_max'] - priors['flux_scale_min']) * np.random.uniform()]) for i in range(nwalkers)]
 
 ## multiprocessing
 
@@ -467,9 +514,10 @@ print(autocorr_time)
 sampler_chain = np.load(save_to_path + '/sampler_chain.npy')
 samples = np.load(save_to_path + '/samples.npy')
 
-ylabels = [	"$T_{eff} 1 (K)$", "$log \, g$1 (dex)", "$vsin \, i 1(km/s)$", "$RV 1(km/s)$",
-			"$T_{eff} 2 (K)$", "$log \, g$2 (dex)", "$vsin \, i 2(km/s)$", "$RV 2(km/s)$", "$F_{2}$",
-			"$AM$", "pwv (mm)","$C_{F_{\lambda}}$ (cnt/s)","$C_{\lambda}$($\AA$)","$C_{noise}$"]
+ylabels = [	"$T_{\mathrm{eff}} (K)$","$\log{g}$(dex)","$v\sin{i}(km/s)$","$RV(km/s)$",
+			"$T_{\mathrm{eff}_2} (K)$","$\log{g}_2$(dex)","$v\sin{i}_2(km/s)$","$RV_2(km/s)$",
+			"$AM$", "pwv (mm)","$C_{F_{\lambda}}$ (cnt/s)","$C_{\lambda}$($\AA$)","$C_{noise}$","$C_{\mathrm{scale}}$"]
+
 
 ## create walker plots
 plt.rc('font', family='sans-serif')
@@ -496,31 +544,10 @@ triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
-teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, teff_mcmc2, logg_mcmc2, vsini_mcmc2, rv_mcmc2, flsc_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
+teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, teff2_mcmc, logg2_mcmc, vsini2_mcmc, rv2_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc, flux_scale_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
 
 # add the summary to the txt file
-log_path = save_to_path + '/mcmc_parameters.txt'
-file_log = open(log_path,"a")
-file_log.write("*** Below is the summary *** \n")
-file_log.write("total_time {} min\n".format(str((time2-time1)/60)))
-file_log.write("mean_acceptance_fraction {0:.3f} \n".format(np.mean(sampler.acceptance_fraction)))
-file_log.write("mean_autocorrelation_time {0:.3f} \n".format(np.mean(autocorr_time)))
-file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
-file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
-file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
-file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
-file_log.write("teff_mcmc2 {} K\n".format(str(teff_mcmc2)))
-file_log.write("logg_mcmc2 {} dex (cgs)\n".format(str(logg_mcmc2)))
-file_log.write("vsini_mcmc2 {} km/s\n".format(str(vsini_mcmc2)))
-file_log.write("rv_mcmc2 {} km/s\n".format(str(rv_mcmc2)))
-file_log.write("flsc_mcmc {} km/s\n".format(str(flsc_mcmc)))
-file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
-file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
-file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
-file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
-file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
-file_log.close()
 
 # log file
 log_path2 = save_to_path + '/mcmc_result.txt'
@@ -530,36 +557,66 @@ file_log2.write("teff_mcmc {}\n".format(str(teff_mcmc[0])))
 file_log2.write("logg_mcmc {}\n".format(str(logg_mcmc[0])))
 file_log2.write("vsini_mcmc {}\n".format(str(vsini_mcmc[0])))
 file_log2.write("rv_mcmc {}\n".format(str(rv_mcmc[0]+barycorr)))
-file_log2.write("teff_mcmc2 {}\n".format(str(teff_mcmc2[0])))
-file_log2.write("logg_mcmc2 {}\n".format(str(logg_mcmc2[0])))
-file_log2.write("vsini_mcmc2 {}\n".format(str(vsini_mcmc2[0])))
-file_log2.write("rv_mcmc2 {}\n".format(str(rv_mcmc2[0]+barycorr)))
-file_log2.write("flsc_mcmc {}\n".format(str(flsc_mcmc[0])))
 file_log2.write("am_mcmc {}\n".format(str(am_mcmc[0])))
 file_log2.write("pwv_mcmc {}\n".format(str(pwv_mcmc[0])))
 file_log2.write("A_mcmc {}\n".format(str(A_mcmc[0])))
 file_log2.write("B_mcmc {}\n".format(str(B_mcmc[0])))
 file_log2.write("N_mcmc {}\n".format(str(N_mcmc[0])))
+file_log2.write("teff2_mcmc {}\n".format(str(teff2_mcmc[0])))
+file_log2.write("logg2_mcmc {}\n".format(str(logg2_mcmc[0])))
+file_log2.write("vsini2_mcmc {}\n".format(str(vsini2_mcmc[0])))
+file_log2.write("rv2_mcmc {}\n".format(str(rv2_mcmc[0]+barycorr)))
+file_log2.write("flux_scale_mcmc {}\n".format(str(flux_scale_mcmc[0])))
 file_log2.write("teff_mcmc_e {}\n".format(str(max(abs(teff_mcmc[1]), abs(teff_mcmc[2])))))
 file_log2.write("logg_mcmc_e {}\n".format(str(max(abs(logg_mcmc[1]), abs(logg_mcmc[2])))))
 file_log2.write("vsini_mcmc_e {}\n".format(str(max(abs(vsini_mcmc[1]), abs(vsini_mcmc[2])))))
 file_log2.write("rv_mcmc_e {}\n".format(str(max(abs(rv_mcmc[1]), abs(rv_mcmc[2])))))
-file_log2.write("teff_mcmc2_e {}\n".format(str(max(abs(teff_mcmc2[1]), abs(teff_mcmc2[2])))))
-file_log2.write("logg_mcmc2_e {}\n".format(str(max(abs(logg_mcmc2[1]), abs(logg_mcmc2[2])))))
-file_log2.write("vsini_mcmc2_e {}\n".format(str(max(abs(vsini_mcmc2[1]), abs(vsini_mcmc2[2])))))
-file_log2.write("rv_mcmc2_e {}\n".format(str(max(abs(rv_mcmc2[1]), abs(rv_mcmc2[2])))))
-file_log2.write("flsc_mcmc_e {}\n".format(str(max(abs(flsc_mcmc[1]), abs(flsc_mcmc[2])))))
 file_log2.write("am_mcmc_e {}\n".format(str(max(abs(am_mcmc[1]), abs(am_mcmc[2])))))
 file_log2.write("pwv_mcmc_e {}\n".format(str(max(abs(pwv_mcmc[1]), abs(pwv_mcmc[2])))))
 file_log2.write("A_mcmc_e {}\n".format(str(max(abs(A_mcmc[1]), abs(A_mcmc[2])))))
 file_log2.write("B_mcmc_e {}\n".format(str(max(abs(B_mcmc[1]), abs(B_mcmc[2])))))
 file_log2.write("N_mcmc_e {}\n".format(str(max(abs(N_mcmc[1]), abs(N_mcmc[2])))))
+file_log2.write("teff2_mcmc_e {}\n".format(str(max(abs(teff2_mcmc[1]), abs(teff2_mcmc[2])))))
+file_log2.write("logg2_mcmc_e {}\n".format(str(max(abs(logg2_mcmc[1]), abs(logg2_mcmc[2])))))
+file_log2.write("vsini2_mcmc_e {}\n".format(str(max(abs(vsini2_mcmc[1]), abs(vsini2_mcmc[2])))))
+file_log2.write("rv2_mcmc_e {}\n".format(str(max(abs(rv2_mcmc[1]), abs(rv2_mcmc[2])))))
+file_log2.write("flux_scale_mcmc_e {}\n".format(str(max(abs(flux_scale_mcmc[1]), abs(flux_scale_mcmc[2])))))
+# upper and lower uncertainties
+# upper uncertainties
+file_log2.write("teff_mcmc_ue {}\n".format(str(abs(teff_mcmc[1]))))
+file_log2.write("logg_mcmc_ue {}\n".format(str(abs(logg_mcmc[1]))))
+file_log2.write("vsini_mcmc_ue {}\n".format(str(abs(vsini_mcmc[1]))))
+file_log2.write("rv_mcmc_ue {}\n".format(str(abs(rv_mcmc[1]))))
+file_log2.write("am_mcmc_ue {}\n".format(str(abs(am_mcmc[1]))))
+file_log2.write("pwv_mcmc_ue {}\n".format(str(abs(pwv_mcmc[1]))))
+file_log2.write("A_mcmc_ue {}\n".format(str(abs(A_mcmc[1]))))
+file_log2.write("B_mcmc_ue {}\n".format(str(abs(B_mcmc[1]))))
+file_log2.write("N_mcmc_ue {}\n".format(str(abs(N_mcmc[1]))))
+file_log2.write("teff2_mcmc_ue {}\n".format(str(abs(teff2_mcmc[1]))))
+file_log2.write("logg2_mcmc_ue {}\n".format(str(abs(logg2_mcmc[1]))))
+file_log2.write("vsini2_mcmc_ue {}\n".format(str(abs(vsini2_mcmc[1]))))
+file_log2.write("rv2_mcmc_ue {}\n".format(str(abs(rv2_mcmc[1]))))
+file_log2.write("flux_scale_mcmc_ue {}\n".format(str(abs(flux_scale_mcmc[1]))))
+# lower uncertainties
+file_log2.write("teff_mcmc_le {}\n".format(str(abs(teff_mcmc[2]))))
+file_log2.write("logg_mcmc_le {}\n".format(str(abs(logg_mcmc[2]))))
+file_log2.write("vsini_mcmc_le {}\n".format(str(abs(vsini_mcmc[2]))))
+file_log2.write("rv_mcmc_le {}\n".format(str(abs(rv_mcmc[2]))))
+file_log2.write("am_mcmc_le {}\n".format(str(abs(am_mcmc[2]))))
+file_log2.write("pwv_mcmc_le {}\n".format(str(abs(pwv_mcmc[2]))))
+file_log2.write("A_mcmc_le {}\n".format(str(abs(A_mcmc[2]))))
+file_log2.write("B_mcmc_le {}\n".format(str(abs(B_mcmc[2]))))
+file_log2.write("N_mcmc_le {}\n".format(str(abs(N_mcmc[2]))))
+file_log2.write("teff2_mcmc_le {}\n".format(str(abs(teff2_mcmc[2]))))
+file_log2.write("logg2_mcmc_le {}\n".format(str(abs(logg2_mcmc[2]))))
+file_log2.write("vsini2_mcmc_le {}\n".format(str(abs(vsini2_mcmc[2]))))
+file_log2.write("rv2_mcmc_le {}\n".format(str(abs(rv2_mcmc[2]))))
+file_log2.write("flux_scale_mcmc_le {}\n".format(str(abs(flux_scale_mcmc[2]))))
 file_log2.close()
 
 #print(teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc)
 
-triangle_samples[:,3] += barycorr #RV1
-triangle_samples[:,7] += barycorr #RV2
+triangle_samples[:,3] += barycorr
 
 ## triangular plots
 plt.rc('font', family='sans-serif')
@@ -568,17 +625,17 @@ fig = corner.corner(triangle_samples,
 	truths=[teff_mcmc[0], 
 	logg_mcmc[0],
 	vsini_mcmc[0], 
-	rv_mcmc[0]+barycorr, 
-	teff_mcmc2[0], 
-	logg_mcmc2[0],
-	vsini_mcmc2[0], 
-	rv_mcmc2[0]+barycorr, 
-	flsc_mcmc[0],
+	rv_mcmc[0]+barycorr,
+	teff2_mcmc[0],
+	logg2_mcmc[0],
+	vsini2_mcmc[0],
+	rv2_mcmc[0]+barycorr,
 	am_mcmc[0],
 	pwv_mcmc[0],
 	A_mcmc[0],
 	B_mcmc[0],
-	N_mcmc[0]],
+	N_mcmc[0],
+	flux_scale_mcmc[0]],
 	quantiles=[0.16, 0.84],
 	label_kwargs={"fontsize": 20})
 plt.minorticks_on()
@@ -587,36 +644,35 @@ if plot_show:
 	plt.show()
 plt.close()
 
-teff   = teff_mcmc[0]
-logg   = logg_mcmc[0]
-z      = 0.0
-vsini  = vsini_mcmc[0]
-rv     = rv_mcmc[0]
-teff2  = teff_mcmc2[0]
-logg2  = logg_mcmc2[0]
-vsini2 = vsini_mcmc2[0]
-rv2    = rv_mcmc2[0]
-flsc   = flsc_mcmc[0]
-am     = am_mcmc[0]
-pwv    = pwv_mcmc[0]
-A      = A_mcmc[0]
-B      = B_mcmc[0]
-N      = N_mcmc[0]
+teff       = teff_mcmc[0]
+logg       = logg_mcmc[0]
+z          = 0.0
+vsini      = vsini_mcmc[0]
+rv         = rv_mcmc[0]
+teff2      = teff2_mcmc[0]
+logg2      = logg2_mcmc[0]
+vsini2     = vsini2_mcmc[0]
+rv2        = rv2_mcmc[0]
+am         = am_mcmc[0]
+pwv        = pwv_mcmc[0]
+A          = A_mcmc[0]
+B          = B_mcmc[0]
+N          = N_mcmc[0]
+flux_scale = flux_scale_mcmc[0]
 
-
-model, model_notell, model2 = model_fit.makeModel(teff=teff, logg=logg, metal=z, vsini=vsini, rv=rv, 
-	teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flsc,
-	tell_alpha=1.0, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=data.order, data=data, modelset=modelset, airmass=am, pwv=pwv,
-	binary=True, output_stellar_model=True)
+model, model_notell, model1_notell, model2_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
+	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, include_fringe_model=include_fringe_model,
+	binary=True, teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flux_scale)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=15)
 ax1.plot(model.wave, model.flux, color='C3', linestyle='-', label='model',alpha=0.8)
-ax1.plot(model2.wave, model2.flux, color='m', linestyle='-', label='model2',alpha=0.8)
-ax1.plot(model_notell.wave,model_notell.flux, color='C0', linestyle='-', label='model no telluric',alpha=0.8)
+ax1.plot(model_notell.wave,model_notell.flux, color='C0', linestyle='-', label='model no telluric (primary + secondary)',alpha=0.8)
+ax1.plot(model2_notell.wave, model2_notell.flux, color='orange', linestyle='-', label='model no telluric (primary)',alpha=0.8)
+ax1.plot(model2_notell.wave, model2_notell.flux, color='magenta', linestyle='-', label='model no telluric (secondary)',alpha=0.8)
 ax1.plot(data.wave,data.flux,'k-',
 	label='data',alpha=0.5)
 ax1.plot(data.wave,data.flux-model.flux,'k-',alpha=0.8)
@@ -630,7 +686,7 @@ plt.figtext(0.89,0.85,str(data.header['OBJECT'])+' '+data.name+' O'+str(data.ord
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=15)
-plt.figtext(0.89,0.81,"$Teff1 \, {0}^{{+{1}}}_{{-{2}}}/ logg1 \, {3}^{{+{4}}}_{{-{5}}}/ en1 \, 0.0/ vsini1 \, {6}^{{+{7}}}_{{-{8}}}/ RV1 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini \, {6}^{{+{7}}}_{{-{8}}}/ RV \, {9}^{{+{10}}}_{{-{11}}}$".format(\
 	round(teff_mcmc[0]),
 	round(teff_mcmc[1]),
 	round(teff_mcmc[2]),
@@ -647,24 +703,24 @@ plt.figtext(0.89,0.81,"$Teff1 \, {0}^{{+{1}}}_{{-{2}}}/ logg1 \, {3}^{{+{4}}}_{{
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=12)
-plt.figtext(0.89,0.77,"$Teff2 \, {0}^{{+{1}}}_{{-{2}}}/ logg2 \, {3}^{{+{4}}}_{{-{5}}}/ en2 \, 0.0/ vsini2 \, {6}^{{+{7}}}_{{-{8}}}/ RV2 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
-	round(teff_mcmc2[0]),
-	round(teff_mcmc2[1]),
-	round(teff_mcmc2[2]),
-	round(logg_mcmc2[0],1),
-	round(logg_mcmc2[1],3),
-	round(logg_mcmc2[2],3),
-	round(vsini_mcmc2[0],2),
-	round(vsini_mcmc2[1],2),
-	round(vsini_mcmc2[2],2),
-	round(rv_mcmc2[0]+barycorr,2),
-	round(rv_mcmc2[1],2),
-	round(rv_mcmc2[2],2)),
+plt.figtext(0.89,0.79,"$Teff_2 \, {0}^{{+{1}}}_{{-{2}}}/ logg_2 \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini_2 \, {6}^{{+{7}}}_{{-{8}}}/ RV_2 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+	round(teff2_mcmc[0]),
+	round(teff2_mcmc[1]),
+	round(teff2_mcmc[2]),
+	round(logg2_mcmc[0],1),
+	round(logg2_mcmc[1],3),
+	round(logg2_mcmc[2],3),
+	round(vsini2_mcmc[0],2),
+	round(vsini2_mcmc[1],2),
+	round(vsini2_mcmc[2],2),
+	round(rv2_mcmc[0]+barycorr,2),
+	round(rv2_mcmc[1],2),
+	round(rv2_mcmc[2],2)),
 	color='C0',
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=12)
-plt.figtext(0.89,0.74,r"$\chi^2$ = {}, DOF = {}".format(\
+plt.figtext(0.89,0.76,r"$\chi^2$ = {}, DOF = {}".format(\
 	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 color='k',
 horizontalalignment='right',
@@ -684,3 +740,72 @@ plt.savefig(save_to_path + '/spectrum.png', dpi=300, bbox_inches='tight')
 if plot_show:
 	plt.show()
 plt.close()
+
+# chi2 and dof in the log
+log_path = save_to_path + '/mcmc_parameters.txt'
+file_log = open(log_path,"a")
+file_log.write("*** Below is the summary *** \n")
+file_log.write("total_time {} min\n".format(str((time2-time1)/60)))
+file_log.write("mean_acceptance_fraction {0:.3f} \n".format(np.mean(sampler.acceptance_fraction)))
+file_log.write("mean_autocorrelation_time {0:.3f} \n".format(np.mean(autocorr_time)))
+file_log.write("chi2 {} \n".format(round(smart.chisquare(data,model))))
+file_log.write("dof {} \n".format(round(len(data.wave-ndim)/3)))
+file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
+file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
+file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
+file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
+file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
+file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
+file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
+file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
+file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
+file_log.write("teff2_mcmc {} K\n".format(str(teff2_mcmc)))
+file_log.write("logg2_mcmc {} dex (cgs)\n".format(str(logg2_mcmc)))
+file_log.write("vsini2_mcmc {} km/s\n".format(str(vsini2_mcmc)))
+file_log.write("rv2_mcmc {} km/s\n".format(str(rv2_mcmc)))
+file_log.write("flux_scale_mcmc {}\n".format(str(flux_scale_mcmc)))
+file_log.close()
+
+
+# excel summary file
+cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
+							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
+							'barycorr','modelset','priors','limits','ndim','nwalkers','step','burn',
+							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
+							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
+							'rv2','e_rv2','ue_rv2','le_rv2','vsini2','e_vsini2','ue_vsini2','le_vsini2',
+							'teff2','e_teff2','ue_teff2','le_teff2','logg2','e_logg2','ue_logg2','le_logg2',
+							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
+							'cflux','e_cflux','ue_cflux','le_cflux','cwave','e_cwave','ue_cwave','le_cwave',
+							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
+							'flux_scale','e_flux_scale','ue_flux_scale','le_flux_scale',
+							'wave_cal_err','chi2','dof','acceptance_fraction','autocorr_time'])
+
+
+med_snr      = np.nanmedian(data.flux/data.noise)
+wave_cal_err = tell_sp.header['STD']
+
+cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
+					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
+					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':custom_mask,
+					'order':order,'coadd':coadd,'mjd':mjd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
+					'modelset':modelset, 'priors':priors, 'limits':limits, 
+					'ndim':ndim, 'nwalkers':nwalkers,'step':step, 'burn':burn,
+					'rv':rv_mcmc[0]+barycorr, 'e_rv':max(rv_mcmc[1], rv_mcmc[2]), 'ue_rv':rv_mcmc[1], 'le_rv':rv_mcmc[2],
+					'vsini':vsini_mcmc[0], 'e_vsini':max(vsini_mcmc[1], vsini_mcmc[2]), 'ue_vsini':vsini_mcmc[1], 'le_vsini':vsini_mcmc[2],
+					'teff':teff_mcmc[0], 'e_teff':max(teff_mcmc[1],teff_mcmc[2]), 'ue_teff':teff_mcmc[1], 'le_teff':teff_mcmc[2],
+					'logg':logg_mcmc[0], 'e_logg':max(logg_mcmc[1], logg_mcmc[2]), 'ue_logg':logg_mcmc[1], 'le_logg':logg_mcmc[2],
+					'rv2':rv2_mcmc[0]+barycorr, 'e_rv2':max(rv2_mcmc[1], rv2_mcmc[2]), 'ue_rv2':rv2_mcmc[1], 'le_rv2':rv2_mcmc[2],
+					'vsini2':vsini2_mcmc[0], 'e_vsini2':max(vsini2_mcmc[1], vsini2_mcmc[2]), 'ue_vsini2':vsini2_mcmc[1], 'le_vsini2':vsini2_mcmc[2],
+					'teff2':teff2_mcmc[0], 'e_teff2':max(teff2_mcmc[1],teff2_mcmc[2]), 'ue_teff2':teff2_mcmc[1], 'le_teff2':teff2_mcmc[2],
+					'logg2':logg_mcmc[0], 'e_logg2':max(logg2_mcmc[1], logg2_mcmc[2]), 'ue_logg2':logg2_mcmc[1], 'le_logg2':logg2_mcmc[2],
+					'am':am_mcmc[0], 'e_am':max(am_mcmc[1], am_mcmc[2]), 'ue_am':am_mcmc[1], 'le_am':am_mcmc[2], 
+					'pwv':pwv_mcmc[0], 'e_pwv':max(pwv_mcmc[1], pwv_mcmc[2]), 'ue_pwv':pwv_mcmc[1], 'le_pwv':pwv_mcmc[2],
+					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
+					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2],
+					'flux_scale':flux_scale_mcmc[0],'e_flux_scale':max(flux_scale_mcmc[1], flux_scale_mcmc[2]),'ue_flux_scale':flux_scale_mcmc[1],'le_flux_scale':flux_scale_mcmc[2],
+					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
+					'wave_cal_err':wave_cal_err, }, ignore_index=True)
+
+cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
+

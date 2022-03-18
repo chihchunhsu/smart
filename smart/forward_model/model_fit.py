@@ -66,7 +66,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		logg2       = kwargs.get('logg2')
 		rv2         = kwargs.get('rv2')
 		vsini2      = kwargs.get('vsini2')
-		flux_scale = kwargs.get('flux_scale', 0.8)
+		flux_scale  = kwargs.get('flux_scale', 0.8)
 
 	data       = kwargs.get('data', None) # for continuum correction and resampling
 
@@ -119,6 +119,10 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		model.flux = model.flux[select_wavelength]
 		model.wave = model.wave[select_wavelength]
 
+		# make a copy for primary model
+		if output_stellar_model:
+			model1     = copy.deepcopy(model)
+
 		# combine the models together and scale the secondary flux
 		model.flux += flux_scale * fit(model.wave)
 
@@ -151,6 +155,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	if output_stellar_model:
 		stellar_model.flux = smart.broaden(wave=stellar_model.wave, flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
 		if binary:
+			model1.flux = smart.broaden(wave=model1.wave, flux=model1.flux, vbroad=lsf, rotate=False, gaussian=True)
 			model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	# wavelength offset
@@ -159,6 +164,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	if output_stellar_model: 
 		stellar_model.wave += wave_offset
 		if binary:
+			model1.wave = stellar_model.wave
 			model2.wave = stellar_model.wave
 
 	# integral resampling
@@ -171,6 +177,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 				stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, yh=stellar_model.flux, xl=data.wave))
 				stellar_model.wave = data.wave
 				if binary:
+					model1.flux = np.array(smart.integralResample(xh=model1.wave, yh=model1.flux, xl=data.wave))
+					model1.wave = data.wave
 					model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
 					model2.wave = data.wave
 
@@ -455,6 +463,8 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 				stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, yh=stellar_model.flux, xl=data.wave))
 				stellar_model.wave = data.wave
 				if binary:
+					model1.flux = np.array(smart.integralResample(xh=model1.wave, yh=model1.flux, xl=data.wave))
+					model1.wave = data.wave
 					model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
 					model2.wave = data.wave
 
@@ -468,6 +478,7 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 					cont_factor *= cont_factor2
 				stellar_model.flux *= cont_factor
 				if binary:
+					model1.flux *= cont_factor
 					model2.flux *= cont_factor
 			else:
 				model = smart.continuum(data=data, mdl=model)
@@ -553,6 +564,7 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 		if output_stellar_model: 
 			stellar_model.flux += flux_offset
 			if binary:
+				model1.flux += flux_offset
 				model2.flux += flux_offset
 	#model.flux **= (1 + flux_exponent_offset)
 
@@ -560,7 +572,7 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 		if not binary:
 			return model, stellar_model
 		else:
-			return model, stellar_model, model2
+			return model, stellar_model, model1, model2
 	else:
 		return model 
 
