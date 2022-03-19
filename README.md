@@ -1,5 +1,5 @@
 # SMART (Spectral Modeling Analysis and RV Tool)
-The `SMART` is a Markov Chain Monte Carlo (MCMC) forward-modeling framework for spectroscopic data, currently working for the Keck/NIRSPEC, SDSS/APOGEE, and IGRINS Shigh-resolution near-infrared spectrometers. A slightly modified version that can model the Keck/OSIRIS medium-resolution near-infrared spectrometer is available [here](https://github.com/ctheissen/osiris_fmp).
+The `SMART` is a Markov Chain Monte Carlo (MCMC) forward-modeling framework for spectroscopic data, currently working for the Keck/NIRSPEC, SDSS/APOGEE, and IGRINS high-resolution near-infrared spectrometers. A slightly modified version that can model the Keck/OSIRIS medium-resolution near-infrared spectrometer is available [here](https://github.com/ctheissen/osiris_fmp).
 
 For NIRSPEC users, required adjustments need to be made before reducing private data using [NIRSPEC-Data-Reduction-Pipeline(NSDRP)](https://github.com/Keck-DataReductionPipelines/NIRSPEC-Data-Reduction-Pipeline), to perform telluric wavelength calibrations, and to forward model spectral data. The code is currently being developed.
 
