@@ -678,7 +678,7 @@ ax1.plot(data.wave,data.flux,'k-',
 ax1.plot(data.wave,data.flux-model.flux,'k-',alpha=0.8)
 plt.fill_between(data.wave,-data.noise*N,data.noise*N,facecolor='C0',alpha=0.5)
 plt.axhline(y=0,color='k',linestyle='-',linewidth=0.5)
-plt.ylim(-np.max(np.append(np.abs(data.noise),np.abs(data.flux-model.flux)))*1.2,np.max(data.flux)*1.5)
+plt.ylim(-np.max(np.append(np.abs(data.noise),np.abs(data.flux-model.flux)))*1.2,np.max(data.flux)*1.2)
 plt.ylabel("Flux ($cnts/s$)",fontsize=15)
 plt.xlabel("$\lambda$ ($\AA$)",fontsize=15)
 plt.figtext(0.89,0.85,str(data.header['OBJECT'])+' '+data.name+' O'+str(data.order),
