@@ -763,7 +763,7 @@ plt.figtext(0.89,0.85,str(data.header['OBJECT'])+' '+data.name+' O'+str(data.ord
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=15)
-plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini \, {6}^{{+{7}}}_{{-{8}}}/ RV \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+plt.figtext(0.89,0.82,"$Teff_1 \, {0}^{{+{1}}}_{{-{2}}}/ logg_1 \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini_1 \, {6}^{{+{7}}}_{{-{8}}}/ RV_1 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
 	round(teff_mcmc[0]),
 	round(teff_mcmc[1]),
 	round(teff_mcmc[2]),
