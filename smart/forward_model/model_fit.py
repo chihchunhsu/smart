@@ -280,10 +280,11 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	#model.flux **= (1 + flux_exponent_offset)
 
 	if output_stellar_model:
-		if not binary:
-			return model, stellar_model
+		if binary:
+			return model, stellar_model, model1, model2
 		else:
-			return model, stellar_model, model2
+			return model, stellar_model
+		
 	else:
 		return model
 
