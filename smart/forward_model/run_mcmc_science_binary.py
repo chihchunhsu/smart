@@ -671,7 +671,7 @@ plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=15)
 ax1.plot(model.wave, model.flux, color='C3', linestyle='-', label='model',alpha=0.8)
 ax1.plot(model_notell.wave,model_notell.flux, color='C0', linestyle='-', label='model no telluric (primary + secondary)',alpha=0.8)
-ax1.plot(model2_notell.wave, model2_notell.flux, color='orange', linestyle='-', label='model no telluric (primary)',alpha=0.8)
+ax1.plot(model1_notell.wave, model1_notell.flux, color='orange', linestyle='-', label='model no telluric (primary)',alpha=0.8)
 ax1.plot(model2_notell.wave, model2_notell.flux, color='magenta', linestyle='-', label='model no telluric (secondary)',alpha=0.8)
 ax1.plot(data.wave,data.flux,'k-',
 	label='data',alpha=0.5)
