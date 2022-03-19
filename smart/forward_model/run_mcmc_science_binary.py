@@ -514,23 +514,23 @@ print(autocorr_time)
 sampler_chain = np.load(save_to_path + '/sampler_chain.npy')
 samples = np.load(save_to_path + '/samples.npy')
 
-ylabels = [	"$T_{\mathrm{eff}} (K)$","$\log{g}$(dex)","$v\sin{i}(km/s)$","$RV(km/s)$",
+ylabels = [	"$T_{\mathrm{eff}_1} (K)$","$\log{g}_1$(dex)","$v\sin{i}_1(km/s)$","$RV_1(km/s)$",
 			"$T_{\mathrm{eff}_2} (K)$","$\log{g}_2$(dex)","$v\sin{i}_2(km/s)$","$RV_2(km/s)$",
 			"$AM$", "pwv (mm)","$C_{F_{\lambda}}$ (cnt/s)","$C_{\lambda}$($\AA$)","$C_{noise}$","$C_{\mathrm{scale}}$"]
 
 
 ## create walker plots
 plt.rc('font', family='sans-serif')
-plt.tick_params(labelsize=30)
-fig = plt.figure(tight_layout=True)
+plt.tick_params(labelsize=25)
+fig = plt.figure(tight_layout=True, figsize=(int(ndim*2),6))
 gs  = gridspec.GridSpec(ndim, 1)
-gs.update(hspace=0.1)
+gs.update(hspace=0.2)
 
 for i in range(ndim):
 	ax = fig.add_subplot(gs[i, :])
 	for j in range(nwalkers):
 		ax.plot(np.arange(1,int(step+1)), sampler_chain[j,:,i],'k',alpha=0.2)
-		ax.set_ylabel(ylabels[i])
+		ax.set_ylabel(ylabels[i], fontsize=12)
 fig.align_labels()
 plt.minorticks_on()
 plt.xlabel('nstep')
