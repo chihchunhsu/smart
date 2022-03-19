@@ -735,7 +735,7 @@ ax2.tick_params(labelsize=15)
 ax2.set_xlim(pixel[0], pixel[-1])
 ax2.minorticks_on()
 	
-#plt.legend()
+plt.legend(fontsize=15)
 plt.savefig(save_to_path + '/spectrum.png', dpi=300, bbox_inches='tight')
 if plot_show:
 	plt.show()
