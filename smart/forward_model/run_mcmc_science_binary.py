@@ -522,7 +522,7 @@ ylabels = [	"$T_{\mathrm{eff}_1} (K)$","$\log{g}_1$(dex)","$v\sin{i}_1(km/s)$","
 ## create walker plots
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=25)
-fig = plt.figure(tight_layout=True, figsize=(int(ndim*2),6))
+fig = plt.figure(tight_layout=True, figsize=(6, int(ndim*1.5)))
 gs  = gridspec.GridSpec(ndim, 1)
 gs.update(hspace=0.2)
 
