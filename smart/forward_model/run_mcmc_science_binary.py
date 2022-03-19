@@ -671,14 +671,14 @@ plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=15)
 ax1.plot(model.wave, model.flux, color='C3', linestyle='-', label='model',alpha=0.8)
 ax1.plot(model_notell.wave,model_notell.flux, color='C0', linestyle='-', label='model no telluric (primary + secondary)',alpha=0.8)
-ax1.plot(model1_notell.wave, model1_notell.flux, color='orange', linestyle='-', label='model no telluric (primary)',alpha=0.8)
-ax1.plot(model2_notell.wave, model2_notell.flux, color='magenta', linestyle='-', label='model no telluric (secondary)',alpha=0.8)
+#ax1.plot(model1_notell.wave, model1_notell.flux, color='orange', linestyle='-', label='model no telluric (primary)',alpha=0.6)
+#ax1.plot(model2_notell.wave, model2_notell.flux, color='magenta', linestyle='-', label='model no telluric (secondary)',alpha=0.6)
 ax1.plot(data.wave,data.flux,'k-',
 	label='data',alpha=0.5)
 ax1.plot(data.wave,data.flux-model.flux,'k-',alpha=0.8)
 plt.fill_between(data.wave,-data.noise*N,data.noise*N,facecolor='C0',alpha=0.5)
 plt.axhline(y=0,color='k',linestyle='-',linewidth=0.5)
-plt.ylim(-np.max(np.append(np.abs(data.noise),np.abs(data.flux-model.flux)))*1.2,np.max(data.flux)*1.2)
+plt.ylim(-np.max(np.append(np.abs(data.noise),np.abs(data.flux-model.flux)))*1.2,np.max(data.flux)*1.5)
 plt.ylabel("Flux ($cnts/s$)",fontsize=15)
 plt.xlabel("$\lambda$ ($\AA$)",fontsize=15)
 plt.figtext(0.89,0.85,str(data.header['OBJECT'])+' '+data.name+' O'+str(data.order),
@@ -727,7 +727,7 @@ horizontalalignment='right',
 verticalalignment='center',
 fontsize=12)
 plt.minorticks_on()
-plt.legend(fontsize=15)
+#plt.legend(loc=2, fontsize=15)
 
 ax2 = ax1.twiny()
 ax2.plot(pixel, data.flux, color='w', alpha=0)
@@ -737,6 +737,83 @@ ax2.set_xlim(pixel[0], pixel[-1])
 ax2.minorticks_on()
 
 plt.savefig(save_to_path + '/spectrum.png', dpi=300, bbox_inches='tight')
+if plot_show:
+	plt.show()
+plt.close()
+
+# full comparison
+fig = plt.figure(figsize=(16,6))
+ax1 = fig.add_subplot(111)
+plt.rc('font', family='sans-serif')
+plt.tick_params(labelsize=15)
+ax1.plot(model.wave, model.flux, color='C3', linestyle='-', label='stellar + telluric model',alpha=0.8)
+ax1.plot(model_notell.wave,model_notell.flux, color='C0', linestyle='-', label='stellar model (primary + secondary)',alpha=0.8)
+ax1.plot(model1_notell.wave, model1_notell.flux, color='orange', linestyle='-', label='stellar model (primary)',alpha=0.6)
+ax1.plot(model2_notell.wave, model2_notell.flux, color='magenta', linestyle='-', label='stellar model (secondary)',alpha=0.6)
+ax1.plot(data.wave,data.flux,'k-',
+	label='data',alpha=0.5)
+ax1.plot(data.wave,data.flux-model.flux,'k-',alpha=0.8)
+plt.fill_between(data.wave,-data.noise*N,data.noise*N,facecolor='C0',alpha=0.5)
+plt.axhline(y=0,color='k',linestyle='-',linewidth=0.5)
+plt.ylim(-np.max(np.append(np.abs(data.noise),np.abs(data.flux-model.flux)))*1.2,np.max(data.flux)*1.5)
+plt.ylabel("Flux ($cnts/s$)",fontsize=15)
+plt.xlabel("$\lambda$ ($\AA$)",fontsize=15)
+plt.figtext(0.89,0.85,str(data.header['OBJECT'])+' '+data.name+' O'+str(data.order),
+	color='k',
+	horizontalalignment='right',
+	verticalalignment='center',
+	fontsize=15)
+plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini \, {6}^{{+{7}}}_{{-{8}}}/ RV \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+	round(teff_mcmc[0]),
+	round(teff_mcmc[1]),
+	round(teff_mcmc[2]),
+	round(logg_mcmc[0],1),
+	round(logg_mcmc[1],3),
+	round(logg_mcmc[2],3),
+	round(vsini_mcmc[0],2),
+	round(vsini_mcmc[1],2),
+	round(vsini_mcmc[2],2),
+	round(rv_mcmc[0]+barycorr,2),
+	round(rv_mcmc[1],2),
+	round(rv_mcmc[2],2)),
+	color='orange',
+	horizontalalignment='right',
+	verticalalignment='center',
+	fontsize=12)
+plt.figtext(0.89,0.78,"$Teff_2 \, {0}^{{+{1}}}_{{-{2}}}/ logg_2 \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini_2 \, {6}^{{+{7}}}_{{-{8}}}/ RV_2 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+	round(teff2_mcmc[0]),
+	round(teff2_mcmc[1]),
+	round(teff2_mcmc[2]),
+	round(logg2_mcmc[0],1),
+	round(logg2_mcmc[1],3),
+	round(logg2_mcmc[2],3),
+	round(vsini2_mcmc[0],2),
+	round(vsini2_mcmc[1],2),
+	round(vsini2_mcmc[2],2),
+	round(rv2_mcmc[0]+barycorr,2),
+	round(rv2_mcmc[1],2),
+	round(rv2_mcmc[2],2)),
+	color='magenta',
+	horizontalalignment='right',
+	verticalalignment='center',
+	fontsize=12)
+plt.figtext(0.89,0.75,r"$\chi^2$ = {}, DOF = {}".format(\
+	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+color='k',
+horizontalalignment='right',
+verticalalignment='center',
+fontsize=12)
+plt.minorticks_on()
+plt.legend(loc=2, fontsize=15)
+
+ax2 = ax1.twiny()
+ax2.plot(pixel, data.flux, color='w', alpha=0)
+ax2.set_xlabel('Pixel',fontsize=15)
+ax2.tick_params(labelsize=15)
+ax2.set_xlim(pixel[0], pixel[-1])
+ax2.minorticks_on()
+
+plt.savefig(save_to_path + '/spectrum_full.png', dpi=300, bbox_inches='tight')
 if plot_show:
 	plt.show()
 plt.close()
