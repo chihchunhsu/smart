@@ -804,7 +804,7 @@ horizontalalignment='right',
 verticalalignment='center',
 fontsize=12)
 plt.minorticks_on()
-plt.legend(loc=2, fontsize=15)
+plt.legend(loc=2, fontsize=12)
 
 ax2 = ax1.twiny()
 ax2.plot(pixel, data.flux, color='w', alpha=0)
