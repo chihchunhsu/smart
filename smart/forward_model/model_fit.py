@@ -192,6 +192,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 					cont_factor *= cont_factor2
 				stellar_model.flux *= cont_factor
 				if binary:
+					model1.flux *= cont_factor
 					model2.flux *= cont_factor
 			else:
 				model = smart.continuum(data=data, mdl=model)

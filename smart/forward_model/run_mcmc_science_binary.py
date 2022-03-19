@@ -699,11 +699,11 @@ plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{
 	round(rv_mcmc[0]+barycorr,2),
 	round(rv_mcmc[1],2),
 	round(rv_mcmc[2],2)),
-	color='C0',
+	color='orange',
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=12)
-plt.figtext(0.89,0.79,"$Teff_2 \, {0}^{{+{1}}}_{{-{2}}}/ logg_2 \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini_2 \, {6}^{{+{7}}}_{{-{8}}}/ RV_2 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+plt.figtext(0.89,0.78,"$Teff_2 \, {0}^{{+{1}}}_{{-{2}}}/ logg_2 \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini_2 \, {6}^{{+{7}}}_{{-{8}}}/ RV_2 \, {9}^{{+{10}}}_{{-{11}}}$".format(\
 	round(teff2_mcmc[0]),
 	round(teff2_mcmc[1]),
 	round(teff2_mcmc[2]),
@@ -716,17 +716,18 @@ plt.figtext(0.89,0.79,"$Teff_2 \, {0}^{{+{1}}}_{{-{2}}}/ logg_2 \, {3}^{{+{4}}}_
 	round(rv2_mcmc[0]+barycorr,2),
 	round(rv2_mcmc[1],2),
 	round(rv2_mcmc[2],2)),
-	color='C0',
+	color='magenta',
 	horizontalalignment='right',
 	verticalalignment='center',
 	fontsize=12)
-plt.figtext(0.89,0.76,r"$\chi^2$ = {}, DOF = {}".format(\
+plt.figtext(0.89,0.75,r"$\chi^2$ = {}, DOF = {}".format(\
 	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 color='k',
 horizontalalignment='right',
 verticalalignment='center',
 fontsize=12)
 plt.minorticks_on()
+plt.legend(fontsize=15)
 
 ax2 = ax1.twiny()
 ax2.plot(pixel, data.flux, color='w', alpha=0)
@@ -734,8 +735,7 @@ ax2.set_xlabel('Pixel',fontsize=15)
 ax2.tick_params(labelsize=15)
 ax2.set_xlim(pixel[0], pixel[-1])
 ax2.minorticks_on()
-	
-plt.legend(fontsize=15)
+
 plt.savefig(save_to_path + '/spectrum.png', dpi=300, bbox_inches='tight')
 if plot_show:
 	plt.show()
