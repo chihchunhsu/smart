@@ -42,7 +42,7 @@ def barycorr(header, instrument='nirspec'):
 	barycentric correction (float*u(km/s))
 
 	"""
-	if instrument == 'nirspec':
+	if (instrument == 'nirspec') or (instrument == 'hires'):
 		longitude = 360 - (155 + 28.7/60 ) # degrees
 		latitude  = 19 + 49.7/60 #degrees
 		altitude  = 4160.
@@ -52,7 +52,7 @@ def barycorr(header, instrument='nirspec'):
 		date    = Time(header['DATE-OBS'], scale='utc')
 		jd      = date.jd
 
-		if jd >= 2458401.500000: # upgraded NIRSPEC
+		if (jd >= 2458401.500000) or (instrument=='hires'): # upgraded NIRSPEC or HIRES
 			ut  = header['DATE-OBS'] + 'T' + header['UT'] 
 			ra  = header['RA']
 			dec = header['DEC']

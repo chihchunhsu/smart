@@ -311,6 +311,26 @@ class Spectrum():
 			self.flux   = hdulist[1].data
 			self.noise  = hdulist[2].data
 
+		elif self.instrument == 'hires':
+			self.name      = kwargs.get('name')
+			self.order     = kwargs.get('order')
+			self.path      = kwargs.get('path')
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
+			#self.manaulmask = kwargs('manaulmask', False)
+
+			if self.path == None:
+				self.path = './'
+
+			fullpath = self.path + '/' + self.name + '_' + str(self.order) + '_all.fits'
+
+			hdulist = fits.open(fullpath, ignore_missing_end=True)
+
+			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
+			self.header = hdulist[0].header
+			self.wave   = hdulist[0].data
+			self.flux   = hdulist[1].data
+			self.noise  = hdulist[2].data
+
 		if self.apply_sigma_mask:
 			# set up masking criteria
 			self.avgFlux = np.mean(self.flux)
