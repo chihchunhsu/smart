@@ -72,7 +72,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	output_stellar_model = kwargs.get('output_stellar_model', False)
 	
-	if data is not None and instrument == 'nirspec':
+	if data is not None and instrument in ['nirspec', 'hires']:
 		order = data.order
 		# read in a model
 		#print('teff ',teff,'logg ',logg, 'z', z, 'order', order, 'modelset', modelset)
@@ -90,7 +90,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		vmicro = 2.478 - 0.325*logg
 		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vmicro, rotate=False, gaussian=True)
 	
-	elif data is None and instrument == 'nirspec':
+	elif data is None and instrument in ['nirspec', 'hires']:
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 	
 	# wavelength offset
@@ -143,7 +143,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		model.flux *= smart.double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset)
 
 	# instrumental LSF
-	if instrument == 'nirspec':
+	if instrument in ['nirspec', 'hires']:
 		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 	elif instrument == 'apogee':
 		model.flux = ap.apogee_hack.spec.lsf.convolve(model.wave, model.flux, lsf=lsf, xlsf=xlsf).flatten()
@@ -169,7 +169,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	# integral resampling
 	if data is not None:
-		if instrument == 'nirspec':
+		if instrument in ['nirspec', 'hires']:
 			model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
 			model.wave = data.wave
 
@@ -183,7 +183,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 					model2.wave = data.wave
 
 		# contunuum correction
-		if data.instrument == 'nirspec':
+		if data.instrument in ['nirspec', 'hires']:
 			niter = 5 # continuum iteration
 			if output_stellar_model:
 				model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
@@ -271,7 +271,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 			model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
 			model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
 
-	if instrument == 'nirspec':
+	if instrument in ['nirspec', 'hires']:
 		# flux offset
 		model.flux += flux_offset
 		if output_stellar_model: 

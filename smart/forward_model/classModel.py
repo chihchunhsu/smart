@@ -80,7 +80,7 @@ class Model():
         self.order = kwargs.get('order')
         self.instrument = kwargs.get('instrument','nirspec')
 
-        if self.order != None and self.instrument == 'nirspec':
+        if (self.order != None) and (self.instrument in ['nirspec', 'hires', 'igrins']):
             self.teff     = kwargs.get('teff', 2500)
             self.logg     = kwargs.get('logg', 5.00)
             self.metal    = kwargs.get('metal', 0.00)
