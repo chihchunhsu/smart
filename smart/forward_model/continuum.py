@@ -125,6 +125,36 @@ def voigt_profile(x, x0, amp, gamma, scale, a, b, c, d):
     voigt_absorption = (1 - scale * np.real(wofz((x-x0 + 1j*gamma)*amp)))
     return voigt_absorption * (a*x**2 + b*x + c) + d
 
+def voigt_profile_emission(x, x0, amp, gamma, scale, a, b, c, d):
+    """
+    Return a spectral line emission with a second order 
+    polynomial and the Voigt line shape absorption at x0 
+    with Lorentzian component HWHM gamma and Gaussian component
+    HWHM alpha (the latter is absorbed in the amp parameter.
+
+    """
+    #sigma = alpha / np.sqrt(2 * np.log(2))
+
+    voigt_profile = (1 + scale * np.real(wofz((x - x0 + 1j*gamma)*amp)))
+    
+    return voigt_profile * (a*x**2 + b*x + c) + d
+
+def voigt_profile_emission_double(x, x0, sigma, gamma, scale, x1, sigma1, gamma1, scale1, a, b, c, d):
+    """
+    Return a spectral line emission with a second order 
+    polynomial and two Voigt line shape absorption at x0 and x2
+    with Lorentzian component HWHM gamma and Gaussian component
+    HWHM alpha (the latter is absorbed in the amp parameter.
+
+    """
+    #sigma  = alpha / np.sqrt(2 * np.log(2))
+    #sigma1 = alpha / np.sqrt(2 * np.log(2))
+
+    voigt_profile = (1 + scale * np.real(wofz((x - x0 + 1j*gamma)/sigma/np.sqrt(2))) / sigma /np.sqrt(2*np.pi) \
+        + scale1 * np.real(wofz((x - x1 + 1j*gamma1)/sigma1/np.sqrt(2))) / sigma1 /np.sqrt(2*np.pi))
+
+    return voigt_profile * (a*x**2 + b*x + c) + d
+
 def sineFit(wavelength,frequency,amplitude,phase,offset):
     """
     A sine fit function of wavelength, frequency,

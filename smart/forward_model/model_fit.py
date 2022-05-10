@@ -133,7 +133,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	# apply telluric
 	if tell is True:
-		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
+		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv, instrument=data.instrument)
 
 	# fringe 
 	if include_fringe_model is True:
@@ -414,7 +414,7 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 
 	# apply telluric
 	if tell is True:
-		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv)
+		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv, instrument=data.instrument)
 
 	# fringe modeling
 	if instrument == 'nirspec':
@@ -599,26 +599,31 @@ def rvShift(wavelength, rv):
 	"""
 	return wavelength * ( 1 + rv / 299792.458)
 
-def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5):
+def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, instrument=None):
 	"""
 	Apply the telluric model on the science model.
 
 	Parameters
 	----------
 	model 	:	model object
-				BT Settl model
+				stellar atmosphere model
 	alpha 	: 	float
 				telluric scaling factor (the power on the flux)
 
 	Returns
 	-------
 	model 	: 	model object
-				BT Settl model times the corresponding model
+				stellar atmosphere model times the corresponding telluric model
 
 	"""
 	# read in a telluric model
-	wavelow  = model.wave[0] - 10
-	wavehigh = model.wave[-1] + 10
+	if instrument == 'hires':
+		wavelow  = model.wave[0]
+		wavehigh = model.wave[-1]
+
+	else:
+		wavelow  = model.wave[0] - 10
+		wavehigh = model.wave[-1] + 10
 	#telluric_model = smart.getTelluric(wavelow=wavelow, wavehigh=wavehigh, alpha=alpha, airmass=airmass)
 
 	telluric_model = smart.Model()
@@ -636,9 +641,15 @@ def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5):
 	#	model.flux *= telluric_model.flux
 
 	#elif len(model.wave) < len(telluric_model.wave):
-	## This should be always true
-	telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, yh=telluric_model.flux, xl=model.wave))
-	telluric_model.wave = model.wave
+	## This should be always true; not true for optical wavelength
+	if instrument == 'hires':
+		model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=telluric_model.wave))
+		model.wave = telluric_model.wave
+
+	else:
+		telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, yh=telluric_model.flux, xl=model.wave))
+		telluric_model.wave = model.wave
+	
 	model.flux *= telluric_model.flux
 
 	#elif len(model.wave) == len(telluric_model.wave):
