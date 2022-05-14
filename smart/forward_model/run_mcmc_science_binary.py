@@ -366,6 +366,11 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 						'flux_scale_min':0.1,                         'flux_scale_max':1.0,
 					}
 
+# HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter
+if data.instrument == 'hires':
+	limits['B_min'] = -3.0 # Angstrom
+	limits['B_max'] = +3.0 # Angstrom
+
 if final_mcmc:
 	limits['rv_min']  = priors['rv_min'] - 10
 	limits['rv_max']  = priors['rv_max'] + 10
