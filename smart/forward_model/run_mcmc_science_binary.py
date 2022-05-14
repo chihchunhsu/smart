@@ -881,7 +881,10 @@ cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-wave_cal_err = tell_sp.header['STD']
+if instrument == 'nirspec':
+	wave_cal_err = tell_sp.header['STD']
+elif instrument == 'hires':
+	wave_cal_err = np.nan
 
 cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
