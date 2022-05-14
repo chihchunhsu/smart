@@ -60,6 +60,9 @@ parser.add_argument("save_to_path",type=str,
 parser.add_argument("lsf",type=float,
     default=None, help="line spread function", nargs="+")
 
+parser.add_argument("-instrument",metavar='--inst',type=str,
+    default='nirspec', help="spectrometer name of the instrument; default nirspec")
+
 parser.add_argument("-outlier_rejection",metavar='--rej',type=float,
     default=3.0, help="outlier rejection based on the multiple of standard deviation of the residual; default 3.0")
 
@@ -115,6 +118,7 @@ args = parser.parse_args()
 
 #source                 = str(args.source[0])
 order                  = int(args.order[0])
+instrument             = str(args.instrument)
 date_obs               = str(args.date_obs[0])
 sci_data_name          = str(args.sci_data_name[0])
 tell_data_name         = str(args.tell_data_name[0])
@@ -150,27 +154,32 @@ dt_string = now.strftime("%H:%M:%S")
 
 #####################################
 
-data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask)
-tell_data_name2 = tell_data_name + '_calibrated'
+data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
 
-tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask)
+if instrument == 'nirspec':
+	tell_data_name2 = tell_data_name + '_calibrated'
 
-data.updateWaveSol(tell_sp)
+	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument)
 
-# MJD for logging
-# upgraded NIRSPEC
-if len(data.oriWave) == 2048:
+	data.updateWaveSol(tell_sp)
+
+	# MJD for logging
+	# upgraded NIRSPEC
+	if len(data.oriWave) == 2048:
+		mjd = data.header['MJD']
+	# old NIRSPEC
+	else:
+		mjd = data.header['MJD-OBS']
+
+if instrument == 'hires':
 	mjd = data.header['MJD']
-# old NIRSPEC
-else:
-	mjd = data.header['MJD-OBS']
 
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
 	if not os.path.exists(save_to_path):
 		os.makedirs(save_to_path)
 	data1       = copy.deepcopy(data)
-	data2       = smart.Spectrum(name=sci_data_name2, order=order, path=data_path, applymask=applymask)
+	data2       = smart.Spectrum(name=sci_data_name2, order=order, path=data_path, applymask=applymask, instrument=instrument)
 	data.coadd(data2, method='pixel')
 
 	plt.figure(figsize=(16,6))
@@ -192,7 +201,9 @@ if coadd:
 	plt.close()
 
 sci_data  = data
-tell_data = tell_sp 
+
+if instrument == 'nirspec':
+	tell_data = tell_sp 
 
 """
 MCMC run for the science spectra. See the parameters in the makeModel function.
@@ -257,8 +268,9 @@ else:
 #if limits is None: limits = priors
 
 data          = copy.deepcopy(sci_data)
-tell_sp       = copy.deepcopy(tell_data)
-data.updateWaveSol(tell_sp)
+if instrument == 'nirspec':
+	tell_sp       = copy.deepcopy(tell_data)
+	data.updateWaveSol(tell_sp)
 
 # barycentric corrction
 #barycorr      = smart.barycorr(data.header).value
@@ -266,9 +278,14 @@ data.updateWaveSol(tell_sp)
 
 ## read the input custom mask and priors
 lines          = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
-custom_mask    = json.loads(lines[5].split('custom_mask')[1])
-priors         = ast.literal_eval(lines[6].split('priors ')[1])
-barycorr       = json.loads(lines[13].split('barycorr')[1])
+if instrument == 'nirspec':
+	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
+	priors         = ast.literal_eval(lines[6].split('priors ')[1])
+	barycorr       = json.loads(lines[13].split('barycorr')[1])
+elif instrument == 'hires':
+	custom_mask    = json.loads(lines[3].split('custom_mask')[1])
+	priors         = ast.literal_eval(lines[4].split('priors ')[1])
+	barycorr       = json.loads(lines[11].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
 if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
@@ -306,7 +323,8 @@ elif modelset == 'sonora':
 						'A_min':-A_const,							 'A_max':A_const,
 						'B_min':-0.6,                              	 'B_max':0.6,
 						'N_min':0.10,                                'N_max':5.0,
-						'teff2_min':max(priors['teff2_min']-300,200), 'teff2_max':min(priors['teff2_max']+300,2400),
+						'teff2_min':max(priors['teff2_min']-300,200),'teff2_max':min(priors['teff2_max']+300,2400),
+						'logg2_min':3.5,                             'logg2_max':logg_max,
 						'vsini2_min':0.0,                            'vsini2_max':100.0,
 						'rv2_min':-200.0,                            'rv2_max':200.0,	
 						'flux_scale_min':0.1,                        'flux_scale_max':1.0,
@@ -323,10 +341,11 @@ elif modelset == 'phoenixaces':
 						'A_min':-A_const,							  'A_max':A_const,
 						'B_min':-0.6,								  'B_max':0.6,
 						'N_min':0.10,                                 'N_max':5.50,
-						'teff2_min':max(priors['teff2_min']-300,2300), 'teff2_max':min(priors['teff2_max']+300,10000),
-						'vsini2_min':0.0,                            'vsini2_max':100.0,
-						'rv2_min':-200.0,                            'rv2_max':200.0,	
-						'flux_scale_min':0.1,                        'flux_scale_max':1.0,
+						'teff2_min':max(priors['teff2_min']-300,2300),'teff2_max':min(priors['teff2_max']+300,10000),
+						'logg2_min':3.5,                              'logg2_max':logg_max,
+						'vsini2_min':0.0,                             'vsini2_max':100.0,
+						'rv2_min':-200.0,                             'rv2_max':200.0,	
+						'flux_scale_min':0.1,                         'flux_scale_max':1.0,
 					}
 
 elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
@@ -340,7 +359,8 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 						'A_min':-A_const,							  'A_max':A_const,
 						'B_min':-0.6,								  'B_max':0.6,
 						'N_min':0.10,                                 'N_max':5.50,
-						'teff2_min':max(priors['teff2_min']-300,2300), 'teff2_max':min(priors['teff2_max']+300,7000),
+						'teff2_min':max(priors['teff2_min']-300,2300),'teff2_max':min(priors['teff2_max']+300,7000),
+						'logg2_min':3.5,                              'logg2_max':logg_max,
 						'vsini2_min':0.0,                             'vsini2_max':100.0,
 						'rv2_min':-200.0,                             'rv2_max':200.0,	
 						'flux_scale_min':0.1,                         'flux_scale_max':1.0,
@@ -365,9 +385,10 @@ data.wave     = data.wave[pixel_start:pixel_end]
 data.flux     = data.flux[pixel_start:pixel_end]
 data.noise    = data.noise[pixel_start:pixel_end]
 
-tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
-tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
-tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
+if instrument == 'nirspec':
+	tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
+	tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
+	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
 
 #if final_mcmc:
 #	priors, limits         = mcmc_utils.generate_final_priors_and_limits(sp_type=sp_type, barycorr=barycorr, save_to_path1=save_to_path1)
@@ -432,7 +453,7 @@ def lnlike(theta, data, lsf):
 
 	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
 		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model,
-		binary=True, teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flux_scale)
+		binary=True, teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flux_scale, instrument=instrument)
 
 	chisquare = smart.chisquare(data, model)/N**2
 
@@ -663,7 +684,7 @@ flux_scale = flux_scale_mcmc[0]
 model, model_notell, model1_notell, model2_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
 	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
 	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, include_fringe_model=include_fringe_model,
-	binary=True, teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flux_scale)
+	binary=True, teff2=teff2, logg2=logg2, vsini2=vsini2, rv2=rv2, flux_scale=flux_scale, instrument=instrument)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)

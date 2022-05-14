@@ -122,10 +122,8 @@ instrument             = str(args.instrument)
 date_obs               = str(args.date_obs[0])
 sci_data_name          = str(args.sci_data_name[0])
 data_path              = str(args.data_path[0])
-
-if instrument != 'hires':
-	tell_data_name         = str(args.tell_data_name[0])
-	tell_path              = str(args.tell_path[0])
+tell_data_name         = str(args.tell_data_name[0])
+tell_path              = str(args.tell_path[0])
 save_to_path_base      = str(args.save_to_path[0])
 lsf                    = float(args.lsf[0])
 ndim, nwalkers, step   = int(args.ndim), int(args.nwalkers), int(args.step)
@@ -351,8 +349,8 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 
 # HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter
 if data.instrument == 'hires':
-	limits['B_min'] = -5.0 # Angstrom
-	limits['B_max'] = +5.0 # Angstrom
+	limits['B_min'] = -1.0 # Angstrom
+	limits['B_max'] = +1.0 # Angstrom
 
 if final_mcmc:
 	limits['rv_min'] = priors['rv_min'] - 10
@@ -627,7 +625,8 @@ N     = N_mcmc[0]
 
 model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
 	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, include_fringe_model=include_fringe_model)
+	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, 
+	include_fringe_model=include_fringe_model, instrument=instrument)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)
@@ -719,7 +718,10 @@ cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-wave_cal_err = tell_sp.header['STD']
+if instrument == 'nirspec':
+	wave_cal_err = tell_sp.header['STD']
+else:
+	wave_cal_err = np.nan
 
 cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
