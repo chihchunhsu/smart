@@ -310,12 +310,13 @@ class Spectrum():
 			self.wave   = hdulist[0].data * 10000.0 # convert to Angstrom
 			self.flux   = hdulist[1].data
 			self.noise  = hdulist[2].data
+			self.mask     = []
 
 		elif self.instrument == 'hires':
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
-			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
 			#self.manaulmask = kwargs('manaulmask', False)
 
 			if self.path == None:
@@ -325,11 +326,19 @@ class Spectrum():
 
 			hdulist = fits.open(fullpath, ignore_missing_end=True)
 
+			# correct back the MAKEE computed heliocentric velocity scale factor (hvsf)
+			from smart.utils import hires_tool
+			hvsf = hires_tool.get_hvsf(float(hdulist[0].header['HELIOVEL']))
+
 			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
-			self.header = hdulist[0].header
-			self.wave   = hdulist[0].data
-			self.flux   = hdulist[1].data
-			self.noise  = hdulist[2].data
+			self.header   = hdulist[0].header
+			self.wave     = hdulist[0].data/hvsf # correct for hvsf
+			self.flux     = hdulist[1].data
+			self.noise    = hdulist[2].data
+			self.oriWave  = hdulist[0].data/hvsf # correct for hvsf
+			self.oriFlux  = hdulist[1].data
+			self.oriNoise = hdulist[2].data
+			self.mask     = []
 
 		if self.apply_sigma_mask:
 			# set up masking criteria

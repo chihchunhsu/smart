@@ -90,6 +90,57 @@ def create_fits_hires(filename, path, savepath=None):
 
 	return None
 
+def get_hvsf(vhelio):
+	"""
+	MAKEE function that compute the heliocentric velocity scale factor (hvsf).
+
+	The wavelength is multiplied by this scale factor with wave = wave * hvsf
+	"""
+
+	c = 299792.5 # not precise but this is what is defined in MAKEE hdr-util.f
+
+	hvsf = np.sqrt( (1 + (vhelio/c) ) / ( 1-(vhelio/c) ) )
+
+	return hvsf
+
+def air2vac(wavelength):
+	"""
+	MAKEE function that converts the air to vacuum wavelength.
+
+	Ported from astro_lib.f
+	Assumes index of refraction of air with 15 deg c, 76 cm hg.
+	Uses:  (n-1) x 10^7 = 2726.43 + 12.288/(w^2 x 10^-8) + 0.3555/(w^4 x 10^-16)
+	"""
+
+	x = wavelength
+
+	n = ( 2726.43 + ( 12.288/( x**2 * 10**(-8)) ) + (0.3555/( x**4 * 10**(-16))) ) * 10**(-7) + 1.0
+
+	y = (n - 1) * x
+
+	air2vac_wave = x + y
+
+	return air2vac_wave
+
+def vac2air(wavelength):
+	"""
+	MAKEE function that converts the vacuum to air wavelength.
+
+	Ported from astro_lib.f
+	Assumes index of refraction of air with 15 deg c, 76 cm hg.
+	Uses:  (n-1) x 10^7 = 2726.43 + 12.288/(w^2 x 10^-8) + 0.3555/(w^4 x 10^-16)
+	"""
+
+	x = wavelength
+
+	n = ( 2726.43 + ( 12.288/( x**2 * 10**(-8)) ) + (0.3555/( x**4 * 10**(-16))) ) * 10**(-7) + 1.0
+
+	y = (n - 1) * x
+
+	vac2air_wave = x - y
+
+	return vac2air_wave
+
 def plot_spectra(sp, order_list):
 	"""
 	Plot multi-order HIRES spectra.

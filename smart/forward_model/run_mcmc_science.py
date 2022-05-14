@@ -60,6 +60,9 @@ parser.add_argument("save_to_path",type=str,
 parser.add_argument("lsf",type=float,
     default=None, help="line spread function", nargs="+")
 
+parser.add_argument("-instrument",metavar='--inst',type=str,
+    default='nirspec', help="spectrometer name of the instrument; default nirspec")
+
 parser.add_argument("-outlier_rejection",metavar='--rej',type=float,
     default=3.0, help="outlier rejection based on the multiple of standard deviation of the residual; default 3.0")
 
@@ -115,11 +118,14 @@ args = parser.parse_args()
 
 #source                 = str(args.source[0])
 order                  = int(args.order[0])
+instrument             = str(args.instrument)
 date_obs               = str(args.date_obs[0])
 sci_data_name          = str(args.sci_data_name[0])
-tell_data_name         = str(args.tell_data_name[0])
 data_path              = str(args.data_path[0])
-tell_path              = str(args.tell_path[0])
+
+if instrument != 'hires':
+	tell_data_name         = str(args.tell_data_name[0])
+	tell_path              = str(args.tell_path[0])
 save_to_path_base      = str(args.save_to_path[0])
 lsf                    = float(args.lsf[0])
 ndim, nwalkers, step   = int(args.ndim), int(args.nwalkers), int(args.step)
@@ -150,20 +156,25 @@ dt_string = now.strftime("%H:%M:%S")
 
 #####################################
 
-data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask)
-tell_data_name2 = tell_data_name + '_calibrated'
+data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
 
-tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask)
+if instrument != 'hires':
+	tell_data_name2 = tell_data_name + '_calibrated'
+	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument)
 
-data.updateWaveSol(tell_sp)
+	data.updateWaveSol(tell_sp)
 
 # MJD for logging
 # upgraded NIRSPEC
-if len(data.oriWave) == 2048:
+if instrument == 'nirspec':
+	if len(data.oriWave) == 2048:
+		mjd = data.header['MJD']
+	# old NIRSPEC
+	else:
+		mjd = data.header['MJD-OBS']
+
+elif instrument == 'hires':
 	mjd = data.header['MJD']
-# old NIRSPEC
-else:
-	mjd = data.header['MJD-OBS']
 
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
@@ -192,7 +203,9 @@ if coadd:
 	plt.close()
 
 sci_data  = data
-tell_data = tell_sp 
+
+if instrument != 'hires':
+	tell_data = tell_sp 
 
 """
 MCMC run for the science spectra. See the parameters in the makeModel function.
@@ -257,8 +270,10 @@ else:
 #if limits is None: limits = priors
 
 data          = copy.deepcopy(sci_data)
-tell_sp       = copy.deepcopy(tell_data)
-data.updateWaveSol(tell_sp)
+
+if instrument != 'hires':
+	tell_sp       = copy.deepcopy(tell_data)
+	data.updateWaveSol(tell_sp)
 
 # barycentric corrction
 #barycorr      = smart.barycorr(data.header).value
@@ -266,9 +281,14 @@ data.updateWaveSol(tell_sp)
 
 ## read the input custom mask and priors
 lines          = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
-custom_mask    = json.loads(lines[5].split('custom_mask')[1])
-priors         = ast.literal_eval(lines[6].split('priors ')[1])
-barycorr       = json.loads(lines[13].split('barycorr')[1])
+if instrument == 'nirspec':
+	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
+	priors         = ast.literal_eval(lines[6].split('priors ')[1])
+	barycorr       = json.loads(lines[13].split('barycorr')[1])
+elif instrument == 'hires':
+	custom_mask    = json.loads(lines[3].split('custom_mask')[1])
+	priors         = ast.literal_eval(lines[4].split('priors ')[1])
+	barycorr       = json.loads(lines[11].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
 if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
@@ -329,6 +349,11 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 						'N_min':0.10,                               'N_max':5.50 				
 					}
 
+# HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter
+if data.instrument == 'hires':
+	limits['B_min'] = -5.0 # Angstrom
+	limits['B_max'] = +5.0 # Angstrom
+
 if final_mcmc:
 	limits['rv_min'] = priors['rv_min'] - 10
 	limits['rv_max'] = priors['rv_max'] + 10
@@ -346,9 +371,10 @@ data.wave     = data.wave[pixel_start:pixel_end]
 data.flux     = data.flux[pixel_start:pixel_end]
 data.noise    = data.noise[pixel_start:pixel_end]
 
-tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
-tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
-tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
+if instrument != 'hires':
+	tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
+	tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
+	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
 
 #if final_mcmc:
 #	priors, limits         = mcmc_utils.generate_final_priors_and_limits(sp_type=sp_type, barycorr=barycorr, save_to_path1=save_to_path1)
@@ -412,7 +438,7 @@ def lnlike(theta, data, lsf):
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
 	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model)
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
 
 	chisquare = smart.chisquare(data, model)/N**2
 
