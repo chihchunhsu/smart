@@ -131,6 +131,7 @@ burn                   = int(args.burn)
 moves                  = float(args.moves)
 applymask              = args.applymask
 pixel_start, pixel_end = int(args.pixel_start), int(args.pixel_end)
+
 #pwv                    = float(args.pwv)
 #alpha_tell             = float(args.alpha_tell[0])
 plot_show              = args.plot_show
@@ -904,7 +905,7 @@ cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tel
 					'rv2':rv2_mcmc[0]+barycorr, 'e_rv2':max(rv2_mcmc[1], rv2_mcmc[2]), 'ue_rv2':rv2_mcmc[1], 'le_rv2':rv2_mcmc[2],
 					'vsini2':vsini2_mcmc[0], 'e_vsini2':max(vsini2_mcmc[1], vsini2_mcmc[2]), 'ue_vsini2':vsini2_mcmc[1], 'le_vsini2':vsini2_mcmc[2],
 					'teff2':teff2_mcmc[0], 'e_teff2':max(teff2_mcmc[1],teff2_mcmc[2]), 'ue_teff2':teff2_mcmc[1], 'le_teff2':teff2_mcmc[2],
-					'logg2':logg_mcmc[0], 'e_logg2':max(logg2_mcmc[1], logg2_mcmc[2]), 'ue_logg2':logg2_mcmc[1], 'le_logg2':logg2_mcmc[2],
+					'logg2':logg2_mcmc[0], 'e_logg2':max(logg2_mcmc[1], logg2_mcmc[2]), 'ue_logg2':logg2_mcmc[1], 'le_logg2':logg2_mcmc[2],
 					'am':am_mcmc[0], 'e_am':max(am_mcmc[1], am_mcmc[2]), 'ue_am':am_mcmc[1], 'le_am':am_mcmc[2], 
 					'pwv':pwv_mcmc[0], 'e_pwv':max(pwv_mcmc[1], pwv_mcmc[2]), 'ue_pwv':pwv_mcmc[1], 'le_pwv':pwv_mcmc[2],
 					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
