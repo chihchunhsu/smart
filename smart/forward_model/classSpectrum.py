@@ -310,6 +310,16 @@ class Spectrum():
 			self.wave   = hdulist[0].data * 10000.0 # convert to Angstrom
 			self.flux   = hdulist[1].data
 			self.noise  = hdulist[2].data
+		
+		else: 
+			self.applymask = kwargs.get('applymask', False)
+			
+			#if self.path == None:
+			#	self.path = './'
+
+			self.wave   = kwargs.get('wave') * 10000.0 # convert to Angstrom
+			self.flux   = kwargs.get('flux')
+			self.noise  = kwargs.get('noise')
 
 		if self.applymask:
 			# set up masking criteria

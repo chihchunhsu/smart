@@ -13,7 +13,7 @@ import time
 import os
 import sys
 
-def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, flux_offset=0,**kwargs):
+def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, **kwargs):
     """
     Return a forward model.
 
@@ -33,12 +33,16 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
     """
 
     # read in the parameters
-    order      = kwargs.get('order', '33')
-    modelset   = kwargs.get('modelset', 'btsettl08')
-    instrument = kwargs.get('instrument', 'nirspec')
-    en         = kwargs.get('en', 0)       # alpha enhancement for the model (if available)
-    veiling    = kwargs.get('veiling', 0)  # flux veiling parameter
-    lsf        = kwargs.get('lsf', 4.5)    # instrumental LSF
+    order           = kwargs.get('order', '33')
+    modelset        = kwargs.get('modelset', 'btsettl08')
+    instrument      = kwargs.get('instrument', 'nirspec')
+    en              = kwargs.get('en', 0)       # alpha enhancement for the model (if available)
+    veiling         = kwargs.get('veiling', 0)  # flux veiling parameter
+    vsini           = kwargs.get('vsini', None) # rotational velocity
+    lsf             = kwargs.get('lsf', None)   # instrumental LSF
+    flux_multiplier = kwargs.get('flux_multiplier', 1)   # Flux scaling (multiplicative)
+    flux_offset     = kwargs.get('flux_offset', 0)   # Flux offset (additive)
+
     if instrument == 'apogee':
         try:
             import apogee_tools as ap
@@ -106,7 +110,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
     #model.wave += wave_offset
 
     # apply vsini
-    model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
+    if vsini != None: 
+        model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
     
     # apply rv (including the barycentric correction)
     model.wave = rvShift(model.wave, rv=rv)
@@ -142,17 +147,18 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
             altitude = 1283
             model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, altitude=altitude, pwv=pwv, instrument=instrument, order=order)
         else:
-            model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv,)
+            model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv, instrument=instrument, order=order)
 
     # instrumental LSF
-    if instrument == 'nirspec':
-        model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
-    elif instrument == 'apogee':
+    if instrument == 'apogee':
         model.flux = ap.apogee_hack.spec.lsf.convolve(model.wave, model.flux, lsf=lsf, xlsf=xlsf).flatten()
         model.wave = ap.apogee_hack.spec.lsf.apStarWavegrid()
         # Remove the NANs
         model.wave = model.wave[~np.isnan(model.flux)]
         model.flux = model.flux[~np.isnan(model.flux)]
+    else:
+        if lsf != None:
+            model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
     if output_stellar_model:
         stellar_model.flux = smart.broaden(wave=stellar_model.wave, flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
@@ -271,6 +277,12 @@ def makeModel(teff, logg=5, metal=0, vsini=1,rv=0, tell_alpha=1.0, airmass=1.0, 
             model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
             model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
 
+        else:
+            model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+            model.wave = data.wave
+            model.flux *= flux_multiplier
+            model.flux += flux_offset
+
     if instrument == 'nirspec':
         # flux offset
         model.flux += flux_offset
@@ -333,7 +345,7 @@ def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, altitude=1283, in
     if instrument.lower() == 'apf':
         telluric_model.wave, telluric_model.flux =  smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, altitude=altitude, pwv=pwv, tellset='psg', instrument=instrument, order=order)
     else:
-        telluric_model.wave, telluric_model.flux =  smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
+        telluric_model.wave, telluric_model.flux =  smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv, instrument=instrument, order=order)
 
     # apply the telluric alpha parameter
     telluric_model.flux = telluric_model.flux**(tell_alpha)
