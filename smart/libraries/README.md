@@ -8,7 +8,7 @@ The library includes
 
 * BT-Settl08 Models (Allard et al. 2012, Bibcode: 2012RSPTA.370.2765A, url: https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A/abstract)
 
-* MARCS_APOGEE_DR15 (Mészáros et al. 2012, Bibcode: 2012AJ....144..120M , url: https://ui.adsabs.harvard.edu/abs/2012AJ....144..120M/abstract)
+* MARCS_APOGEE_DR15 (Gustafsson et al. 2008, Bibcode: 2008A&A...486..951G , url: https://ui.adsabs.harvard.edu/abs/2008A%26A...486..951G/abstract)
 
 * PHOENIX_ACES_AGSS_COND_2011 (Husser et al. 2013, Bibcode: 2013A&A...553A...6H, url: https://ui.adsabs.harvard.edu/abs/2013A%26A...553A...6H/abstract)
 
