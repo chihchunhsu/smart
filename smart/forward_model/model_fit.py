@@ -103,7 +103,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
         if modelset.lower() == 'phoenix-aces-agss-cond-2011': 
             model    = smart.Model(teff=teff, logg=logg, metal=metal, en=en, order=str(order), modelset=modelset, instrument=instrument)
         else:
-            model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
+            model    = smart.Model(teff=teff, logg=logg, metal=metal, en=en, order=str(order), modelset=modelset, instrument=instrument)
 
     
     # wavelength offset

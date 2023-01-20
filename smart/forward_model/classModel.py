@@ -134,7 +134,7 @@ class Model():
             self.wave = wave # Angstrom
             self.flux = flux # erg/s/cm^2/Angstrom
 
-        elif self.order == None and self.instrument in ['lowres1','lowres5', 'lowres10', 'lowres100']:
+        elif self.order == None and self.instrument in ['lowres1', 'lowres5', 'lowres10', 'lowres100']:
 
             self.teff     = kwargs.get('teff', 2500)
             self.logg     = kwargs.get('logg', 5.00)

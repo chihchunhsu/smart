@@ -42,7 +42,7 @@ def barycorr(header, instrument='nirspec'):
 	barycentric correction (float*u(km/s))
 
 	"""
-	if instrument == 'nirspec':
+	if instrument.lower() == 'nirspec':
 		longitude = 360 - (155 + 28.7/60 ) # degrees
 		latitude  = 19 + 49.7/60 #degrees
 		altitude  = 4160.
@@ -65,7 +65,7 @@ def barycorr(header, instrument='nirspec'):
 
 		barycorr = sc.radial_velocity_correction(obstime=Time(ut, scale='utc'), location=keck)
 
-	elif instrument == 'apogee':
+	elif instrument.lower() == 'apogee':
 		longitude = 360 - (105 + 49.2/60 ) # degrees
 		latitude  =  32 + 46.8/60 #degrees
 		altitude  = 2798.
@@ -81,7 +81,7 @@ def barycorr(header, instrument='nirspec'):
 
 		barycorr = sc.radial_velocity_correction(obstime=Time(ut, scale='utc'), location=apogee)
 
-	elif instrument == 'igrins':
+	elif instrument.lower() == 'igrins':
 		# McDonalds Observatory
 		longitude = 360 - (104+0/60+54.67839/3600) # degrees
 		latitude  =  +1*(30+40/60+48.94384/3600) #degrees
@@ -104,5 +104,26 @@ def barycorr(header, instrument='nirspec'):
 
 		barycorr = sc.radial_velocity_correction(obstime=Time(ut, scale='utc'), location=apogee)
 
-	
+	elif instrument.lower() == 'nires':
+		# IRTF Observatory
+		longitude = 360 - (155 + 29/60 + 19.19564/3600) # degrees
+		latitude  =  +1*(19 + 49/60 + 34.38594/3600) #degrees
+		altitude  = 13674.76
+
+		irtf      = EarthLocation.from_geodetic(lat=latitude*u.deg, lon=longitude*u.deg, height=altitude*u.m)
+
+		ut        = header['AVE_MJD']
+		ra        = float(header['RA'])#.split('+')[1].split(':')
+		dec       = float(header['DEC'])#.split('+')[1].split(':')
+		#ra        = 15* ( float(tmp_ra[0]) + float(tmp_ra[1])/60 + float(tmp_ra[2])/3600 )
+		#if '-' in header['TELDEC']:
+		#	tmp_dec = header['TELDEC'].split('-')[1].split(':')
+		#	dec      = -1 * (float(tmp_dec[0]) + float(tmp_dec[1])/60 + float(tmp_dec[2])/3600)
+		#else:
+		#	tmp_dec = header['TELDEC'].split('+')[1].split(':')
+		#	dec      = +1 * (float(tmp_dec[0]) + float(tmp_dec[1])/60 + float(tmp_dec[2])/3600)
+		sc      = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, equinox='J2000', frame='fk5')
+
+		barycorr = sc.radial_velocity_correction(obstime=Time(ut, format='mjd'), location=irtf)
+
 	return barycorr.to(u.km/u.s)
