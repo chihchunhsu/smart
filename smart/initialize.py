@@ -15,7 +15,8 @@ ModelSets = {
     'drift-phoenix' : 'DRIFT_PHOENIX',
     'marcs-apogee-dr15' : 'MARCS_APOGEE_DR15',
     'marcs-pp' : 'MARCS_PP',
-    'btsettl08' : 'BTSETTL08'
+    'btsettl08' : 'BTSETTL08',
+    'phoenix-btsettl08' : 'PHOENIX_BTSETTL08'
 }
 
 def getModelgrid(modelset = 'phoenix-aces-agss-cond-2011'):
