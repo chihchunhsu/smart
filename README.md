@@ -4,7 +4,7 @@ The `SMART` is a Markov Chain Monte Carlo (MCMC) forward-modeling framework for 
 For NIRSPEC users, required adjustments need to be made before reducing private data using [NIRSPEC-Data-Reduction-Pipeline(NSDRP)](https://github.com/Keck-DataReductionPipelines/NIRSPEC-Data-Reduction-Pipeline), to perform telluric wavelength calibrations, and to forward model spectral data. The code is currently being developed.
 
 Authors:
-* Dino Chih-Chun Hsu (UCSD)
+* Dino Chih-Chun Hsu (Northwestern, UCSD)
 * Adam Burgasser, PI (UCSD)
 * Chris Theissen (UCSD, BU)
 * Jessica Birky (UW, UCSD)
@@ -115,5 +115,9 @@ You can run the following command on the terminal:
 ```
 
 The required parameters order sorting filter `order`, data of observation `date_obs`, science data name `sci_data_name`, telluric data name `tell_data_name`, science file path `data_path`, telluric file path `tell_path`, saving path `save_to_path`, optional paramters MCMC number of chains/walkers `-nwalkers`, number of steps `-step`, burn-in `-burn`, starting/ending pixels `-pixel_start` and `-pixel_end` are defined the same as the telluric data modeling routine. The NIRSPEC line-spread function `lsf` is obtained from the telluric data modeling (typically 4.8 km/s). The outlier rejection `-outlier_rejection` is to perform a sigma-clipping outlier rejection (in this case sigma=3.0) to remove bad pixels by comparing the resiaudl of the best-fit model and observed data. Finally, the model set to use `-modelset` in this case is the [BT-Settl](https://ui.adsabs.harvard.edu/abs/2012RSPTA.370.2765A/abstract) models. Other model sets are availale and described in detailed [here](https://github.com/chihchunhsu/smart/tree/master/smart/libraries).
+
+## Citation:
+
+If you use this code in your research, please cite [Hsu et al. 2021; ApJS, 257, 45](https://ui.adsabs.harvard.edu/abs/2021ApJS..257...45H/abstract) and the frozen version is on [Hsu et al. 2021 Zenodo](https://ui.adsabs.harvard.edu/abs/2021zndo...4765258H/abstract)
 
 
