@@ -292,24 +292,48 @@ class Spectrum():
 			self.mask     = []
 
 		elif self.instrument == 'igrins':
+			"""
+			Follow the IGRINS PIP data product convention; default is to read the flattened spectra
+			
+			Example: if spec = SDCK_20221215_0021.spec_flattened.fits
+			--------
+			name: SDCK_20221215_0032
+			name2: SDCK_20221215_0021
+
+			At 2.3 micron, order = 6
+
+			It will find 'SDCK_20221215_0021.wave.fits' for (vacuum) wavelength and
+			'SDCK_20221215_0021.variance.fits' for variance
+			
+			"""
 			self.name      = kwargs.get('name')
+			self.name2     = kwargs.get('name2') # for wavelength solution using A0V file 
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
-			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
-			#self.manaulmask = kwargs('manaulmask', False)
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
+			self.tell      = kwargs.get('tell', False)
 
 			if self.path == None:
 				self.path = './'
 
-			fullpath = self.path + '/' + self.name + '_' + str(self.order) + '.fits'
+			# follow the IGRINS PIP data product convention
+			# read the flattend spectrum for telluric for wavelength calibration
+			if self.tell:
+				fullpath_flux = self.path + '/' + self.name + '.spec_flattened.fits'
+			else:
+				fullpath_flux = self.path + '/' + self.name + '.spec.fits'
+			fullpath_wave = self.path + '/' + self.name2 + '.wave.fits'
+			fullpath_var  = self.path + '/' + self.name + '.variance.fits'
 
-			hdulist = fits.open(fullpath, ignore_missing_end=True)
+			hdulist = fits.open(fullpath_flux)
+			wave    = fits.open(fullpath_wave)
+			var     = fits.open(fullpath_var)
 
 			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
 			self.header = hdulist[0].header
-			self.wave   = hdulist[0].data * 10000.0 # convert to Angstrom
-			self.flux   = hdulist[1].data
-			self.noise  = hdulist[2].data
+			self.wave   = wave[0].data[self.order] * 10.0 # convert from nm to Angstrom
+			self.flux   = hdulist[0].data[self.order]
+			self.noise  = np.sqrt(var[0].data[self.order])
 			self.mask     = []
 
 		elif self.instrument == 'hires':
