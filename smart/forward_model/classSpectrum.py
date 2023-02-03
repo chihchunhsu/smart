@@ -311,14 +311,14 @@ class Spectrum():
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
 			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
-			self.tell      = kwargs.get('tell', False)
+			self.flat_tell = kwargs.get('flat_tell', False)
 
 			if self.path == None:
 				self.path = './'
 
 			# follow the IGRINS PIP data product convention
 			# read the flattend spectrum for telluric for wavelength calibration
-			if self.tell:
+			if self.flat_tell:
 				fullpath_flux = self.path + '/' + self.name + '.spec_flattened.fits'
 			else:
 				fullpath_flux = self.path + '/' + self.name + '.spec.fits'
