@@ -336,6 +336,13 @@ class Spectrum():
 			self.noise  = np.sqrt(var[0].data[self.order])
 			self.mask     = []
 
+			self.oriWave  = self.wave
+			self.oriFlux  = self.flux
+			self.oriNoise = self.noise
+
+			# define a list for storing the best wavelength shift
+			self.bestshift = []
+
 		elif self.instrument == 'hires':
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
