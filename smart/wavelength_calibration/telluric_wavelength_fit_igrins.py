@@ -1019,8 +1019,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 
 	if save is True:
 		if data_path is None:
-			data_path = save_to_path + ".spec_flattened.fits"
-		save_name = save_to_path + "_calibrated.spec_flattened.fits"
+			data_path = save_to_path + ".wave.fits"
+		save_name = save_to_path + "_calibrated.wave.fits"
 		with fits.open(data_path) as hdulist:
 			hdulist[0].header['COMMENT']  = 'SMART Calibrated Wavelength Solutions'
 			hdulist[0].header['PWV']      = pwv

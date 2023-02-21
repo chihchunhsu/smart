@@ -331,7 +331,12 @@ class Spectrum():
 
 			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
 			self.header = hdulist[0].header
-			self.wave   = wave[0].data[self.order] * 10.0 # convert from nm to Angstrom
+
+			# if the calibrated wavelength, read the data different from the raw data
+			if '_calibrated' in self.name2:
+				self.wave = wave[0].data
+			else:
+				self.wave   = wave[0].data[self.order] * 10.0 # convert from nm to Angstrom
 			self.flux   = hdulist[0].data[self.order]
 			self.noise  = np.sqrt(var[0].data[self.order])
 			self.mask     = []
