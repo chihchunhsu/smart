@@ -104,7 +104,13 @@ if instrument == 'nirspec':
 elif instrument == 'igrins':
 	# model the unflatted spectrum
 	tell_sp = smart.Spectrum(name=tell_data_name, name2=tell_data_name+'_calibrated', 
+		order=order, path=tell_path, flat_tell=True, instrument=instrument)
+
+	tell_sp2 = smart.Spectrum(name=tell_data_name, name2=tell_data_name+'_calibrated', 
 		order=order, path=tell_path, flat_tell=False, instrument=instrument)
+
+	scales = tell_sp.flux/tell_sp2.flux
+	tell_sp.noise *= scales
 
 # MJD for logging
 # upgraded NIRSPEC
