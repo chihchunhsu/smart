@@ -432,7 +432,7 @@ file_log.close()
 
 print(lsf_mcmc, airmass_mcmc, pwv_mcmc, A_mcmc, B_mcmc)
 
-if '_' in tell_sp.name:
+if ('_' in tell_sp.name) and (instrument != 'igrins'):
 	tell_data_name = tell_sp.name.split('_')[0]
 
 ## triangular plots
