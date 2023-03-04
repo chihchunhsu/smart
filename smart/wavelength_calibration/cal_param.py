@@ -27,6 +27,6 @@ cal_param_nirspec = {
 }
 
 cal_param_igrins = {
-	'6':{'xcorr_range':1.0, 'outlier_rej':3., 	'pixel_range_start':40, 	'pixel_range_end':-40},
+	'6':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
 }
 

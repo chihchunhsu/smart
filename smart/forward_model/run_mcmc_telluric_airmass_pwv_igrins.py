@@ -92,7 +92,7 @@ pixel_start, pixel_end = int(args.pixel_start), int(args.pixel_end)
 save                   = args.save
 
 lines                  = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
-custom_mask            = json.loads(lines[3].split('custom_mask')[1])
+custom_mask            = json.loads(lines[4].split('custom_mask')[1])
 
 instrument             = str(args.instrument)
 

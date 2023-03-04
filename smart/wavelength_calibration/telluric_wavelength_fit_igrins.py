@@ -156,7 +156,8 @@ def xcorrTelluric(data, model, shift, start_pixel, width, lsf):
 	##the model is selected in the pixel range in the beginning
 	#m = model2.flux[start_pixel:start_pixel+width]
 	m = model2.flux
-	xcorr = np.inner(d, m)/(np.average(d)*np.average(m))
+	#xcorr = np.inner(d, m)/(np.average(d)*np.average(m))
+	xcorr = np.inner(d, m)/(np.median(d)*np.median(m))/len(d) # normalize by the length of data array
 
 	return xcorr
 
@@ -595,9 +596,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
 	#pixel0             = np.arange(length1)
 	#if mask_custom != []:
-	pixel              = pixel0
-	#else:
-	#	pixel              = pixel0[pixel_range_start:pixel_range_end]
+	#pixel              = pixel0
+	pixel              = pixel0[pixel_range_start:pixel_range_end]
+	print('len(pixel)', len(pixel))
 
 	# LSF of the intrument
 	vbroad = (299792.458)*np.mean(np.diff(data.wave))/np.mean(data.wave)
@@ -666,20 +667,21 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	for i in range(niter):
 	# getting the parameters of initial wavelength solution 
 
-		if i == 0: # Change the width for the first iteration
-			width     = 300
-			step_size = 10
-			include_ends = True
-		elif i == 1: # Change the width for the second iteration
-			width     = 150
-			step_size = 10
-			include_ends = True
-		elif i == 2: # Change the width for the second iteration
-			width     = 100
-			step_size = 10
-		else: # Change the width for the middle few iterations
-			width     = 80
-			step_size = 10
+		#if i == 0: # Change the width for the first iteration
+		#	width     = 300
+		#	step_size = 10
+		#	include_ends = True
+		#elif i == 1: # Change the width for the second iteration
+		#	width     = 150
+		#	step_size = 10
+		#	include_ends = True
+		#elif i == 2: # Change the width for the second iteration
+		#	width     = 100
+		#	step_size = 10
+		#else: # Change the width for the middle few iterations
+		width     = 40
+		step_size = 10
+		include_ends = False
 
 		if include_ends:
 			spec_range          = len(pixel) # window range coverage for xcorr
@@ -712,15 +714,25 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			#print(width_range_centers)
 			#print(widths)
 			#sys.exit()
-		else:
-			spec_range          = len(pixel) # window range coverage for xcorr
-			width_ranges        = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size)
-			width_range_centers = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size) + width//2
-			widths              = np.zeros(len(width_ranges), dtype=np.int) + width
-			#print(i, width, spec_range)
-			#print(width_range_centers)
-			#print(widths)
-			#sys.exit()
+		#else:
+		#	spec_range          = len(pixel) # window range coverage for xcorr
+		#	width_ranges        = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size)
+		#	width_range_centers = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size) + width//2
+		#	widths              = np.zeros(len(width_ranges), dtype=np.int) + width
+		#	#print(i, width, spec_range)
+		#	#print(width_range_centers)
+		#	#print(widths)
+		#	#sys.exit()
+
+		spec_range          = len(pixel) # window range coverage for xcorr
+		width_ranges        = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size)
+		width_range_centers = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size) + width//2
+		widths              = np.zeros(len(width_ranges), dtype=np.int) + width
+
+		print('spec_range', spec_range)
+		print('width_ranges', width_ranges)
+		print('width_range_centers', width_range_centers)
+		print('widths', widths)
 
 		time1 = time.time()
 
@@ -741,6 +753,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		#for counter, j, width in enumerate(width_range):
 		#print('TEST0', len(widths), len(width_ranges), len(width_range_centers))
 		for counter, j, center, width in zip(range(len(widths)), width_ranges, width_range_centers, widths):
+			print(counter, j, center, width)
 			testname = "loop{}".format(i+1)
 				
 			data2 = data
@@ -750,12 +763,12 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			if delta_wave_range > 2:
 				delta_wave_range = 0.6
 			step = 0.01
-			best_shift = smart.pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
-											test=test, testname=testname,
-											counter=counter, step=step,
-											pixel_range_start=pixel_range_start,
-											pixel_range_end=pixel_range_end,
-											lsf=vbroad, length1=length1, pixel=pixel0)
+			best_shift = pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
+										test=test, testname=testname,
+										counter=counter, step=step,
+										pixel_range_start=pixel_range_start,
+										pixel_range_end=pixel_range_end,
+										lsf=vbroad, length1=length1, pixel=pixel0)
 			time3 = time.time()
 			if test is True:
 				print("xcorr time: {} s".format(round(time3-time2, 4)))
@@ -1037,8 +1050,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			hdulist[0].header['POPT2']	  = popt2[2]
 			hdulist[0].header['POPT3']	  = popt2[3]
 			hdulist[0].header['POPT4']	  = popt2[4]
-			hdulist[0].header['STD']      = str(np.std\
-				                               (residualprevious)/np.average(new_wave_sol)*299792.458) + 'km/s'
+			hdulist[0].header['STD']      = str(np.std(residualprevious)/np.average(new_wave_sol)*299792.458) + 'km/s'
 			hdulist[0].header['RMS']      = str(RMSEprevious/np.average(new_wave_sol)*299792.458) + 'km/s'
 			hdulist[0].data               = waveSolution(np.arange(length1), c0, c1, c2, c3, c4)
 			try:
@@ -1108,7 +1120,7 @@ def run_wave_cal(data_name, data_path, order_list,
 
 		# use median value to replace the masked values later
 		if instrument == 'igrins':
-			pix_start, pix_end = 40, -40 # need to make it more flexible
+			pix_start, pix_end = pixel_range_start, pixel_range_end # need to make it more flexible
 			data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask,
 									name2=data_name, flat_tell=True, instrument=instrument)
 			length1  = len(data.wave) # preserve the length of the array
@@ -1160,6 +1172,7 @@ def run_wave_cal(data_name, data_path, order_list,
 
 		# this is to apply a sigma clipping mask
 		if apply_sigma_mask:
+			print('*** apply sigma mask ***')
 			#data.flux  = data.oriFlux
 			#data.wave  = data.oriWave
 			#data.noise = data.oriNoise
@@ -1179,6 +1192,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
 		elif not apply_sigma_mask:
 			if apply_edge_mask:
+				print('*** apply edge mask ***')
 				data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
 				data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
 				data.noise = np.delete(data.oriNoise, mask_custom)[pixel_range_start: pixel_range_end]
