@@ -135,6 +135,12 @@ class Spectrum():
 				# read the bitmask
 				self.bitmask   = hdulist[3].data
 
+				# store the fiber ID
+				self.fiber     = hdulist[0].header['FIBERID']
+
+				# store the original LSF parameters
+				self.LSF       = hdulist[10].data
+
 				#import bitmask
 				# chip a
 				if self.chip == 'all' or self.chip == 'a':
@@ -165,7 +171,6 @@ class Spectrum():
 						(3 in bitmask) or (4 in bitmask) or (5 in bitmask) or \
 						(6 in bitmask) or (12 in bitmask) or (14 in bitmask):
 							mask_2.append(i)
-
 
 				if self.chip == 'all':
 					self.wave      = np.array(list(np.delete(hdulist[4].data[0], mask_0))+list(np.delete(hdulist[4].data[1], mask_1))+list(np.delete(hdulist[4].data[2], mask_2)))
