@@ -50,7 +50,7 @@ class Spectrum():
 	"""
 	def __init__(self, **kwargs):
 		self.instrument = kwargs.get('instrument','nirspec')
-		print(self.instrument)
+		# print(self.instrument)
 		if self.instrument == 'nirspec':
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')

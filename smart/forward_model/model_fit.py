@@ -87,7 +87,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
     #elif data is not None and instrument == 'apogee':
     elif instrument == 'apogee':
-        model    = smart.Model(teff=teff, logg=logg, metal=metal, modelset=modelset, instrument=instrument)
+        model    = smart.Model(teff=teff, logg=logg, metal=metal, modelset=modelset, instrument=instrument, order='all')
         # Dirty fix here
         model.wave = model.wave[np.where(model.flux != 0)]
         model.flux = model.flux[np.where(model.flux != 0)]
