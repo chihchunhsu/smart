@@ -221,69 +221,69 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 				data0.wave = data0.wave[::-1]
 				data0.flux = data0.flux[::-1]
 				
-				model0.flux = np.array(smart.integralResample(xh=model0.wave, yh=model0.flux, xl=data0.wave))
-				model0.wave = data0.wave
-				model0      = smart.continuum(data=data0, mdl=model0, deg=deg)
-				# flux corrections
-				#model0.flux = (model0.flux + c0_1) * np.e**(-c0_2)
-				model0.flux = (model0.flux + c0_1)
+			model0.flux = np.array(smart.integralResample(xh=model0.wave, yh=model0.flux, xl=data0.wave))
+			model0.wave = data0.wave
+			model0      = smart.continuum(data=data0, mdl=model0, deg=deg)
+			# flux corrections
+			#model0.flux = (model0.flux + c0_1) * np.e**(-c0_2)
+			model0.flux = (model0.flux + c0_1)
 
-				data1       = copy.deepcopy(data)
-				model1      = copy.deepcopy(model)
+			data1       = copy.deepcopy(data)
+			model1      = copy.deepcopy(model)
 
-				# wavelength offset
-				model1.wave += wave_off2
+			# wavelength offset
+			model1.wave += wave_off2
 
-				range1      = np.where((data1.wave >= data.oriWave0[1][-1]) & (data1.wave <= data.oriWave0[1][0]))
-				data1.wave  = data1.wave[range1]
-				data1.flux  = data1.flux[range1]
+			range1      = np.where((data1.wave >= data.oriWave0[1][-1]) & (data1.wave <= data.oriWave0[1][0]))
+			data1.wave  = data1.wave[range1]
+			data1.flux  = data1.flux[range1]
 
-				if data1.wave[0] > data1.wave[-1]:
-					data1.wave = data1.wave[::-1]
-					data1.flux = data1.flux[::-1]
+			if data1.wave[0] > data1.wave[-1]:
+				data1.wave = data1.wave[::-1]
+				data1.flux = data1.flux[::-1]
 
-				model1.flux = np.array(smart.integralResample(xh=model1.wave, yh=model1.flux, xl=data1.wave))
-				model1.wave = data1.wave
-				model1      = smart.continuum(data=data1, mdl=model1, deg=deg)
+			model1.flux = np.array(smart.integralResample(xh=model1.wave, yh=model1.flux, xl=data1.wave))
+			model1.wave = data1.wave
+			model1      = smart.continuum(data=data1, mdl=model1, deg=deg)
 
-				# flux corrections
-				#model1.flux = (model1.flux + c1_1) * np.e**(-c1_2)
-				model1.flux = (model1.flux + c1_1)
+			# flux corrections
+			#model1.flux = (model1.flux + c1_1) * np.e**(-c1_2)
+			model1.flux = (model1.flux + c1_1)
 
-				data2       = copy.deepcopy(data)
-				model2      = copy.deepcopy(model)
+			data2       = copy.deepcopy(data)
+			model2      = copy.deepcopy(model)
 
-				# wavelength offset
-				model2.wave += wave_off3
+			# wavelength offset
+			model2.wave += wave_off3
 
-				range2      = np.where((data2.wave >= data.oriWave0[2][-1]) & (data2.wave <= data.oriWave0[2][0]))
-				data2.wave  = data2.wave[range2]
-				data2.flux  = data2.flux[range2]
+			range2      = np.where((data2.wave >= data.oriWave0[2][-1]) & (data2.wave <= data.oriWave0[2][0]))
+			data2.wave  = data2.wave[range2]
+			data2.flux  = data2.flux[range2]
 
-				if data2.wave[0] > data2.wave[-1]:
-					data2.wave = data2.wave[::-1]
-					data2.flux = data2.flux[::-1]
+			if data2.wave[0] > data2.wave[-1]:
+				data2.wave = data2.wave[::-1]
+				data2.flux = data2.flux[::-1]
 
-				model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data2.wave))
-				model2.wave = data2.wave
-				model2      = smart.continuum(data=data2, mdl=model2, deg=deg)
+			model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data2.wave))
+			model2.wave = data2.wave
+			model2      = smart.continuum(data=data2, mdl=model2, deg=deg)
 
-				# flux corrections
-				#model2.flux = (model2.flux + c2_1) * np.e**(-c2_2)
-				model2.flux = (model2.flux + c2_1)
+			# flux corrections
+			#model2.flux = (model2.flux + c2_1) * np.e**(-c2_2)
+			model2.flux = (model2.flux + c2_1)
 
-				## scale the flux to be the same as the data
-				#model0.flux *= (np.std(data0.flux)/np.std(model0.flux))
-				#model0.flux -= np.median(model0.flux) - np.median(data0.flux)
+			## scale the flux to be the same as the data
+			#model0.flux *= (np.std(data0.flux)/np.std(model0.flux))
+			#model0.flux -= np.median(model0.flux) - np.median(data0.flux)
 
-				#model1.flux *= (np.std(data1.flux)/np.std(model1.flux))
-				#model1.flux -= np.median(model1.flux) - np.median(data1.flux)
+			#model1.flux *= (np.std(data1.flux)/np.std(model1.flux))
+			#model1.flux -= np.median(model1.flux) - np.median(data1.flux)
 
-				#model2.flux *= (np.std(data2.flux)/np.std(model2.flux))
-				#model2.flux -= np.median(model2.flux) - np.median(data2.flux)
+			#model2.flux *= (np.std(data2.flux)/np.std(model2.flux))
+			#model2.flux -= np.median(model2.flux) - np.median(data2.flux)
 
-				model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
-				model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
+			model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
+			model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
 
 	if instrument in ['nirspec', 'hires']:
 		# flux offset
