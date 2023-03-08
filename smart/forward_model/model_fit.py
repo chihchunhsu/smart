@@ -175,7 +175,12 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
         stellar_model.wave += wave_offset
         if binary:
             model2.wave = stellar_model.wave
-
+    
+    # super-resampling
+    f_model = interp1d(x=model.wave, y=model.flux)
+    model.wave = np.linspace(min(model.wave), max(model.wave), len(data.wave))
+    model.flux = f_model(model.wave)
+    
     # integral resampling
     if data is not None:
         if instrument == 'nirspec':
