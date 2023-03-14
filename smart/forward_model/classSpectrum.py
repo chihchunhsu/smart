@@ -249,6 +249,8 @@ class Spectrum():
 				#self.flux     *= self.tell
 
 			elif self.datatype == 'apstar':
+				# see the description of the data model: 
+				# https://data.sdss.org/datamodel/files/APOGEE_REDUX/APRED_VERS/APSTAR_VERS-DR14/TELESCOPE/LOCATION_ID/apStar.html
 				crval1         = hdulist[0].header['CRVAL1']
 				cdelt1         = hdulist[0].header['CDELT1']
 				naxis1         = hdulist[0].header['NWAVE']
@@ -262,7 +264,7 @@ class Spectrum():
 				self.nvisits = hdulist[0].header['NVISITS']
 				self.weighting = kwargs.get('weighting', 'pixel')
 				# choose pixel-based weighting (1st row) or global weighting (2nd row)
-				# See https://data.sdss.org/datamodel/files/APOGEE_REDUX/APRED_VERS/stars/TELESCOPE/FIELD/apStar.html#hdu1
+				# see https://data.sdss.org/datamodel/files/APOGEE_REDUX/APRED_VERS/stars/TELESCOPE/FIELD/apStar.html#hdu1
 				if (self.nvisits > 1) and (self.weighting=='global'):
 					idx = 1
 				else:
@@ -284,7 +286,14 @@ class Spectrum():
 				self.oriWave   = np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1)))	
 				self.oriFlux   = hdulist[1].data[idx]
 				self.oriNoise  = hdulist[2].data[idx]
-
+				
+				# store the piece-wise wavelength using the headeer information; consistent with apVisit data model
+				self.oriWave0  = np.asarray([
+					self.oriWave[hdulist[0].header['BMIN']:hdulist[0].header['BMAX']], 
+					self.oriWave[hdulist[0].header['GMIN']:hdulist[0].header['GMAX']], 
+					self.oriWave[hdulist[0].header['RMIN']:hdulist[0].header['RMAX']]
+				])
+				
 				## APOGEE APVISIT has corrected the telluric absorption; the forward-modeling routine needs to put it back
 				#self.flux     *= self.tell
 
