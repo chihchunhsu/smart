@@ -227,8 +227,6 @@ class Spectrum():
 				self.wavecoeff = hdulist[9].data
 				self.lsfcoeff  = hdulist[10].data
 
-
-
 				if self.wave[0] > self.wave[-1]:
 					self.wave      = self.wave[::-1]
 					self.flux      = self.flux[::-1]
@@ -249,6 +247,8 @@ class Spectrum():
 				#self.flux     *= self.tell
 
 			elif self.datatype == 'apstar':
+				# see the description of the data model: 
+				# https://data.sdss.org/datamodel/files/APOGEE_REDUX/APRED_VERS/APSTAR_VERS-DR14/TELESCOPE/LOCATION_ID/apStar.html
 				crval1         = hdulist[0].header['CRVAL1']
 				cdelt1         = hdulist[0].header['CDELT1']
 				naxis1         = hdulist[0].header['NWAVE']
@@ -259,13 +259,9 @@ class Spectrum():
 				self.header8   = hdulist[8].header
 				self.header9   = hdulist[9].header
 
-				#print(hdulist)
-				#print(hdulist[1])
-				#print(hdulist[1].data.shape)
-				#sys.exit()
-
 				self.wave      = np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1)))
-				self.flux      = hdulist[1].data
+				self.flux      = hdulist[1].data[0] # pixel combined flux
+				self.flux1     = hdulist[1].data[1] # global weighting combined flux
 				self.noise     = hdulist[2].data
 				self.sky       = hdulist[4].data
 				self.skynoise  = hdulist[5].data
@@ -274,11 +270,16 @@ class Spectrum():
 				self.lsfcoeff  = hdulist[8].data
 				self.binary    = hdulist[9].data
 
-
 				# store the original parameters
 				self.oriWave   = np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1)))	
 				self.oriFlux   = hdulist[1].data
 				self.oriNoise  = hdulist[2].data
+
+				# store the piece-wise wavelength using the headeer information; consistent with apVisit data model
+				self.oriWave0  = np.asarray([	self.oriWave[hdulist[0].header['BMIN']:hdulist[0].header['BMAX']], 
+												self.oriWave[hdulist[0].header['GMIN']:hdulist[0].header['GMAX']], 
+												self.oriWave[hdulist[0].header['RMIN']:hdulist[0].header['RMAX']]]
+											)
 
 				## APOGEE APVISIT has corrected the telluric absorption; the forward-modeling routine needs to put it back
 				#self.flux     *= self.tell
