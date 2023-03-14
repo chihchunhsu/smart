@@ -90,7 +90,7 @@ class Spectrum():
 			self.path      = kwargs.get('path')
 			self.datatype  = kwargs.get('datatype','aspcap')
 			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
-			self.applytell = kwargs.get('applytell', False)
+			self.apply_tell = kwargs.get('apply_tell', False)
 			self.chip      = kwargs.get('chip', 'all')
 
 			hdulist        = fits.open(self.path)
@@ -222,7 +222,7 @@ class Spectrum():
 					self.oriFlux   = np.array(list(hdulist[1].data[2]))
 					self.oriNoise  = np.array(list(hdulist[2].data[2]))
 
-				if self.applytell:
+				if self.apply_tell:
 					self.flux *= self.tell
 				self.wavecoeff = hdulist[9].data
 				self.lsfcoeff  = hdulist[10].data
@@ -259,26 +259,31 @@ class Spectrum():
 				self.header8   = hdulist[8].header
 				self.header9   = hdulist[9].header
 
-				#print(hdulist)
-				#print(hdulist[1])
-				#print(hdulist[1].data.shape)
-				#sys.exit()
-
-				self.wave      = np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1)))
-				self.flux      = hdulist[1].data
-				self.noise     = hdulist[2].data
-				self.sky       = hdulist[4].data
-				self.skynoise  = hdulist[5].data
-				self.tell      = hdulist[6].data
-				self.tellnoise = hdulist[7].data
+				self.nvisits = hdulist[0].header['NVISITS']
+				self.weighting = kwargs.get('weighting', 'pixel')
+				# choose pixel-based weighting (1st row) or global weighting (2nd row)
+				# See https://data.sdss.org/datamodel/files/APOGEE_REDUX/APRED_VERS/stars/TELESCOPE/FIELD/apStar.html#hdu1
+				if (self.nvisits > 1) and (self.weighting=='global'):
+					idx = 1
+				else:
+					idx = 0
+				
+				self.apogee_mask = (hdulist[3].data[idx]) & 1
+				self.wave      = np.ma.MaskedArray(np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1))), mask=self.apogee_mask).compressed()
+				self.flux      = np.ma.MaskedArray(hdulist[1].data[idx], mask=self.apogee_mask).compressed()
+				self.noise     = np.ma.MaskedArray(hdulist[2].data[idx], mask=self.apogee_mask).compressed()
+				self.sky       = np.ma.MaskedArray(hdulist[4].data[idx], mask=self.apogee_mask).compressed()
+				self.skynoise  = np.ma.MaskedArray(hdulist[5].data[idx], mask=self.apogee_mask).compressed()
+				self.tell      = np.ma.MaskedArray(hdulist[6].data[idx], mask=self.apogee_mask).compressed()
+				self.tellnoise = np.ma.MaskedArray(hdulist[7].data[idx], mask=self.apogee_mask).compressed()
 				self.lsfcoeff  = hdulist[8].data
 				self.binary    = hdulist[9].data
 
 
 				# store the original parameters
 				self.oriWave   = np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1)))	
-				self.oriFlux   = hdulist[1].data
-				self.oriNoise  = hdulist[2].data
+				self.oriFlux   = hdulist[1].data[idx]
+				self.oriNoise  = hdulist[2].data[idx]
 
 				## APOGEE APVISIT has corrected the telluric absorption; the forward-modeling routine needs to put it back
 				#self.flux     *= self.tell
@@ -378,28 +383,25 @@ class Spectrum():
 
 		if self.apply_sigma_mask:
 			# set up masking criteria
-			self.avgFlux = np.mean(self.flux)
-			self.stdFlux = np.std(self.flux)
+			self.avgFlux = np.nanmean(self.flux)
+			self.stdFlux = np.nanstd(self.flux)
 
 			self.smoothFlux = self.flux
 			# set the outliers as the flux below 
 			#self.smoothFlux[self.smoothFlux <= self.avgFlux - 2 * self.stdFlux] = 0
 			#self.smoothFlux[ np.abs(self.smoothFlux - self.avgFlux ) <= 2 * self.stdFlux] = 0
 		
-			self.mask  = np.where(np.abs(self.flux - self.avgFlux ) >= 3. * self.stdFlux)
-			#print(self.mask)
+			self.mask  = np.where(np.abs(self.flux - self.avgFlux ) >= 3. * self.stdFlux)[0]
 
 			if self.instrument == 'apogee':
-				#self.mask = np.union1d(self.mask[0],np.where(self.noise >= self.flux)[0])
 				noise_median = np.median(self.noise)
-				self.mask = np.union1d(self.mask[0], np.where(self.noise >= 3. * noise_median)[0])
-			self.wave  = np.delete(self.wave, list(self.mask))
-			self.flux  = np.delete(self.flux, list(self.mask))
-			self.noise = np.delete(self.noise, list(self.mask))
+				self.mask = np.union1d(self.mask, np.where(self.noise >= 3. * noise_median)[0])
+			self.wave  = np.delete(self.wave, self.mask)
+			self.flux  = np.delete(self.flux, self.mask)
+			self.noise = np.delete(self.noise, self.mask)
 			
 			if self.instrument == 'nirspec':
-				self.sky   = np.delete(self.sky, list(self.mask))
-			self.mask  = self.mask[0]
+				self.sky   = np.delete(self.sky, self.mask)
 
 	def mask_custom(self, custom_mask):
 		"""
