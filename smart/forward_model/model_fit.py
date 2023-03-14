@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 import scipy.signal as signal
 from scipy.interpolate import interp1d
 import pandas as pd
@@ -87,7 +88,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
     #elif data is not None and instrument == 'apogee':
     elif instrument == 'apogee':
-        model    = smart.Model(teff=teff, logg=logg, metal=metal, modelset=modelset, instrument=instrument)
+        model    = smart.Model(teff=teff, logg=logg, metal=metal, modelset=modelset, instrument=instrument, order=order)
         # Dirty fix here
         model.wave = model.wave[np.where(model.flux != 0)]
         model.flux = model.flux[np.where(model.flux != 0)]
@@ -363,7 +364,30 @@ def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, altitude=1283, in
     ind1 = np.where( (model.wave >= np.min(telluric_model.wave)) & (model.wave <= np.max(telluric_model.wave)) )
     model.wave = model.wave[ind1]
     model.flux = model.flux[ind1]
-    telluric_model.flux = np.array(smart.integralResample(xh=telluric_model.wave, yh=telluric_model.flux, xl=model.wave))
+
+    #print('telluric:')
+    #print(telluric_model.wave)
+    #print(telluric_model.wave[1:] - telluric_model.wave[:-1])
+
+    # Supersample the telluric model!
+    #print(model.wave.data)
+    #print(telluric_model.wave)
+    new_waves  = np.concatenate((model.wave.data, telluric_model.wave))#.sort()
+    new_waves.sort(kind='mergesort')
+    
+    #print('New waves:', new_waves)
+    #import matplotlib.pyplot as plt
+    #plt.plot(new_waves)
+    #plt.show()
+    interp_func = sp.interpolate.interp1d(telluric_model.wave, telluric_model.flux)
+    new_fluxes = interp_func(new_waves)
+    #plt.plot(new_waves, new_fluxes)
+    #plt.scatter(telluric_model.wave, telluric_model.flux)
+    #plt.show()
+    #sys.exit()
+    
+
+    telluric_model.flux = np.array(smart.integralResample(xh=new_waves, yh=new_fluxes, xl=model.wave))
     telluric_model.wave = model.wave
     model.flux         *= telluric_model.flux
 
