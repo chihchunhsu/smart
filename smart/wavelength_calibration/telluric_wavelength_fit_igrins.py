@@ -156,8 +156,8 @@ def xcorrTelluric(data, model, shift, start_pixel, width, lsf):
 	##the model is selected in the pixel range in the beginning
 	#m = model2.flux[start_pixel:start_pixel+width]
 	m = model2.flux
-	#xcorr = np.inner(d, m)/(np.average(d)*np.average(m))
-	xcorr = np.inner(d, m)/(np.median(d)*np.median(m))/len(d) # normalize by the length of data array
+	xcorr = np.inner(d, m)/(np.average(d)*np.average(m))
+	#xcorr = np.inner(d, m)/(np.median(d)*np.median(m))/len(d) # normalize by the length of data array
 
 	return xcorr
 

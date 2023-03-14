@@ -168,8 +168,8 @@ def xcorrTelluric(data, model, shift, start_pixel, width, lsf):
 	##the model is selected in the pixel range in the beginning
 	#m = model2.flux[start_pixel:start_pixel+width]
 	m = model2.flux
-	#xcorr = np.inner(d, m)/(np.average(d)*np.average(m))
-	xcorr = np.inner(d, m)/(np.median(d)*np.median(m))/len(d) # normalize by the length of data array
+	xcorr = np.inner(d, m)/(np.average(d)*np.average(m))
+	#xcorr = np.inner(d, m)/(np.median(d)*np.median(m))/len(d) # normalize by the length of data array
 
 	return xcorr
 
@@ -724,18 +724,18 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			#x3 = np.arange(x2[-1]+width//2, spec_range-endwidth//2, step_size)
 			#width_ranges        = np.concatenate( [ x1, x2, x3 ] )
 			#width_range_centers = np.concatenate( [ x1 + endwidth//2, x2 + width//2, x3 + endwidth//2 ] )
-			#widths              = np.concatenate( [ np.zeros(len(x1), dtype=int) + endwidth,
-			#	  								    np.zeros(len(x2), dtype=int) + width,
-			#	 								    np.zeros(len(x3), dtype=int) + endwidth ] )
+			#widths              = np.concatenate( [ np.zeros(len(x1), dtype=np.int) + endwidth,
+			#	  								    np.zeros(len(x2), dtype=np.int) + width,
+			#	 								    np.zeros(len(x3), dtype=np.int) + endwidth ] )
 
 			x1 = np.arange(0, width//2-endwidth, step_size)
 			x2 = np.arange(0, spec_range-width, step_size)
 			x3 = np.arange(x2[-1]+width//2, spec_range-endwidth, step_size)
 			width_ranges        = np.concatenate( [ x1, x2, x3 ] )
 			width_range_centers = np.concatenate( [ x1 + endwidth, x2 + width//2, x3 + endwidth ] )
-			widths              = np.concatenate( [ np.zeros(len(x1), dtype=int) + endwidth,
-				  								    np.zeros(len(x2), dtype=int) + width,
-				 								    np.zeros(len(x3), dtype=int) + endwidth ] )
+			widths              = np.concatenate( [ np.zeros(len(x1), dtype=np.int) + endwidth,
+				  								    np.zeros(len(x2), dtype=np.int) + width,
+				 								    np.zeros(len(x3), dtype=np.int) + endwidth ] )
 
 			#print(i, width, width//2, spec_range+pixel_range_start-width//2, spec_range)
 			#print(spec_range+pixel_range_start)
@@ -749,7 +749,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			spec_range          = len(pixel) # window range coverage for xcorr
 			width_ranges        = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size)
 			width_range_centers = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size) + width//2
-			widths              = np.zeros(len(width_ranges), dtype=int) + width
+			widths              = np.zeros(len(width_ranges), dtype=np.int) + width
 			#print(i, width, spec_range)
 			#print(width_range_centers)
 			#print(widths)
