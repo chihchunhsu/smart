@@ -270,7 +270,8 @@ class Spectrum():
 				else:
 					idx = 0
 				
-				self.apogee_mask = (hdulist[3].data[idx]) & 1
+				# mask out apogee badpix and nans.
+				self.apogee_mask = ((hdulist[3].data[idx]) & 1) | np.isnan(hdulist[1].data[idx])
 				self.wave      = np.ma.MaskedArray(np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1))), mask=self.apogee_mask).compressed()
 				self.flux      = np.ma.MaskedArray(hdulist[1].data[idx], mask=self.apogee_mask).compressed()
 				self.noise     = np.ma.MaskedArray(hdulist[2].data[idx], mask=self.apogee_mask).compressed()
@@ -289,9 +290,9 @@ class Spectrum():
 				
 				# store the piece-wise wavelength using the headeer information; consistent with apVisit data model
 				self.oriWave0  = np.asarray([
-					self.oriWave[hdulist[0].header['BMIN']:hdulist[0].header['BMAX']], 
-					self.oriWave[hdulist[0].header['GMIN']:hdulist[0].header['GMAX']], 
-					self.oriWave[hdulist[0].header['RMIN']:hdulist[0].header['RMAX']]
+					self.oriWave[hdulist[0].header['RMAX']:hdulist[0].header['RMIN']:-1], 
+					self.oriWave[hdulist[0].header['GMAX']:hdulist[0].header['GMIN']:-1], 
+					self.oriWave[hdulist[0].header['BMAX']:hdulist[0].header['BMIN']:-1]
 				])
 				
 				## APOGEE APVISIT has corrected the telluric absorption; the forward-modeling routine needs to put it back
@@ -392,8 +393,8 @@ class Spectrum():
 
 		if self.apply_sigma_mask:
 			# set up masking criteria
-			self.avgFlux = np.nanmean(self.flux)
-			self.stdFlux = np.nanstd(self.flux)
+			self.avgFlux = np.mean(self.flux)
+			self.stdFlux = np.std(self.flux)
 
 			self.smoothFlux = self.flux
 			# set the outliers as the flux below 
