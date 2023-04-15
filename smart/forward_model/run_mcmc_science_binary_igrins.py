@@ -155,7 +155,9 @@ dt_string = now.strftime("%H:%M:%S")
 
 #####################################
 
-data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
+if instrument == 'igrins':
+	tell_data_name2 = tell_data_name + '_calibrated'
+	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, applymask=applymask, instrument=instrument)
 
 if instrument == 'nirspec':
 	tell_data_name2 = tell_data_name + '_calibrated'
@@ -174,6 +176,9 @@ if instrument == 'nirspec':
 
 if instrument == 'hires':
 	mjd = data.header['MJD']
+
+elif instrument == 'igrins':
+	mjd = data.header['MJD-OBS']
 
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
@@ -287,6 +292,10 @@ elif instrument == 'hires':
 	custom_mask    = json.loads(lines[3].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[4].split('priors ')[1])
 	barycorr       = json.loads(lines[11].split('barycorr')[1])
+elif instrument == 'igrins':
+	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
+	priors         = ast.literal_eval(lines[6].split('priors ')[1])
+	barycorr       = json.loads(lines[13].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
 if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
@@ -295,7 +304,7 @@ else: logg_max = 5.5
 # limit of the flux nuisance parameter: 5 percent of the median flux
 A_const       = 0.05 * abs(np.median(data.flux))
 
-if modelset == 'btsettl08':
+if modelset == 'btsettl08' or modelset == 'phoenix-btsettl08':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,500),  'teff_max':min(priors['teff_max']+300,3500),
 						'logg_min':3.5,                              'logg_max':logg_max,

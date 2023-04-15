@@ -158,7 +158,7 @@ if instrument == 'igrins':
 	tell_data_name2 = tell_data_name + '_calibrated'
 	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, applymask=applymask, instrument=instrument)
 
-if instrument in ['nirspec']:
+if instrument == 'nirspec':
 	data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
 	tell_data_name2 = tell_data_name + '_calibrated'
 	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument)
@@ -275,7 +275,7 @@ else:
 
 data          = copy.deepcopy(sci_data)
 
-if instrument in ['nirspec']:
+if instrument == 'nirspec':
 	tell_sp       = copy.deepcopy(tell_data)
 	data.updateWaveSol(tell_sp)
 
