@@ -896,7 +896,7 @@ cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-if instrument == 'nirspec':
+if instrument in ['nirspec', 'igrins']:
 	wave_cal_err = tell_sp.header['STD']
 elif instrument == 'hires':
 	wave_cal_err = np.nan
