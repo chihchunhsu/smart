@@ -315,7 +315,7 @@ class Spectrum():
 			name: SDCK_20221215_0032
 			name2: SDCK_20221215_0021
 
-			At 2.3 micron, order = 6
+			At 2.3 micron, order = 6 --> order 77
 
 			It will find 'SDCK_20221215_0021.wave.fits' for (vacuum) wavelength and
 			'SDCK_20221215_0021.variance.fits' for variance
@@ -327,6 +327,10 @@ class Spectrum():
 			self.path      = kwargs.get('path')
 			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
 			self.flat_tell = kwargs.get('flat_tell', False)
+			self.spec_a0v  = kwargs.get('spec_a0v', False)
+
+			# assign IGRINS data index
+			igrins_order_dict = {'77':6}
 
 			if self.path == None:
 				self.path = './'
@@ -335,6 +339,8 @@ class Spectrum():
 			# read the flattend spectrum for telluric for wavelength calibration
 			if self.flat_tell:
 				fullpath_flux = self.path + '/' + self.name + '.spec_flattened.fits'
+			elif self.spec_a0v:
+				fullpath_flux = self.path + '/' + self.name + '.spec_a0v.fits'
 			else:
 				fullpath_flux = self.path + '/' + self.name + '.spec.fits'
 			fullpath_wave = self.path + '/' + self.name2 + '.wave.fits'
@@ -345,20 +351,31 @@ class Spectrum():
 			var     = fits.open(fullpath_var)
 
 			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
-			self.header = hdulist[0].header
+			if self.flat_tell:
+				self.header = wave[0].header
+			else:
+				self.header = hdulist[0].header
 
 			# if the calibrated wavelength, read the data different from the raw data
 			if '_calibrated' in self.name2:
 				self.wave = wave[0].data
 			else:
-				self.wave   = wave[0].data[self.order] * 10.0 # convert from nm to Angstrom
-			self.flux   = hdulist[0].data[self.order]
-			self.noise  = np.sqrt(var[0].data[self.order])
-			self.mask     = []
+				self.wave   = wave[0].data[igrins_order_dict[str(self.order)]] * 10.0 # convert from nm to Angstrom
+			self.flux   = hdulist[0].data[igrins_order_dict[str(self.order)]]
+			self.noise  = np.sqrt(var[0].data[igrins_order_dict[str(self.order)]])
+			#self.mask   = []
 
 			self.oriWave  = self.wave
 			self.oriFlux  = self.flux
 			self.oriNoise = self.noise
+
+			# masking out any NaNs in noise, wave, flux
+			mask_locs = np.any([np.isnan(self.noise).tolist(), np.isnan(self.wave).tolist(), np.isnan(self.flux).tolist()], axis=0)
+
+			self.wave  = self.wave[~mask_locs]
+			self.flux  = self.flux[~mask_locs]
+			self.noise = self.noise[~mask_locs]
+			self.mask  = np.arange(len(self.oriWave))[mask_locs]
 
 			# define a list for storing the best wavelength shift
 			self.bestshift = []
