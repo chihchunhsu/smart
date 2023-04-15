@@ -157,6 +157,7 @@ dt_string = now.strftime("%H:%M:%S")
 if instrument == 'igrins':
 	tell_data_name2 = tell_data_name + '_calibrated'
 	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, applymask=applymask, instrument=instrument)
+	tell_sp     = smart.Spectrum(name=tell_data_name, name2=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True)
 
 if instrument == 'nirspec':
 	data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
@@ -208,7 +209,7 @@ if coadd:
 
 sci_data  = data
 
-if instrument == 'nirspec':
+if instrument in ['nirspec', 'igrins']:
 	tell_data = tell_sp 
 
 """
@@ -727,7 +728,7 @@ cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-if instrument == 'nirspec':
+if instrument in ['nirspec', 'igrins']:
 	wave_cal_err = tell_sp.header['STD']
 else:
 	wave_cal_err = np.nan
