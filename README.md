@@ -19,6 +19,7 @@ Dependencies. The `SMART` has been tested under the following environments:
 * pandas 0.20.1/0.23.4/1.0.1
 * emcee 3.0.2/3.0.3.dev4+gc14b212
 * corner 2.0.1
+* openpyxl 3.0.10
 * wavelets (for defringeflat)
 
 Download the `SMART` and the forked and modified version of the NSDRP to your computer.
