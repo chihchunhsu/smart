@@ -730,9 +730,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			x3 = np.arange(x2[-1]+width//2, spec_range-endwidth, step_size)
 			width_ranges        = np.concatenate( [ x1, x2, x3 ] )
 			width_range_centers = np.concatenate( [ x1 + endwidth, x2 + width//2, x3 + endwidth ] )
-			widths              = np.concatenate( [ np.zeros(len(x1), dtype=np.int) + endwidth,
-				  								    np.zeros(len(x2), dtype=np.int) + width,
-				 								    np.zeros(len(x3), dtype=np.int) + endwidth ] )
+			widths              = np.concatenate( [ np.zeros(len(x1), dtype=np.int64) + endwidth,
+				  								    np.zeros(len(x2), dtype=np.int64) + width,
+				 								    np.zeros(len(x3), dtype=np.int64) + endwidth ] )
 
 			#print(i, width, width//2, spec_range+pixel_range_start-width//2, spec_range)
 			#print(spec_range+pixel_range_start)
@@ -746,7 +746,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			spec_range          = len(pixel) # window range coverage for xcorr
 			width_ranges        = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size)
 			width_range_centers = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size) + width//2
-			widths              = np.zeros(len(width_ranges), dtype=np.int) + width
+			widths              = np.zeros(len(width_ranges), dtype=np.int64) + width
 			#print(i, width, spec_range)
 			#print(width_range_centers)
 			#print(widths)

@@ -21,6 +21,12 @@ def bilinear_interpolation(x, y, points):
 
     (x0, y0, q00), (x0, y1, q01), (x1, y0, q10), (x1, y1, q11) = points
 
+    # Pull the data out of the Table object
+    #x0 = x0.data[0]
+    #x1 = x1.data[0]
+    #y0 = y0.data[0]
+    #y1 = y1.data[0]
+
     # Check if we just need linear interpolation!
     if x0 == x1:
         interpFlux = 10**( ( q00 * ( y1 - y ) + q11 * ( y - y0 ) ) / ( ( y1 - y0 ) ) )
@@ -119,6 +125,7 @@ def quadlinear_interpolation(x, y, z, t, points):
     (x1, y0, z0, t1, q1001), (x0, y1, z0, t1, q0101), (x0, y0, z1, t1, q0011), (x1, y0, z1, t1, q1011), (x0, y1, z1, t1, q0111), \
     (x1, y1, z1, t1, q1111), (x0, y1, z1, t0, q0110), (x1, y0, z1, t0, q1010), (x1, y1, z0, t0, q1100), (x1, y1, z0, t1, q1101), \
     (x1, y1, z1, t0, q1110) = points
+    #print(x0, z1, y0, y1, z0, z1, t0, t1)
     #x0 = x0.data[0]
     #x1 = x1.data[0]
     #y0 = y0.data[0]
