@@ -21,6 +21,7 @@ Dependencies. The `SMART` has been tested under the following environments:
 * corner 2.0.1
 * openpyxl 3.0.10
 * wavelets (for defringeflat)
+* PyAstronomy 0.15.2 (for accurate computation of vsini)
 
 Download the `SMART` and the forked and modified version of the NSDRP to your computer.
 

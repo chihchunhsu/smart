@@ -39,6 +39,11 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
 	include_fringe_model = kwargs.get('include_fringe_model', False)
+	slow_rotation_broaden = kwargs.get('slow_rotation_broaden', False)
+
+	# for accurate vsini computation
+	if slow_rotation_broaden:
+		from PyAstronomy import pyasl 
 
 	if instrument == 'apogee':
 		try:
@@ -92,7 +97,10 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 		# apply vmicro
 		vmicro = 2.478 - 0.325*logg
-		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vmicro, rotate=False, gaussian=True)
+		if slow_rotation_broaden:
+			model.flux = pyasl.rotBroad(wvl=model.wave, flux=model.flux, vsini=vmicro, epsilon=0.6)
+		else:
+			model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vmicro, rotate=False, gaussian=True)
 	
 	elif data is None and instrument in ['nirspec', 'hires', 'igrins']:
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
@@ -101,7 +109,10 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	#model.wave += wave_offset
 
 	# apply vsini
-	model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
+	if slow_rotation_broaden:
+		model.flux = pyasl.rotBroad(wvl=model.wave, flux=model.flux, vsini=vsini, epsilon=0.6)
+	else:
+		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
 	
 	# apply rv (including the barycentric correction)
 	model.wave = rvShift(model.wave, rv=rv)
@@ -113,7 +124,10 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	if binary:
 		model2      = smart.Model(teff=teff2, logg=logg2, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 		# apply vsini
-		model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
+		if slow_rotation_broaden:
+			model.flux = pyasl.rotBroad(wvl=model.wave, flux=model.flux, vsini=vsini, epsilon=0.6)
+		else:
+			model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
 		# apply rv (including the barycentric correction)
 		model2.wave = rvShift(model2.wave, rv=rv2)
 		# linearly interpolate the model2 onto the model1 grid
@@ -338,6 +352,11 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 	instrument   = kwargs.get('instrument', 'nirspec')
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
+	slow_rotation_broaden = kwargs.get('slow_rotation_broaden', False)
+
+	# for accurate vsini computation
+	if slow_rotation_broaden:
+		from PyAstronomy import pyasl 
 
 	if instrument == 'apogee':
 		try:
@@ -387,7 +406,10 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 
 		# apply vmicro
 		vmicro = 2.478 - 0.325*logg
-		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vmicro, rotate=False, gaussian=True)
+		if slow_rotation_broaden:
+			model.flux = pyasl.rotBroad(wvl=model.wave, flux=model.flux, vsini=vsini, epsilon=0.6)
+		else:
+			model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vmicro, rotate=False, gaussian=True)
 	
 	elif data is None and instrument == 'nirspec':
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
@@ -396,7 +418,10 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 	#model.wave += wave_offset
 
 	# apply vsini
-	model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
+	if slow_rotation_broaden:
+			model.flux = pyasl.rotBroad(wvl=model.wave, flux=model.flux, vsini=vsini, epsilon=0.6)
+	else:
+		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
 	
 	# apply rv (including the barycentric correction)
 	model.wave = rvShift(model.wave, rv=rv)
@@ -408,7 +433,10 @@ def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmas
 	if binary:
 		model2      = smart.Model(teff=teff2, logg=logg2, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 		# apply vsini
-		model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
+		if slow_rotation_broaden:
+			model.flux = pyasl.rotBroad(wvl=model.wave, flux=model.flux, vsini=vsini, epsilon=0.6)
+		else:
+			model2.flux = smart.broaden(wave=model2.wave, flux=model2.flux, vbroad=vsini2, rotate=True, gaussian=False)
 		# apply rv (including the barycentric correction)
 		model2.wave = rvShift(model2.wave, rv=rv2)
 		# linearly interpolate the model2 onto the model1 grid
