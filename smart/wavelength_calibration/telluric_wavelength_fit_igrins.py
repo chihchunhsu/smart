@@ -11,7 +11,7 @@ from scipy.special import wofz
 import time
 import sys
 import smart
-from .cal_param import cal_param_nirspec
+from .cal_param import cal_param_nirspec, cal_param_igrins
 
 FULL_PATH  = os.path.realpath(__file__)
 BASE = os.path.split(os.path.split(os.path.split(FULL_PATH)[0])[0])[0]
@@ -20,39 +20,27 @@ BASE = os.path.split(os.path.split(os.path.split(FULL_PATH)[0])[0])[0]
 plt.rc('font', family='sans-serif')
 
 
-def waveSolution(pixel, wfit0, wfit1, wfit2, wfit3, wfit4, wfit5, c3, c4, **kwargs):
+def waveSolution(pixel, c0, c1, c2, c3, c4):
     """
-    Calculate the wavelength solution givene parameters of a 
-    fourth order polynomial.
-	The equation is modified from NSDRP_Software_Design p.35.
+    Calculate the wavelength solution givene parameters of a fourth order polynomial.
 
 	Parameters
 	----------
-	wfit0-5: float
-			 The fitting parameters in NSDRP_Software_Design p.35
-	c3     : float
-	         The coefficient of the cubic term of the polynomial
-	c4     : float
-			 The coefficient of the fourth-power term of the polynomial
+	c0--c4 : float
+			 The coefficient of the i-th-power term of the polynomial
 	pixel  : int/array
 			 The pixel number as the input of wavelength solution
-    order  : int
-             The order number as the input of wavelength
 
     Returns
     -------
     The wavelength solution: array-like
 
-
     """
-    order = kwargs.get('order', None)
+    
+    poly_param = np.poly1d([c4, c3, c2, c1, c0])
+    wave = poly_param(pixel)
 
-    wave_sol = wfit0 + wfit1*pixel + wfit2*pixel**2 + \
-               (wfit3 + wfit4*pixel + wfit5*pixel**2)/order + \
-               c3*pixel**3 + c4*pixel**4
-
-    return wave_sol
-
+    return wave
 
 
 def getTelluric(wavelow, wavehigh, **kwargs):
@@ -604,31 +592,13 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	# calculation the necessary parameters
 	pixel_range_start  = kwargs.get('pixel_range_start',0)
 	pixel_range_end    = kwargs.get('pixel_range_end',-1)
+	instrument         = kwargs.get('instrument', 'nirspec')
 	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
 	#pixel0             = np.arange(length1)
 	#if mask_custom != []:
-	pixel              = pixel0
-	#else:
-	#	pixel              = pixel0[pixel_range_start:pixel_range_end]
-
-	"""
-	## Ultimately this should be removed by the airmass parameter
-	# increase the telluric model strength for N3
-	if order == 63 or order == 64 or order == 65 or order == 66:
-		model.flux **= 1 # was 6
-	elif order == 62:
-		model.flux **= 4
-	elif order == 59:
-		model.flux **= 3
-	elif order == 61:
-		model.flux **= 2
-	elif order == 35:
-		model.flux **= 2
-	elif order == 36:
-		model.flux **= 3
-	elif order == 37:
-		model.flux **= 1.2
-	"""
+	#pixel              = pixel0
+	pixel              = pixel0[pixel_range_start:pixel_range_end]
+	print('len(pixel)', len(pixel))
 
 	# LSF of the intrument
 	vbroad = (299792.458)*np.mean(np.diff(data.wave))/np.mean(data.wave)
@@ -697,22 +667,21 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	for i in range(niter):
 	# getting the parameters of initial wavelength solution 
 
-		#if i > 4: break
-
-		if i == 0: # Change the width for the first iteration
-			width     = 300
-			step_size = 10
-			include_ends = True #False
-		elif i == 1: # Change the width for the second iteration
-			width     = 150
-			step_size = 10
-			include_ends = True
-		elif i == 2: # Change the width for the second iteration
-			width     = 100
-			step_size = 10
-		else: # Change the width for the middle few iterations
-			width     = 80
-			step_size = 10
+		#if i == 0: # Change the width for the first iteration
+		#	width     = 300
+		#	step_size = 10
+		#	include_ends = True
+		#elif i == 1: # Change the width for the second iteration
+		#	width     = 150
+		#	step_size = 10
+		#	include_ends = True
+		#elif i == 2: # Change the width for the second iteration
+		#	width     = 100
+		#	step_size = 10
+		#else: # Change the width for the middle few iterations
+		width     = 40
+		step_size = 10
+		include_ends = False
 
 		if include_ends:
 			spec_range          = len(pixel) # window range coverage for xcorr
@@ -733,15 +702,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			x3 = np.arange(x2[-1]+width//2, spec_range-endwidth, step_size)
 			width_ranges        = np.concatenate( [ x1, x2, x3 ] )
 			width_range_centers = np.concatenate( [ x1 + endwidth, x2 + width//2, x3 + endwidth ] )
-<<<<<<< HEAD
-			widths              = np.concatenate( [ np.zeros(len(x1), dtype=np.int64) + endwidth,
-				  								    np.zeros(len(x2), dtype=np.int64) + width,
-				 								    np.zeros(len(x3), dtype=np.int64) + endwidth ] )
-=======
 			widths              = np.concatenate( [ np.zeros(len(x1), dtype=int) + endwidth,
 				  								    np.zeros(len(x2), dtype=int) + width,
 				 								    np.zeros(len(x3), dtype=int) + endwidth ] )
->>>>>>> 8a244c2baa3ed296faec10f2739dba3f29c496e5
 
 			#print(i, width, width//2, spec_range+pixel_range_start-width//2, spec_range)
 			#print(spec_range+pixel_range_start)
@@ -751,143 +714,76 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			#print(width_range_centers)
 			#print(widths)
 			#sys.exit()
-		else:
-			spec_range          = len(pixel) # window range coverage for xcorr
-			width_ranges        = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size)
-			width_range_centers = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size) + width//2
-<<<<<<< HEAD
-			widths              = np.zeros(len(width_ranges), dtype=np.int64) + width
-=======
-			widths              = np.zeros(len(width_ranges), dtype=int) + width
->>>>>>> 8a244c2baa3ed296faec10f2739dba3f29c496e5
-			#print(i, width, spec_range)
-			#print(width_range_centers)
-			#print(widths)
-			#sys.exit()
+		#else:
+		#	spec_range          = len(pixel) # window range coverage for xcorr
+		#	width_ranges        = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size)
+		#	width_range_centers = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size) + width//2
+		#	widths              = np.zeros(len(width_ranges), dtype=int) + width
+		#	#print(i, width, spec_range)
+		#	#print(width_range_centers)
+		#	#print(widths)
+		#	#sys.exit()
+
+		spec_range          = len(pixel) # window range coverage for xcorr
+		width_ranges        = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size)
+		width_range_centers = np.arange(pixel_range_start, spec_range+pixel_range_start-width, step_size) + width//2
+		widths              = np.zeros(len(width_ranges), dtype=int) + width
+
+		print('spec_range', spec_range)
+		print('width_ranges', width_ranges)
+		print('width_range_centers', width_range_centers)
+		print('widths', widths)
 
 		time1 = time.time()
 
-		if i is 0:
-			wfit0 = data2.header['WFIT0']
-			wfit1 = data2.header['WFIT1']
-			wfit2 = data2.header['WFIT2']
-			wfit3 = data2.header['WFIT3']
-			wfit4 = data2.header['WFIT4']
-			wfit5 = data2.header['WFIT5']
-			c3    = 0
-			c4    = 0
-			p0    = np.array([wfit0, wfit1, wfit2, wfit3, wfit4, wfit5, c3, c4])
-
-		else:
-			wfit0     = data2.header['WFIT0NEW']
-			wfit1     = data2.header['WFIT1NEW']
-			wfit2     = data2.header['WFIT2NEW']
-			wfit3     = data2.header['WFIT3NEW']
-			wfit4     = data2.header['WFIT4NEW']
-			wfit5     = data2.header['WFIT5NEW']
-			c3        = data2.header['C3']
-			c4        = data2.header['C4']
-			popt0_ori = data2.header['POPT0']
-			popt1_ori = data2.header['POPT1']
-			popt2_ori = data2.header['POPT2']
-			popt3_ori = data2.header['POPT3']
-			popt4_ori = data2.header['POPT4']
-			popt5_ori = data2.header['POPT5']
-			popt6_ori = data2.header['POPT6']
-			popt7_ori = data2.header['POPT7']
-			p0        = np.array([wfit0, wfit1, wfit2, wfit3, wfit4, wfit5, c3, c4])
+		c0     = data2.header['C0']
+		c1     = data2.header['C1']
+		c2     = data2.header['C2']
+		c3     = data2.header['C3']
+		c4     = data2.header['C4']
+		popt0_ori = data2.header['POPT0']
+		popt1_ori = data2.header['POPT1']
+		popt2_ori = data2.header['POPT2']
+		popt3_ori = data2.header['POPT3']
+		popt4_ori = data2.header['POPT4']
+		p0        = np.array([c0, c1, c2, c3, c4])
 
 		# calcutate the delta wavelentgh
 		best_shift_list  = []
 		#for counter, j, width in enumerate(width_range):
 		#print('TEST0', len(widths), len(width_ranges), len(width_range_centers))
 		for counter, j, center, width in zip(range(len(widths)), width_ranges, width_range_centers, widths):
+			print(counter, j, center, width)
 			testname = "loop{}".format(i+1)
-			if i == 0:
-				#print(counter, j, center, width)
-				time2 = time.time()
-				best_shift = smart.pixelWaveShift(data2, model, j, width, delta_wave_range, model2,
-												test=test, testname=testname,
-					                            counter=counter, step=step,
-					                            pixel_range_start=pixel_range_start,
-					                            pixel_range_end=pixel_range_end,
-					                            lsf=vbroad, length1=length1, pixel=pixel0)
-				time3 = time.time()
-				if test is True:
-					print("xcorr time: {} s".format(round(time3-time2, 4)))
-			elif i == 1:
-				if delta_wave_range >= 5:
-					# reduce the delta_wave_range as 5
-					delta_wave_range = 5
-					time2 = time.time()
-					best_shift = smart.pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
-													test=test, testname=testname,
-													counter=counter, step=step,
-													pixel_range_start=pixel_range_start,
-													pixel_range_end=pixel_range_end,
-													lsf=vbroad, length1=length1, pixel=pixel0)
-					time3 = time.time()
-					if test is True:
-						print("xcorr time: {} s".format(round(time3-time2, 4)))
-				elif delta_wave_range < 5:
-					time2 = time.time()
-					delta_wave_range = 2
-					best_shift = smart.pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
-													test=test, testname=testname,
-													counter=counter, step=step,
-													pixel_range_start=pixel_range_start,
-													pixel_range_end=pixel_range_end,
-													lsf=vbroad, length1=length1, pixel=pixel0)
-					time3 = time.time()
-					if test is True:
-						print("xcorr time: {} s".format(round(time3-time2, 4)))
-			else:
-				# reduce the delta_wave_range as 2
-				time2 = time.time()
-				if delta_wave_range > 2:
-					delta_wave_range = 0.6
-				if i > 4:
-					step = 0.01
-				best_shift = smart.pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
-											    test=test, testname=testname,
-											    counter=counter, step=step,
-												pixel_range_start=pixel_range_start,
-												pixel_range_end=pixel_range_end,
-												lsf=vbroad, length1=length1, pixel=pixel0)
-				time3 = time.time()
-				if test is True:
-					print("xcorr time: {} s".format(round(time3-time2, 4)))
+				
+			data2 = data
+			data3 = data
+			# reduce the delta_wave_range as 2
+			time2 = time.time()
+			if delta_wave_range > 2:
+				delta_wave_range = 0.6
+			step = 0.01
+			best_shift = pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
+										test=test, testname=testname,
+										counter=counter, step=step,
+										pixel_range_start=pixel_range_start,
+										pixel_range_end=pixel_range_end,
+										lsf=vbroad, length1=length1, pixel=pixel0)
+			time3 = time.time()
+			if test is True:
+				print("xcorr time: {} s".format(round(time3-time2, 4)))
 
-
-			#print(counter, center, best_shift)
-			#if counter == 0:
-			#	print(best_shift_list)
 			best_shift_list.append(best_shift)
-			#print(len(best_shift_list))
 
-			time4 = time.time()
+		# TEST
+		#fig = plt.figure()
+		#plt.plot(np.arange(len(best_shift_list)), best_shift_list)
+		#plt.show()
+		#plt.close()
+
+		time4 = time.time()
 		
 		print("Total X correlation time for loop {}: {} s".format(i+1, round(time4-time1, 4)))
-
-		# fit a new wavelength solution
-		def waveSolutionFn0(orderNum):
-			def fitFn(pixel, wfit0, wfit1, wfit2, wfit3, wfit4, wfit5):
-				order    = float(orderNum)
-				wave_sol = wfit0 + wfit1*pixel + wfit2*pixel**2 + \
-				           (wfit3 + wfit4*pixel + wfit5*pixel**2)/order 
-
-				return wave_sol
-			return fitFn
-
-		def waveSolutionFn1(orderNum):
-			def fitFn(pixel, wfit0, wfit1, wfit2, wfit3, wfit4, wfit5, c3, c4):
-				order    = float(orderNum)
-				wave_sol = wfit0 + wfit1*pixel + wfit2*pixel**2 + \
-				           (wfit3 + wfit4*pixel + wfit5*pixel**2)/order + \
-				           c3*pixel**3 + c4*pixel**4
-
-				return wave_sol
-			return fitFn
 
 		# fit a low order polynomial for the first iteration
 		best_shift_list2 = np.asarray(best_shift_list)
@@ -895,16 +791,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		# We don't want values that didn't converge
 		mask1            = np.where(abs(best_shift_list2) != delta_wave_range) 
 
-		if i==0:
-			p1 = p0[:-2]
-			popt, pcov = curve_fit(waveSolutionFn0(order), width_range_centers[mask1], 
-				                   best_shift_list2[mask1], p1)
-			popt = np.append(popt,[0,0])
-
-		# fit a new wavelength solution
-		# fit a fourth order polynomial for later iterations
-		else:
-			popt, pcov = curve_fit(waveSolutionFn1(order), width_range_centers[mask1], 
+		popt, pcov = curve_fit(waveSolution, width_range_centers[mask1], 
 				                   best_shift_list2[mask1], p0)
 
 		# outlier rejection
@@ -914,19 +801,17 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		if i == 0:
 			fit_sigma = 2#0.8
 			#fit_sigma = np.std(original_fit - best_shift_array)
-			original_fit = smart.waveSolution(width_range_centers[mask1], *popt, order=order)
+			original_fit = waveSolution(width_range_centers[mask1], *popt)
 		elif i < 5:
 			fit_sigma = data2.header['FITSTD']
 			m = 3. # Change the sigma!
 			#if i+1 == 4: m = 2. # Change the sigma!
-			original_fit = smart.waveSolution(width_range_centers[mask1], *popt, order=order)
+			original_fit = waveSolution(width_range_centers[mask1], *popt)
 		else:
 			fit_sigma = data2.header['FITSTD']
 			#m = 1.5 # Change the sigma!
-			original_fit = smart.waveSolution(width_range_centers[mask1], 
-											popt0_ori, popt1_ori, popt2_ori, popt3_ori,
-				                            popt4_ori, popt5_ori, popt6_ori, popt7_ori,
-				                            order=order)
+			original_fit = waveSolution(width_range_centers[mask1], 
+											popt0_ori, popt1_ori, popt2_ori, popt3_ori, popt4_ori)
 
 		# exclude the edge pixels in the fitting
 		#width_range_center2 = width_range_center[5:-5]
@@ -949,13 +834,10 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			#width_range_center2 = width_range_center
 			#best_shift_array2   = best_shift_array
 			if i != 0:
-				residual2           = smart.waveSolution(width_range_centers[mask1], 
-													   popt0_ori, popt1_ori, popt2_ori, popt3_ori,
-					                                   popt4_ori, popt5_ori, popt6_ori, popt7_ori, 
-					                                   order=order) - best_shift_array
+				residual2           = waveSolution(width_range_centers[mask1], 
+									popt0_ori, popt1_ori, popt2_ori, popt3_ori, popt4_ori) - best_shift_array
 				residual2           = residual2[np.where(abs(original_fit - best_shift_array) < m*fit_sigma)]
 
-         
 				variance2           = ((residual2 ** 2).sum()) / (len(residual2) - 1)
 				RMSE2               = np.sqrt(variance2)
 				break
@@ -966,10 +848,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 				len(width_range_centers[mask1]))
 			#width_range_center2 = width_range_center
 			#best_shift_array2   = best_shift_array
-			residual2           = smart.waveSolution(width_range_centers[mask1], 
-												   popt0_ori, popt1_ori, popt2_ori, popt3_ori,
-				                                   popt4_ori, popt5_ori, popt6_ori, popt7_ori, 
-				                                   order=order) - best_shift_array
+			residual2           = waveSolution(width_range_centers[mask1], 
+								popt0_ori, popt1_ori, popt2_ori, popt3_ori, popt4_ori) - best_shift_array
 			residual2           = residual2[np.where \
 			                                (abs(original_fit - best_shift_array) < m*fit_sigma)]
 
@@ -978,90 +858,61 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			break
 
 		# fit the wavelength again after the outlier rejections
-		if i==0:
-			p1 = p0[:-2]
-			popt2, pcov2  = curve_fit(waveSolutionFn0(order),
-				                      width_range_center2, best_shift_array2, p1)
-			popt2         = np.append(popt2, [0,0])
-			#if i==0: m=1.2
-			for num_fit in range(8):
-				## re-fit for five times after the second outlier rejection
-				## the residual fit in the first iteration is the most important part
-				original_fit2       = smart.waveSolution(width_range_centers[mask1], *popt2, order=order)
-				width_range_center2 = width_range_centers[mask1][np.where(abs(original_fit2 - best_shift_array) < m*fit_sigma)]
-				best_shift_array2   = best_shift_array[np.where(abs(original_fit2 - best_shift_array) < m*fit_sigma)]	
-				popt2, pcov2        = curve_fit(waveSolutionFn0(order), width_range_center2, best_shift_array2, p1)
-				popt2               = np.append(popt2, [0,0])
+		popt2, pcov2 = curve_fit(waveSolution, width_range_center2, best_shift_array2, p0)
 
-		else:
-			popt2, pcov2 = curve_fit(waveSolutionFn1(order),
-				                     width_range_center2, best_shift_array2, p0)
-
-			for num_fit in range(5):
-				## re-fit again after the second outlier rejection
-				original_fit2       = smart.waveSolution(width_range_centers[mask1], *popt2, order=order)
-				width_range_center2 = width_range_centers[mask1][np.where(abs(original_fit2 - best_shift_array) < m*fit_sigma)]
-				best_shift_array2   = best_shift_array[np.where(abs(original_fit2 - best_shift_array) < m*fit_sigma)]	
+		for num_fit in range(5):
+			## re-fit again after the second outlier rejection
+			original_fit2       = waveSolution(width_range_centers[mask1], *popt2)
+			width_range_center2 = width_range_centers[mask1][np.where(abs(original_fit2 - best_shift_array) < m*fit_sigma)]
+			best_shift_array2   = best_shift_array[np.where(abs(original_fit2 - best_shift_array) < m*fit_sigma)]	
 				
-				if len(width_range_center2) > 8:
-					popt2, pcov2        = curve_fit(waveSolutionFn1(order), width_range_center2, best_shift_array2, p0)
+			if len(width_range_center2) > 8:
+				popt2, pcov2        = curve_fit(waveSolution, width_range_center2, best_shift_array2, p0)
 				
-				else:
-					print("The iteration stops because the selected points for fitting",
-						len(width_range_center2),"are fewer than number of parameters = 8")
-					popt2               = popt2previous
-					width_range_center2 = width_range_centers[mask1]
-					best_shift_array2   = best_shift_array
-					break
+			else:
+				print("The iteration stops because the selected points for fitting",
+					len(width_range_center2),"are fewer than number of parameters = 8")
+				popt2               = popt2previous
+				width_range_center2 = width_range_centers[mask1]
+				best_shift_array2   = best_shift_array
+				break
 
-				if len(width_range_center2) < len(width_range_centers[mask1])*0.4 and i != 0:
-					print("The iteration stops because the selected points for fitting",
-						len(width_range_center2),"are smaller than 2/5 of the total points",
-						len(width_range_centers[mask1]))
-					popt2 = popt2previous
-					break
+			if len(width_range_center2) < len(width_range_centers[mask1])*0.4 and i != 0:
+				print("The iteration stops because the selected points for fitting",
+					len(width_range_center2),"are smaller than 2/5 of the total points",
+					len(width_range_centers[mask1]))
+				popt2 = popt2previous
+				break
 
 
 		# update the parameters
-		wfit0 += popt2[0]
-		wfit1 += popt2[1]
-		wfit2 += popt2[2]
-		wfit3 += popt2[3]
-		wfit4 += popt2[4]
-		wfit5 += popt2[5]
-		c3    += popt2[6]
-		c4    += popt2[7]
-		p0    = np.array([wfit0, wfit1, wfit2, wfit3, wfit4, wfit5, c3, c4])
-		#if test is True:
-		#	print("fitted p0: ",p0)
+		c0 += popt2[0]
+		c1 += popt2[1]
+		c2 += popt2[2]
+		c3 += popt2[3]
+		c4 += popt2[4]
+		p0 = np.array([c0, c1, c2, c3, c4])
 		
 		# update the fits header keywords WFIT0-5, c3, c4
-		data2.header['COMMENT']  = 'WFITNEW and C3 C4 are the keywords added by SMART.'
-		data2.header['WFIT0NEW'] = wfit0
-		data2.header['WFIT1NEW'] = wfit1
-		data2.header['WFIT2NEW'] = wfit2
-		data2.header['WFIT3NEW'] = wfit3
-		data2.header['WFIT4NEW'] = wfit4
-		data2.header['WFIT5NEW'] = wfit5
+		data2.header['COMMENT']  = 'Keys C0--C4 added by SMART.'
+		data2.header['c0']       = c0
+		data2.header['c1']       = c1
+		data2.header['c2']       = c2
 		data2.header['c3']       = c3
 		data2.header['c4']       = c4
 		if i == 0:
 			data2.bestshift      = np.asarray(best_shift_list)
 		#else:
 			#data2.bestshift      = data2.bestshift + np.asarray(best_shift_list)
-		data2.header['FITSTD']   = np.std(smart.waveSolution(width_range_center2, *popt2, 
-			                                               order=order) - best_shift_array2)
+		data2.header['FITSTD']   = np.std(waveSolution(width_range_center2, *popt2) - best_shift_array2)
 		data2.header['POPT0']	 = popt2[0]
 		data2.header['POPT1']	 = popt2[1]
 		data2.header['POPT2']	 = popt2[2]
 		data2.header['POPT3']	 = popt2[3]
 		data2.header['POPT4']	 = popt2[4]
-		data2.header['POPT5']	 = popt2[5]
-		data2.header['POPT6']	 = popt2[6]
-		data2.header['POPT7']	 = popt2[7]
 
-		new_wave_sol  = smart.waveSolution(pixel,  wfit0, wfit1, wfit2, wfit3, wfit4, wfit5, c3, c4, order=order)
-		new_wave_sol0 = smart.waveSolution(pixel0, wfit0, wfit1, wfit2, wfit3, wfit4, wfit5, c3, c4, order=order)
+		new_wave_sol  = waveSolution(pixel, c0, c1, c2, c3, c4)
+		new_wave_sol0 = waveSolution(pixel0, c0, c1, c2, c3, c4)
 
 		time5 = time.time()
 		if test:
@@ -1107,10 +958,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		ax1.get_xaxis().get_major_formatter().set_scientific(False)
 		ax1.legend(frameon=False)
 
-		residual1 = smart.waveSolution(width_range_centers[mask1], *popt, 
-			                         order=order) - best_shift_array
-		residual2 = smart.waveSolution(width_range_center2, *popt2, 
-			                         order=order) - best_shift_array2
+		residual1 = waveSolution(width_range_centers[mask1], *popt) - best_shift_array
+		residual2 = waveSolution(width_range_center2, *popt2) - best_shift_array2
 		variance2 = ((residual2 ** 2).sum()) / (len(residual2) - 1)
 		RMSE2     = np.sqrt(variance2)
 		std       = round(np.std(residual2), 4)	
@@ -1118,10 +967,10 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		ax2.plot(width_range_centers, best_shift_list, 'k.', label="delta wavelength")
 		ax2.plot(width_range_center2, best_shift_array2, 'b.',
 			     label="delta wavelength with outlier rejection")
-		#ax2.plot(width_range_center,smart.waveSolution(width_range_center,
-		#	popt[0],popt[1],popt[2],popt[3],popt[4],popt[5],popt[6],popt[7],
-		#	order=order),'g.',label="fitted wavelength function".format(np.std(residual1)),alpha=0.5)
-		ax2.plot(width_range_center2, smart.waveSolution(width_range_center2, *popt2, order=order), 'r-',
+		#ax2.plot(width_range_center,waveSolution(width_range_center,
+		#	popt[0],popt[1],popt[2],popt[3],popt[4]),
+		#	'g.',label="fitted wavelength function".format(np.std(residual1)),alpha=0.5)
+		ax2.plot(width_range_center2, waveSolution(width_range_center2, *popt2), 'r-',
 			     label="fitted wavelength function with outlier rejection, STD = {} $\AA$ ({} km/s), RMS = {} $\AA$ ({} km/s)".format(\
 			     np.round_(std, decimals=3), np.round_(std/np.average(new_wave_sol)*299792.458, decimals=3),
 			     np.round_(RMSE2, decimals=3), np.round_(RMSE2/np.average(new_wave_sol)*299792.458, decimals=3)),
@@ -1181,40 +1030,29 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			previousModel				= model3
 			RMSEprevious                = RMSE2
 
-
 	if save is True:
 		if data_path is None:
-			data_path = save_to_path + '_' + str(order) + '_all.fits'
-		save_name = save_to_path + "_calibrated_{}_all.fits".format(order)
+			data_path = save_to_path + ".wave.fits"
+		save_name = save_to_path + "_calibrated.wave.fits"
 		with fits.open(data_path) as hdulist:
 			hdulist[0].header['COMMENT']  = 'SMART Calibrated Wavelength Solutions'
 			hdulist[0].header['PWV']      = pwv
-			hdulist[0].header['WFIT0NEW'] = wfit0
-			hdulist[0].header['WFIT1NEW'] = wfit1
-			hdulist[0].header['WFIT2NEW'] = wfit2
-			hdulist[0].header['WFIT3NEW'] = wfit3
-			hdulist[0].header['WFIT4NEW'] = wfit4
-			hdulist[0].header['WFIT5NEW'] = wfit5
-			hdulist[0].header['c3']       = c3
-			hdulist[0].header['c4']       = c4
+			hdulist[0].header['C0']       = c0
+			hdulist[0].header['C1']       = c1
+			hdulist[0].header['C2']       = c2
+			hdulist[0].header['C3']       = c3
+			hdulist[0].header['C4']       = c4
 			#hdulist[0].bestshift          = data2.bestshift + best_shift_list
-			hdulist[0].header['FITSTD']   = np.std(smart.waveSolution(\
-			       								   width_range_center2, *popt2,
-												   order=order) - best_shift_array2)  ### XXX THIS NEEDS TO BE FIXED!
+			hdulist[0].header['FITSTD']   = np.std(waveSolution(\
+			       								   width_range_center2, *popt2) - best_shift_array2)  ### XXX THIS NEEDS TO BE FIXED!
 			hdulist[0].header['POPT0']	  = popt2[0]	### XXX DO WE REALLY NEED ALL THESE? THEY ARE ONLY THE LAST ITERATION!
 			hdulist[0].header['POPT1']	  = popt2[1]
 			hdulist[0].header['POPT2']	  = popt2[2]
 			hdulist[0].header['POPT3']	  = popt2[3]
 			hdulist[0].header['POPT4']	  = popt2[4]
-			hdulist[0].header['POPT5']	  = popt2[5]
-			hdulist[0].header['POPT6']	  = popt2[6]
-			hdulist[0].header['POPT7']	  = popt2[7]
-			hdulist[0].header['STD']      = str(np.std\
-				                               (residualprevious)/np.average(new_wave_sol)*299792.458) + 'km/s'
+			hdulist[0].header['STD']      = str(np.std(residualprevious)/np.average(new_wave_sol)*299792.458) + 'km/s'
 			hdulist[0].header['RMS']      = str(RMSEprevious/np.average(new_wave_sol)*299792.458) + 'km/s'
-			hdulist[0].data               = smart.waveSolution(np.arange(length1),
-				                                             wfit0, wfit1, wfit2, wfit3, 
-				                                             wfit4, wfit5, c3, c4, order=order)
+			hdulist[0].data               = waveSolution(np.arange(length1), c0, c1, c2, c3, c4)
 			try:
 				hdulist.writeto(save_name, overwrite=True)
 			except FileNotFoundError:
@@ -1231,7 +1069,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 def run_wave_cal(data_name, data_path, order_list,
 	             save_to_path, test=False, save=False, plot_masked=False,
 	             window_width=40, window_step=5, mask_custom=[], apply_sigma_mask=False, apply_edge_mask=False, pwv='1.5',
-	             xcorr_step=0.05, niter=20, outlier_rej=None, defringe_list=[62], cal_param=None):
+	             xcorr_step=0.05, niter=20, outlier_rej=None, defringe_list=[62], cal_param=None, instrument='nirspec'):
 	"""
 	Run the telluric wavelength calibration.
 
@@ -1259,21 +1097,17 @@ def run_wave_cal(data_name, data_path, order_list,
 		print("Start telluric wavelength calibration on {} order {}".format(data_name,order))
 
 		# load the default calibration parameters
-		if cal_param is not None:
-			xcorr_range       = cal_param[str(order)]['xcorr_range']
-			pixel_range_start = cal_param[str(order)]['pixel_range_start']
-			pixel_range_end   = cal_param[str(order)]['pixel_range_end']
-			if outlier_rej is None:
-				if cal_param[str(order)]['outlier_rej'] is not None:
-					outlier_rej = cal_param[str(order)]['outlier_rej']
-				else:
-					outlier_rej = 3.
+		if instrument == 'igrins':
+				cal_param_dict = cal_param_igrins
 		else:
-			xcorr_range       = cal_param_nirspec[str(order)]['xcorr_range']
-			pixel_range_start = cal_param_nirspec[str(order)]['pixel_range_start']
-			pixel_range_end   = cal_param_nirspec[str(order)]['pixel_range_end']
-			if outlier_rej is None:
-				outlier_rej = cal_param_nirspec[str(order)]['outlier_rej']
+			cal_param_dict = cal_param_nirspec
+
+		xcorr_range       = cal_param_dict[str(order)]['xcorr_range']
+		pixel_range_start = cal_param_dict[str(order)]['pixel_range_start']
+		pixel_range_end   = cal_param_dict[str(order)]['pixel_range_end']
+
+		if outlier_rej is None:
+			outlier_rej = cal_param_dict[str(order)]['outlier_rej']
 
 		if pixel_range_end == -1 and apply_sigma_mask is False:
 			pixel_range_end   += -25
@@ -1285,8 +1119,39 @@ def run_wave_cal(data_name, data_path, order_list,
 		os.chdir(directory)
 
 		# use median value to replace the masked values later
-		data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask)
-		length1  = len(data.oriWave) # preserve the length of the array
+		if instrument == 'igrins':
+			pix_start, pix_end = pixel_range_start, pixel_range_end # need to make it more flexible
+			data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask,
+									name2=data_name, flat_tell=True, instrument=instrument)
+			length1  = len(data.wave) # preserve the length of the array
+
+			p_init = np.poly1d(np.polyfit(np.arange(len(data.wave))[pix_start:pix_end], data.wave[pix_start:pix_end], 4))
+
+			data.header['C0'] = p_init[0]
+			data.header['C1'] = p_init[1]
+			data.header['C2'] = p_init[2]
+			data.header['C3'] = p_init[3]
+			data.header['C4'] = p_init[4]
+
+			data.header['POPT0'] = p_init[0]
+			data.header['POPT1'] = p_init[1]
+			data.header['POPT2'] = p_init[2]
+			data.header['POPT3'] = p_init[3]
+			data.header['POPT4'] = p_init[4]
+
+			#plt.plot(p_init(np.arange(len(data.wave))), data.wave, color='k')
+			#plt.plot([22940, 23260], [22940, 23260], color='red', ls='--', alpha=0.5)
+			#plt.ylabel('IGRINS pipeline wavelength', fontsize=20)
+			#plt.xlabel('Polyfit 4-order polynomials wavelength', fontsize=20)
+			#plt.show()
+			#plt.close()
+			#sys.exit()
+
+
+			data.header['AIRMASS'] = np.mean([data.header['AMSTART'], data.header['AMEND']])
+		else:
+			data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask)
+			length1  = len(data.oriWave) # preserve the length of the array
 
 		# the telluric standard model
 		wavelow  = data.wave[0]  - 200
@@ -1296,54 +1161,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		if airmass > 3.0: airmass = 3.0
 		print('airmass', airmass)
 		airmass  = str(airmass)
-		
-		"""
-		## testing
-		mask_combined = [2, 3, 497, 498, 499, 500, 501, 502, 503, 685]
-		for i in mask_combined:
-			data.flux[int(i)] = (data.flux[int(i)-1] + data.flux[int(i)+1])/2
-		data.flux[496] = 87
-		data.flux[497] = 86.5
-		data.flux[498] = 86
-		data.flux[499] = 85.5
-		data.flux[500] = 85
-		data.flux[501] = 85.5
-		data.flux[502] = 84
-		data.flux[503] = 84.5
-		"""
 
-		## estimating the pwv parameter
-		#pwv_list = ['0.5', '1.0', '1.5', '2.5', '3.5', '5.0', '7.5', '10.0', '20.0']
-		#pwv_chi2 = []
-		#for pwv in pwv_list:
-		#	data_tmp       = copy.deepcopy(data)
-
-		#	data_tmp.flux  = data_tmp.flux[pixel_range_start:pixel_range_end]
-		#	data_tmp.wave  = data_tmp.wave[pixel_range_start:pixel_range_end]
-		#	data_tmp.noise = data_tmp.noise[pixel_range_start:pixel_range_end]
-
-		#	model_tmp      = smart.getTelluric(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
-		#	data_tmp       = smart.continuumTelluric(data=data_tmp, model=model_tmp)
-
-		#	model_tmp.flux = np.array(smart.integralResample(xh=model_tmp.wave, yh=model_tmp.flux, xl=data_tmp.wave))
-		#	model_tmp.wave = data_tmp.wave
-
-		#	pwv_chi2.append(smart.chisquare(data_tmp, model_tmp))
-		# find the pwv with minimum chisquare
-		#pwv_chi2_array = np.array(pwv_chi2)
-		#
-		#plt.plot(pwv_list, pwv_chi2)
-		#plt.xlabel('pwv (mm)', fontsize=15)
-		#plt.ylabel('$\chi^2$', fontsize=15)
-		#plt.tight_layout()
-		#plt.savefig(save_to_path+'/O{}/pwv_chi2.png'.format(order))
-		##plt.show()
-		#plt.close()
-		##sys.exit()
-
-		#pwv_min_index = np.where(pwv_chi2_array == np.min(pwv_chi2_array))[0][0]
-		#pwv           = pwv_list[pwv_min_index]
-		#pwv = '1.5' #self defined pwv
 		print('pwv', pwv)
 		
 
@@ -1354,6 +1172,7 @@ def run_wave_cal(data_name, data_path, order_list,
 
 		# this is to apply a sigma clipping mask
 		if apply_sigma_mask:
+			print('*** apply sigma mask ***')
 			#data.flux  = data.oriFlux
 			#data.wave  = data.oriWave
 			#data.noise = data.oriNoise
@@ -1373,6 +1192,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
 		elif not apply_sigma_mask:
 			if apply_edge_mask:
+				print('*** apply edge mask ***')
 				data.flux  = np.delete(data.oriFlux, mask_custom)[pixel_range_start: pixel_range_end]
 				data.wave  = np.delete(data.oriWave, mask_custom)[pixel_range_start: pixel_range_end]
 				data.noise = np.delete(data.oriNoise, mask_custom)[pixel_range_start: pixel_range_end]
@@ -1393,10 +1213,11 @@ def run_wave_cal(data_name, data_path, order_list,
 		
 		# continuum correction for the data
 		data1    = copy.deepcopy(data)
-		data     = smart.continuumTelluric(data=data, model=model)
-		## constant offset correction
-		const    = np.median(data.flux) - np.median(model.flux)
-		data.flux -= const
+		if instrument == 'nirspec':
+			data     = smart.continuumTelluric(data=data, model=model)
+			## constant offset correction
+			const    = np.median(data.flux) - np.median(model.flux)
+			data.flux -= const
 
 		#print(len(data.wave),len(data.flux),len(data.noise))
 		#plt.plot(data.wave, data.flux, 'r-', alpha=0.5, label='median combined mask data')
@@ -1437,12 +1258,12 @@ def run_wave_cal(data_name, data_path, order_list,
 		file_log.write("mask_custom {} \n".format(mask_custom))
 		file_log.close()
 
-		data_path2 = data_path + '/' + data_name + '_' + str(order) + '_all.fits'
+		data_path2 = data_path + '/' + data_name + '.spec_flattened.fits'
 		#print('data length:', len(data.oriWave), len(data.wave))
 		time1 = time.time()
 
 		new_wave_sol, p0, width_range_center, residual, best_shift_list = \
-		smart.wavelengthSolutionFit(data, model,
+		wavelengthSolutionFit(data, model,
 			                      order=order,
 			                      window_width=window_width,
 			                      window_step=window_step,
@@ -1459,14 +1280,15 @@ def run_wave_cal(data_name, data_path, order_list,
 								  length1 = length1,
 								  apply_sigma_mask=apply_sigma_mask,
 								  mask_custom=mask_custom,
-								  pwv=pwv)
+								  pwv=pwv,
+								  instrument=instrument)
 
 		time2 = time.time()
 		print("Total X correlation time: {} min".format((time2-time1)/60))
 
 		# convert the flux back to the original data
 		data       = data1
-		data       = smart.continuumTelluric(data=data, model=model)
+		#data       = smart.continuumTelluric(data=data, model=model)
 		if apply_sigma_mask:
 			data.wave  = np.delete(data.wave,data.mask)
 			data.flux  = np.delete(data.flux,data.mask)
@@ -1513,12 +1335,12 @@ def run_wave_cal(data_name, data_path, order_list,
 		
 		vbroad            = (299792.458)*np.mean(np.diff(data.wave))/np.mean(data.wave)
 		telluric_new      = copy.deepcopy(data)
-		new_wave_sol      = smart.waveSolution(pixel,  *p0, order=order)
+		new_wave_sol      = waveSolution(pixel, *p0)
 		telluric_new.wave = new_wave_sol
-		#telluric_new.wave = smart.waveSolution(pixel,  *p0, order=order)
+		#telluric_new.wave = waveSolution(pixel,  *p0)
 		telluric_new.flux  = data.oriFlux[pixel]
 		telluric_new.noise = telluric_new.oriNoise[pixel]
-		telluric_new       = smart.continuumTelluric(data=telluric_new, model=model)
+		#telluric_new       = smart.continuumTelluric(data=telluric_new, model=model)
 
 		# get an estimate for lsf and telluric alpha
 		#if apply_sigma_mask:
@@ -1620,7 +1442,7 @@ def run_wave_cal(data_name, data_path, order_list,
 				     alpha=0.5, linewidth=linewidth)
 		ax1.plot(residual_telluric_wavesol.wave, residual_telluric_wavesol.flux,
 			     color='blue', linestyle='-', alpha=0.5, linewidth=linewidth, label='residual')
-		ax1.fill_between(new_wave_sol, -data.noise, data.noise, facecolor='grey', alpha=0.5)
+		#ax1.fill_between(new_wave_sol, -data.noise, data.noise, facecolor='grey', alpha=0.5)
 		ax1.axhline(y=0, color='grey', linestyle=':', alpha=0.5)
 		ax1.set_title("Telluric Comparison {} O{} Calibrated Spectra".format(data_name, order),
 			          y=1.25, fontsize=25)

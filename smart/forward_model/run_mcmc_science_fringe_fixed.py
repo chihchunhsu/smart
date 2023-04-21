@@ -12,6 +12,7 @@ from multiprocessing import Pool
 import smart
 import model_fit
 import mcmc_utils
+import fringe_model
 import corner
 import os
 import sys
@@ -30,7 +31,7 @@ warnings.filterwarnings("ignore")
 ## nuisance parameters for wavelength, flux and noise.
 ##############################################################################################
 
-parser = argparse.ArgumentParser(description="Run the forward-modeling routine for science files",
+parser = argparse.ArgumentParser(description="Run the forward-modeling routine for science files with a fringe model",
 	usage="run_mcmc_science.py order date_obs sci_data_name tell_data_name data_path tell_path save_to_path lsf priors limits")
 
 #parser.add_argument("source",metavar='src',type=str,
@@ -60,14 +61,11 @@ parser.add_argument("save_to_path",type=str,
 parser.add_argument("lsf",type=float,
     default=None, help="line spread function", nargs="+")
 
-parser.add_argument("-instrument",metavar='--inst',type=str,
-    default='nirspec', help="spectrometer name of the instrument; default nirspec")
-
 parser.add_argument("-outlier_rejection",metavar='--rej',type=float,
     default=3.0, help="outlier rejection based on the multiple of standard deviation of the residual; default 3.0")
 
 parser.add_argument("-ndim",type=int,
-    default=8, help="number of dimension; default 8")
+    default=8, help="number of dimension; default 25")
 
 parser.add_argument("-nwalkers",type=int,
     default=50, help="number of walkers of MCMC; default 50")
@@ -110,19 +108,16 @@ parser.add_argument("-modelset",type=str,
 
 parser.add_argument("-final_mcmc", action='store_true', help="run final mcmc; default False")
 
-parser.add_argument("-include_fringe_model", action='store_true', help="model the fringe pattern; default False")
-
 args = parser.parse_args()
 
 ######################################################################################################
 
 #source                 = str(args.source[0])
 order                  = int(args.order[0])
-instrument             = str(args.instrument)
 date_obs               = str(args.date_obs[0])
 sci_data_name          = str(args.sci_data_name[0])
-data_path              = str(args.data_path[0])
 tell_data_name         = str(args.tell_data_name[0])
+data_path              = str(args.data_path[0])
 tell_path              = str(args.tell_path[0])
 save_to_path_base      = str(args.save_to_path[0])
 lsf                    = float(args.lsf[0])
@@ -138,14 +133,13 @@ coadd                  = args.coadd
 outlier_rejection      = float(args.outlier_rejection)
 modelset               = str(args.modelset)
 final_mcmc             = args.final_mcmc
-include_fringe_model   = args.include_fringe_model
 
 if final_mcmc:
 	#save_to_path1  = save_to_path_base + '/init_mcmc'
-	save_to_path   = save_to_path_base + '/final_mcmc'
+	save_to_path   = save_to_path_base + '/final_mcmc_fringe'
 
 else:
-	save_to_path   = save_to_path_base + '/init_mcmc'
+	save_to_path   = save_to_path_base + '/init_mcmc_fringe'
 
 # date
 today     = date.today()
@@ -154,25 +148,20 @@ dt_string = now.strftime("%H:%M:%S")
 
 #####################################
 
-data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
+data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask)
+tell_data_name2 = tell_data_name + '_calibrated'
 
-if instrument != 'hires':
-	tell_data_name2 = tell_data_name + '_calibrated'
-	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument)
+tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask)
 
-	data.updateWaveSol(tell_sp)
+data.updateWaveSol(tell_sp)
 
 # MJD for logging
 # upgraded NIRSPEC
-if instrument == 'nirspec':
-	if len(data.oriWave) == 2048:
-		mjd = data.header['MJD']
-	# old NIRSPEC
-	else:
-		mjd = data.header['MJD-OBS']
-
-elif instrument == 'hires':
+if len(data.oriWave) == 2048:
 	mjd = data.header['MJD']
+# old NIRSPEC
+else:
+	mjd = data.header['MJD-OBS']
 
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
@@ -201,9 +190,7 @@ if coadd:
 	plt.close()
 
 sci_data  = data
-
-if instrument != 'hires':
-	tell_data = tell_sp 
+tell_data = tell_sp 
 
 """
 MCMC run for the science spectra. See the parameters in the makeModel function.
@@ -268,10 +255,8 @@ else:
 #if limits is None: limits = priors
 
 data          = copy.deepcopy(sci_data)
-
-if instrument != 'hires':
-	tell_sp       = copy.deepcopy(tell_data)
-	data.updateWaveSol(tell_sp)
+tell_sp       = copy.deepcopy(tell_data)
+data.updateWaveSol(tell_sp)
 
 # barycentric corrction
 #barycorr      = smart.barycorr(data.header).value
@@ -279,14 +264,9 @@ if instrument != 'hires':
 
 ## read the input custom mask and priors
 lines          = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
-if instrument == 'nirspec':
-	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
-	priors         = ast.literal_eval(lines[6].split('priors ')[1])
-	barycorr       = json.loads(lines[13].split('barycorr')[1])
-elif instrument == 'hires':
-	custom_mask    = json.loads(lines[3].split('custom_mask')[1])
-	priors         = ast.literal_eval(lines[4].split('priors ')[1])
-	barycorr       = json.loads(lines[11].split('barycorr')[1])
+custom_mask    = json.loads(lines[5].split('custom_mask')[1])
+priors         = ast.literal_eval(lines[6].split('priors ')[1])
+barycorr       = json.loads(lines[13].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
 if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
@@ -347,10 +327,14 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 						'N_min':0.10,                               'N_max':5.50 				
 					}
 
-# HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter
-if data.instrument == 'hires':
-	limits['B_min'] = -3.0 # Angstrom
-	limits['B_max'] = +3.0 # Angstrom
+# definition of slices
+piecewise_fringe_model = [0, 400, 1000, -300, -1]
+#s1, s2, s3, s4, s5 = 0, 400, 1000, -300, -1
+#a1_1, k1_1, a2_1, k2_1 = 0.00823479, 2.13007061, 0.00604103, 0.85318542
+#a1_2, k1_2, a2_2, k2_2 = 0.00711908, 2.10406247, 0.00672382, 0.89811313
+#a1_3, k1_3, a2_3, k2_3 = 0.01348733, 2.07407643, 0.00915492, 0.83526088
+#a1_4, k1_4, a2_4, k2_4 = 0.00702735, 2.36886565, 0.00642253, 0.82219434
+
 
 if final_mcmc:
 	limits['rv_min'] = priors['rv_min'] - 10
@@ -369,10 +353,9 @@ data.wave     = data.wave[pixel_start:pixel_end]
 data.flux     = data.flux[pixel_start:pixel_end]
 data.noise    = data.noise[pixel_start:pixel_end]
 
-if instrument != 'hires':
-	tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
-	tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
-	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
+tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
+tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
+tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
 
 #if final_mcmc:
 #	priors, limits         = mcmc_utils.generate_final_priors_and_limits(sp_type=sp_type, barycorr=barycorr, save_to_path1=save_to_path1)
@@ -413,8 +396,6 @@ file_log.close()
 ## for multiprocessing
 #########################################################################################
 
-print('include_fringe_model', include_fringe_model)
-
 def lnlike(theta, data, lsf):
 	"""
 	Log-likelihood, computed from chi-squared.
@@ -433,10 +414,31 @@ def lnlike(theta, data, lsf):
 
 	## Parameters MCMC
 	teff, logg, vsini, rv, am, pwv, A, B, N = theta #N noise prefactor
-	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
-	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
+	#model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+	#	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv)
+
+	model = fringe_model.double_sine_fringe(data=data, piecewise_fringe_model=piecewise_fringe_model, 
+		teff=teff, logg=logg, vsini=vsini, rv=rv, airmass=am, pwv=pwv, wave_offset=B, flux_offset=A, lsf=lsf, modelset=modelset)
+
+	# construct the residual
+
+
+	# add the fringe model to the forward model
+	#f1, f2 = fringe_model.get_peak_fringe_frequency(fringe_object=, pixel_start=s1, pixel_end=s2)
+
+
+	# construct the fringe model
+
+
+	# add the fringe model to the forward model
+
+	#model = model_fit.makeModelFringe(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+	#	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv,
+	#	a1_1=a1_1, k1_1=k1_1, a2_1=a2_1, k2_1=k2_1, a1_2=a1_2, k1_2=k1_2, a2_2=a2_2, k2_2=k2_2, 
+	#	a1_3=a1_3, k1_3=k1_3, a2_3=a2_3, k2_3=k2_3, a1_4=a1_4, k1_4=k1_4, a2_4=a2_4, k2_4=k2_4)
+
+
 
 	chisquare = smart.chisquare(data, model)/N**2
 
@@ -484,9 +486,8 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 ## multiprocessing
 
 with Pool() as pool:
-	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
-	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
-			moves=emcee.moves.KDEMove())
+	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool, moves=emcee.moves.StretchMove(a=2.0))
+	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool, moves=emcee.moves.KDEMove())
 	time1 = time.time()
 	sampler.run_mcmc(pos, step, progress=True)
 	time2 = time.time()
@@ -514,7 +515,7 @@ ylabels = ["$T_{\mathrm{eff}} (K)$","$\log{g}$(dex)","$v\sin{i}(km/s)$","$RV(km/
 ## create walker plots
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=30)
-fig = plt.figure(tight_layout=True)
+fig = plt.figure(tight_layout=True, figsize=(6, len(ylabels)))
 gs  = gridspec.GridSpec(ndim, 1)
 gs.update(hspace=0.1)
 
@@ -540,20 +541,39 @@ teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
 
 # add the summary to the txt file
+log_path = save_to_path + '/mcmc_parameters.txt'
+file_log = open(log_path,"a")
+file_log.write("*** Below is the summary *** \n")
+file_log.write("total_time {} min\n".format(str((time2-time1)/60)))
+file_log.write("mean_acceptance_fraction {0:.3f} \n".format(np.mean(sampler.acceptance_fraction)))
+file_log.write("mean_autocorrelation_time {0:.3f} \n".format(np.mean(autocorr_time)))
+file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
+file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
+file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
+file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
+file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
+file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
+file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
+file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
+file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
+file_log.close()
 
 # log file
 log_path2 = save_to_path + '/mcmc_result.txt'
 
 file_log2 = open(log_path2,"w+")
-file_log2.write("teff_mcmc {}\n".format(str(teff_mcmc[0])))
-file_log2.write("logg_mcmc {}\n".format(str(logg_mcmc[0])))
-file_log2.write("vsini_mcmc {}\n".format(str(vsini_mcmc[0])))
-file_log2.write("rv_mcmc {}\n".format(str(rv_mcmc[0]+barycorr)))
-file_log2.write("am_mcmc {}\n".format(str(am_mcmc[0])))
-file_log2.write("pwv_mcmc {}\n".format(str(pwv_mcmc[0])))
-file_log2.write("A_mcmc {}\n".format(str(A_mcmc[0])))
-file_log2.write("B_mcmc {}\n".format(str(B_mcmc[0])))
-file_log2.write("N_mcmc {}\n".format(str(N_mcmc[0])))
+index_dic = {'mcmc':0, 'mcmc_ue':1, 'mcmc_le':2}
+for key in index_dic.keys():
+	file_log2.write("teff_{} {}\n".format(key, str(teff_mcmc[index_dic[key]])))
+	file_log2.write("logg_{} {}\n".format(key, str(logg_mcmc[index_dic[key]])))
+	file_log2.write("vsini_{} {}\n".format(key, str(vsini_mcmc[index_dic[key]])))
+	file_log2.write("rv_{} {}\n".format(key, str(rv_mcmc[index_dic[key]]+barycorr)))
+	file_log2.write("am_{} {}\n".format(key, str(am_mcmc[index_dic[key]])))
+	file_log2.write("pwv_{} {}\n".format(key, str(pwv_mcmc[index_dic[key]])))
+	file_log2.write("A_{} {}\n".format(key, str(A_mcmc[index_dic[key]])))
+	file_log2.write("B_{} {}\n".format(key, str(B_mcmc[index_dic[key]])))
+	file_log2.write("N_{} {}\n".format(key, str(N_mcmc[index_dic[key]])))
+
 file_log2.write("teff_mcmc_e {}\n".format(str(max(abs(teff_mcmc[1]), abs(teff_mcmc[2])))))
 file_log2.write("logg_mcmc_e {}\n".format(str(max(abs(logg_mcmc[1]), abs(logg_mcmc[2])))))
 file_log2.write("vsini_mcmc_e {}\n".format(str(max(abs(vsini_mcmc[1]), abs(vsini_mcmc[2])))))
@@ -563,27 +583,6 @@ file_log2.write("pwv_mcmc_e {}\n".format(str(max(abs(pwv_mcmc[1]), abs(pwv_mcmc[
 file_log2.write("A_mcmc_e {}\n".format(str(max(abs(A_mcmc[1]), abs(A_mcmc[2])))))
 file_log2.write("B_mcmc_e {}\n".format(str(max(abs(B_mcmc[1]), abs(B_mcmc[2])))))
 file_log2.write("N_mcmc_e {}\n".format(str(max(abs(N_mcmc[1]), abs(N_mcmc[2])))))
-# upper and lower uncertainties
-# upper uncertainties
-file_log2.write("teff_mcmc_ue {}\n".format(str(abs(teff_mcmc[1]))))
-file_log2.write("logg_mcmc_ue {}\n".format(str(abs(logg_mcmc[1]))))
-file_log2.write("vsini_mcmc_ue {}\n".format(str(abs(vsini_mcmc[1]))))
-file_log2.write("rv_mcmc_ue {}\n".format(str(abs(rv_mcmc[1]))))
-file_log2.write("am_mcmc_ue {}\n".format(str(abs(am_mcmc[1]))))
-file_log2.write("pwv_mcmc_ue {}\n".format(str(abs(pwv_mcmc[1]))))
-file_log2.write("A_mcmc_ue {}\n".format(str(abs(A_mcmc[1]))))
-file_log2.write("B_mcmc_ue {}\n".format(str(abs(B_mcmc[1]))))
-file_log2.write("N_mcmc_ue {}\n".format(str(abs(N_mcmc[1]))))
-# lower uncertainties
-file_log2.write("teff_mcmc_le {}\n".format(str(abs(teff_mcmc[2]))))
-file_log2.write("logg_mcmc_le {}\n".format(str(abs(logg_mcmc[2]))))
-file_log2.write("vsini_mcmc_le {}\n".format(str(abs(vsini_mcmc[2]))))
-file_log2.write("rv_mcmc_le {}\n".format(str(abs(rv_mcmc[2]))))
-file_log2.write("am_mcmc_le {}\n".format(str(abs(am_mcmc[2]))))
-file_log2.write("pwv_mcmc_le {}\n".format(str(abs(pwv_mcmc[2]))))
-file_log2.write("A_mcmc_le {}\n".format(str(abs(A_mcmc[2]))))
-file_log2.write("B_mcmc_le {}\n".format(str(abs(B_mcmc[2]))))
-file_log2.write("N_mcmc_le {}\n".format(str(abs(N_mcmc[2]))))
 file_log2.close()
 
 #print(teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc)
@@ -622,18 +621,29 @@ A     = A_mcmc[0]
 B     = B_mcmc[0]
 N     = N_mcmc[0]
 
-
-model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
+# model without fringe model
+model_nofringe, model_notell_nofringe = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
 	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, 
-	include_fringe_model=include_fringe_model, instrument=instrument)
+	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, 
+	output_stellar_model=True)
+
+# model with a fringe model
+#model, model_notell = model_fit.makeModelFringe(teff=teff, logg=logg, metal=0.0, 
+#	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+#	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, 
+#	a1_1=a1_1, k1_1=k1_1, a2_1=a2_1, k2_1=k2_1, a1_2=a1_2, k1_2=k1_2, a2_2=a2_2, k2_2=k2_2, 
+#	a1_3=a1_3, k1_3=k1_3, a2_3=a2_3, k2_3=k2_3, a1_4=a1_4, k1_4=k1_4, a2_4=a2_4, k2_4=k2_4,
+#	output_stellar_model=True)
+model, model_notell = fringe_model.double_sine_fringe(data=data, piecewise_fringe_model=piecewise_fringe_model, 
+		teff=teff, logg=logg, vsini=vsini, rv=rv, airmass=am, pwv=pwv, wave_offset=B, flux_offset=A, lsf=lsf, modelset=modelset, output_stellar_model=True)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=15)
-ax1.plot(model.wave, model.flux, color='C3', linestyle='-', label='model',alpha=0.8)
-ax1.plot(model_notell.wave,model_notell.flux, color='C0', linestyle='-', label='model no telluric',alpha=0.8)
+ax1.plot(model_notell_nofringe.wave, model_notell_nofringe.flux, color='m', linestyle='-', label='model no telluric',alpha=0.8)
+ax1.plot(model.wave, model.flux, color='C3', linestyle='-', label='model + fringe',alpha=0.8)
+ax1.plot(model_notell.wave,model_notell.flux, color='C0', linestyle='-', label='model no telluric + fringe',alpha=0.8)
 ax1.plot(data.wave,data.flux,'k-',
 	label='data',alpha=0.5)
 ax1.plot(data.wave,data.flux-model.flux,'k-',alpha=0.8)
@@ -670,6 +680,7 @@ color='k',
 horizontalalignment='right',
 verticalalignment='center',
 fontsize=12)
+plt.xlim(data.wave[0], data.wave[-1])
 plt.minorticks_on()
 
 ax2 = ax1.twiny()
@@ -685,27 +696,6 @@ if plot_show:
 	plt.show()
 plt.close()
 
-# chi2 and dof in the log
-log_path = save_to_path + '/mcmc_parameters.txt'
-file_log = open(log_path,"a")
-file_log.write("*** Below is the summary *** \n")
-file_log.write("total_time {} min\n".format(str((time2-time1)/60)))
-file_log.write("mean_acceptance_fraction {0:.3f} \n".format(np.mean(sampler.acceptance_fraction)))
-file_log.write("mean_autocorrelation_time {0:.3f} \n".format(np.mean(autocorr_time)))
-file_log.write("chi2 {} \n".format(round(smart.chisquare(data,model))))
-file_log.write("dof {} \n".format(round(len(data.wave-ndim)/3)))
-file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
-file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
-file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
-file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
-file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
-file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
-file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
-file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
-file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
-file_log.close()
-
-
 # excel summary file
 cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
 							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
@@ -713,15 +703,14 @@ cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell
 							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
 							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
 							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
-							'cflux','e_cflux','ue_cflux','le_cflux','cwave','e_cwave','ue_cwave','le_cwave',
-							'cnoise','e_cnoise','ue_cnoise','le_cnoise','wave_cal_err','chi2','dof','acceptance_fraction','autocorr_time'])
+							'cflux','e_cflux','ue_cflux','le_cflux',
+							'cwave','e_cwave','ue_cwave','le_cwave',
+							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
+							'wave_cal_err'])
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-if instrument == 'nirspec':
-	wave_cal_err = tell_sp.header['STD']
-else:
-	wave_cal_err = np.nan
+wave_cal_err = tell_sp.header['STD']
 
 cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
@@ -738,7 +727,7 @@ cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tel
 					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
 					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2], 
 					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
-					'wave_cal_err':wave_cal_err, }, ignore_index=True)
+					'wave_cal_err':wave_cal_err}, ignore_index=True)
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 

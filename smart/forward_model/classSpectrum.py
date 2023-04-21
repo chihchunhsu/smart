@@ -90,7 +90,7 @@ class Spectrum():
 			self.path      = kwargs.get('path')
 			self.datatype  = kwargs.get('datatype','aspcap')
 			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
-			self.applytell = kwargs.get('applytell', False)
+			self.apply_tell = kwargs.get('apply_tell', False)
 			self.chip      = kwargs.get('chip', 'all')
 
 			hdulist        = fits.open(self.path)
@@ -222,7 +222,7 @@ class Spectrum():
 					self.oriFlux   = np.array(list(hdulist[1].data[2]))
 					self.oriNoise  = np.array(list(hdulist[2].data[2]))
 
-				if self.applytell:
+				if self.apply_tell:
 					self.flux *= self.tell
 				self.wavecoeff = hdulist[9].data
 				self.lsfcoeff  = hdulist[10].data
@@ -249,6 +249,8 @@ class Spectrum():
 				#self.flux     *= self.tell
 
 			elif self.datatype == 'apstar':
+				# see the description of the data model: 
+				# https://data.sdss.org/datamodel/files/APOGEE_REDUX/APRED_VERS/APSTAR_VERS-DR14/TELESCOPE/LOCATION_ID/apStar.html
 				crval1         = hdulist[0].header['CRVAL1']
 				cdelt1         = hdulist[0].header['CDELT1']
 				naxis1         = hdulist[0].header['NWAVE']
@@ -259,27 +261,40 @@ class Spectrum():
 				self.header8   = hdulist[8].header
 				self.header9   = hdulist[9].header
 
-				#print(hdulist)
-				#print(hdulist[1])
-				#print(hdulist[1].data.shape)
-				#sys.exit()
-
-				self.wave      = np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1)))
-				self.flux      = hdulist[1].data
-				self.noise     = hdulist[2].data
-				self.sky       = hdulist[4].data
-				self.skynoise  = hdulist[5].data
-				self.tell      = hdulist[6].data
-				self.tellnoise = hdulist[7].data
+				self.nvisits = hdulist[0].header['NVISITS']
+				self.weighting = kwargs.get('weighting', 'pixel')
+				# choose pixel-based weighting (1st row) or global weighting (2nd row)
+				# see https://data.sdss.org/datamodel/files/APOGEE_REDUX/APRED_VERS/stars/TELESCOPE/FIELD/apStar.html#hdu1
+				if (self.nvisits > 1) and (self.weighting=='global'):
+					idx = 1
+				else:
+					idx = 0
+				
+				# mask out apogee badpix and nans.
+				self.apogee_mask = ((hdulist[3].data[idx]) & 1) | np.isnan(hdulist[1].data[idx])
+				self.wave      = np.ma.MaskedArray(np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1))), mask=self.apogee_mask).compressed()
+				self.flux      = np.ma.MaskedArray(hdulist[1].data[idx], mask=self.apogee_mask).compressed()
+				self.noise     = np.ma.MaskedArray(hdulist[2].data[idx], mask=self.apogee_mask).compressed()
+				self.sky       = np.ma.MaskedArray(hdulist[4].data[idx], mask=self.apogee_mask).compressed()
+				self.skynoise  = np.ma.MaskedArray(hdulist[5].data[idx], mask=self.apogee_mask).compressed()
+				self.tell      = np.ma.MaskedArray(hdulist[6].data[idx], mask=self.apogee_mask).compressed()
+				self.tellnoise = np.ma.MaskedArray(hdulist[7].data[idx], mask=self.apogee_mask).compressed()
 				self.lsfcoeff  = hdulist[8].data
 				self.binary    = hdulist[9].data
 
 
 				# store the original parameters
 				self.oriWave   = np.array(pow(10, crval1 + cdelt1 * np.arange(1, naxis1+1)))	
-				self.oriFlux   = hdulist[1].data
-				self.oriNoise  = hdulist[2].data
-
+				self.oriFlux   = hdulist[1].data[idx]
+				self.oriNoise  = hdulist[2].data[idx]
+				
+				# store the piece-wise wavelength using the headeer information; consistent with apVisit data model
+				self.oriWave0  = np.asarray([
+					self.oriWave[hdulist[0].header['RMAX']:hdulist[0].header['RMIN']:-1], 
+					self.oriWave[hdulist[0].header['GMAX']:hdulist[0].header['GMIN']:-1], 
+					self.oriWave[hdulist[0].header['BMAX']:hdulist[0].header['BMIN']:-1]
+				])
+				
 				## APOGEE APVISIT has corrected the telluric absorption; the forward-modeling routine needs to put it back
 				#self.flux     *= self.tell
 
@@ -292,24 +307,89 @@ class Spectrum():
 			self.mask     = []
 
 		elif self.instrument == 'igrins':
+			"""
+			Follow the IGRINS PIP data product convention; default is to read the flattened spectra
+			
+			Example: if spec = SDCK_20221215_0021.spec_flattened.fits
+			--------
+			name: SDCK_20221215_0032
+			name2: SDCK_20221215_0021
+
+			At 2.3 micron, order = 6
+
+			It will find 'SDCK_20221215_0021.wave.fits' for (vacuum) wavelength and
+			'SDCK_20221215_0021.variance.fits' for variance
+			
+			"""
+			self.name      = kwargs.get('name')
+			self.name2     = kwargs.get('name2') # for wavelength solution using A0V file 
+			self.order     = kwargs.get('order')
+			self.path      = kwargs.get('path')
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
+			self.flat_tell = kwargs.get('flat_tell', False)
+
+			if self.path == None:
+				self.path = './'
+
+			# follow the IGRINS PIP data product convention
+			# read the flattend spectrum for telluric for wavelength calibration
+			if self.flat_tell:
+				fullpath_flux = self.path + '/' + self.name + '.spec_flattened.fits'
+			else:
+				fullpath_flux = self.path + '/' + self.name + '.spec.fits'
+			fullpath_wave = self.path + '/' + self.name2 + '.wave.fits'
+			fullpath_var  = self.path + '/' + self.name + '.variance.fits'
+
+			hdulist = fits.open(fullpath_flux)
+			wave    = fits.open(fullpath_wave)
+			var     = fits.open(fullpath_var)
+
+			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
+			self.header = hdulist[0].header
+
+			# if the calibrated wavelength, read the data different from the raw data
+			if '_calibrated' in self.name2:
+				self.wave = wave[0].data
+			else:
+				self.wave   = wave[0].data[self.order] * 10.0 # convert from nm to Angstrom
+			self.flux   = hdulist[0].data[self.order]
+			self.noise  = np.sqrt(var[0].data[self.order])
+			self.mask     = []
+
+			self.oriWave  = self.wave
+			self.oriFlux  = self.flux
+			self.oriNoise = self.noise
+
+			# define a list for storing the best wavelength shift
+			self.bestshift = []
+
+		elif self.instrument == 'hires':
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
-			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
 			#self.manaulmask = kwargs('manaulmask', False)
 
 			if self.path == None:
 				self.path = './'
 
-			fullpath = self.path + '/' + self.name + '_' + str(self.order) + '.fits'
+			fullpath = self.path + '/' + self.name + '_' + str(self.order) + '_all.fits'
 
 			hdulist = fits.open(fullpath, ignore_missing_end=True)
 
+			# correct back the MAKEE computed heliocentric velocity scale factor (hvsf)
+			from smart.utils import hires_tool
+			hvsf = hires_tool.get_hvsf(float(hdulist[0].header['HELIOVEL']))
+
 			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
-			self.header = hdulist[0].header
-			self.wave   = hdulist[0].data * 10000.0 # convert to Angstrom
-			self.flux   = hdulist[1].data
-			self.noise  = hdulist[2].data
+			self.header   = hdulist[0].header
+			self.wave     = hdulist[0].data/hvsf # correct for hvsf
+			self.flux     = hdulist[1].data
+			self.noise    = hdulist[2].data
+			self.oriWave  = hdulist[0].data/hvsf # correct for hvsf
+			self.oriFlux  = hdulist[1].data
+			self.oriNoise = hdulist[2].data
+			self.mask     = []
 
 		if self.apply_sigma_mask:
 			# set up masking criteria
@@ -321,20 +401,17 @@ class Spectrum():
 			#self.smoothFlux[self.smoothFlux <= self.avgFlux - 2 * self.stdFlux] = 0
 			#self.smoothFlux[ np.abs(self.smoothFlux - self.avgFlux ) <= 2 * self.stdFlux] = 0
 		
-			self.mask  = np.where(np.abs(self.flux - self.avgFlux ) >= 3. * self.stdFlux)
-			#print(self.mask)
+			self.mask  = np.where(np.abs(self.flux - self.avgFlux ) >= 3. * self.stdFlux)[0]
 
 			if self.instrument == 'apogee':
-				#self.mask = np.union1d(self.mask[0],np.where(self.noise >= self.flux)[0])
 				noise_median = np.median(self.noise)
-				self.mask = np.union1d(self.mask[0], np.where(self.noise >= 3. * noise_median)[0])
-			self.wave  = np.delete(self.wave, list(self.mask))
-			self.flux  = np.delete(self.flux, list(self.mask))
-			self.noise = np.delete(self.noise, list(self.mask))
+				self.mask = np.union1d(self.mask, np.where(self.noise >= 3. * noise_median)[0])
+			self.wave  = np.delete(self.wave, self.mask)
+			self.flux  = np.delete(self.flux, self.mask)
+			self.noise = np.delete(self.noise, self.mask)
 			
 			if self.instrument == 'nirspec':
-				self.sky   = np.delete(self.sky, list(self.mask))
-			self.mask  = self.mask[0]
+				self.sky   = np.delete(self.sky, self.mask)
 
 	def mask_custom(self, custom_mask):
 		"""
@@ -471,7 +548,7 @@ class Spectrum():
 		#pixel = np.delete(np.arange(1024),list(self.mask))
 		pixel = np.arange(len(self.oriWave))
 		## create the output mask array 0=good; 1=bad
-		if self.apply_sigma_mask:
+		if (self.apply_sigma_mask) or (self.mask != []):
 			mask = np.zeros((len(self.oriWave),),dtype=int)
 			np.put(mask,self.mask,int(1))
 		else:
@@ -533,12 +610,15 @@ class Spectrum():
 				
 
 		elif method == 'ascii':
-			if self.header['NAXIS1'] == 1024:
-				save_to_path2 = save_to_path + self.header['FILENAME'].split('.')[0]\
-				+ '_O' + str(self.order) + '.txt'
+			if '.txt' not in save_to_path:
+				if self.header['NAXIS1'] == 1024:
+					save_to_path2 = save_to_path + self.header['FILENAME'].split('.')[0]\
+					+ '_O' + str(self.order) + '.txt'
+				else:
+					save_to_path2 = save_to_path + self.header['OFNAME'].split('.')[0]\
+					+ '_O' + str(self.order) + '.txt'
 			else:
-				save_to_path2 = save_to_path + self.header['OFNAME'].split('.')[0]\
-				+ '_O' + str(self.order) + '.txt'
+				save_to_path2 = save_to_path
 
 			if tell_sp is None:
 				df = pd.DataFrame(data={'wavelength':list(self.oriWave/10000),

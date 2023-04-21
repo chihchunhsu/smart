@@ -35,25 +35,39 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     #print('model wave:', type(mdl.wave), mdl.wave[-1])
     #print(data.wave)
     #print(mdl.wave)
-    if data.instrument == 'nirspec':
+    if data.instrument in ['nirspec', 'hires', 'igrins']:
         mdl_range      = np.where((mdl.wave >= data.wave[0]) & (mdl.wave <= data.wave[-1]))
         mdl_wave       = mdl.wave[mdl_range]
         mdl_flux       = mdl.flux[mdl_range]
-    elif data.instrument == 'apogee':
+    #elif data.instrument in ['igrins']:
+    #    # avoid the telluric CH4 region for order 6
+    #    mdl_range      = np.where( ((mdl.wave >= data.wave[0]) & (mdl.wave <= data.wave[1350])) | (mdl.wave >= data.wave[1650]) & (mdl.wave <= data.wave[-1])  )
+    #    mdl_wave       = mdl.wave[mdl_range]
+    #    mdl_flux       = mdl.flux[mdl_range]
+    elif data.instrument in ['apogee']:
         ## the index for apogee is reversed
         #mdl_range      = np.where((mdl.wave >= data.wave[-1]) & (mdl.wave <= data.wave[0]))
         mdl_wave       = mdl.wave
         mdl_flux       = mdl.flux
 
-    mdl_int         = np.interp(data.wave, mdl_wave, mdl_flux)
-    mdldiv          = data.flux/mdl_int
+    if data.instrument == 'igrins':
+        # avoid the telluric CH4 region for order 6
+        wave = np.concatenate((data.wave[70: 1350], data.wave[1650: -10]), axis=None)
+        flux = np.concatenate((data.flux[70: 1350], data.flux[1650: -10]), axis=None)
+
+        mdl_int         = np.interp(wave, mdl_wave, mdl_flux)
+        mdldiv          = flux/mdl_int
+
+    else:
+        mdl_int         = np.interp(data.wave, mdl_wave, mdl_flux)
+        mdldiv          = data.flux/mdl_int
 
     ## find mean and stdev of mdldiv
     mean_mdldiv     = np.mean(mdldiv)
     std_mdldiv      = np.std(mdldiv)
     
     ## replace outliers with average value for nirspec
-    if data.instrument == 'nirspec':
+    if data.instrument in ['nirspec', 'hires']:
         mdldiv[mdldiv  <= mean_mdldiv - 2 * std_mdldiv] = mean_mdldiv
         mdldiv[mdldiv  >= mean_mdldiv + 2 * std_mdldiv] = mean_mdldiv
         try:
@@ -62,6 +76,15 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
             ## if the length of the data flux and noise are not the same
             pcont           = np.polyfit(data.wave, mdldiv, deg)
     
+    if data.instrument == 'igrins':
+        #mdldiv[mdldiv  <= mean_mdldiv - 2 * std_mdldiv] = mean_mdldiv
+        #mdldiv[mdldiv  >= mean_mdldiv + 2 * std_mdldiv] = mean_mdldiv
+        #try:
+        #   pcont           = np.polyfit(wave, mdldiv, deg, w=1/data.noise**2)
+        #except:
+        #    ## if the length of the data flux and noise are not the same
+        pcont           = np.polyfit(wave, mdldiv, deg)
+
     ## outlier rejection for apogee
     elif data.instrument == 'apogee':
         select_poly_fit = np.where(np.absolute(mdldiv - mean_mdldiv) <= 2 * std_mdldiv)
@@ -124,6 +147,36 @@ def voigt_profile(x, x0, amp, gamma, scale, a, b, c, d):
 
     voigt_absorption = (1 - scale * np.real(wofz((x-x0 + 1j*gamma)*amp)))
     return voigt_absorption * (a*x**2 + b*x + c) + d
+
+def voigt_profile_emission(x, x0, amp, gamma, scale, a, b, c, d):
+    """
+    Return a spectral line emission with a second order 
+    polynomial and the Voigt line shape absorption at x0 
+    with Lorentzian component HWHM gamma and Gaussian component
+    HWHM alpha (the latter is absorbed in the amp parameter.
+
+    """
+    #sigma = alpha / np.sqrt(2 * np.log(2))
+
+    voigt_profile = (1 + scale * np.real(wofz((x - x0 + 1j*gamma)*amp)))
+    
+    return voigt_profile * (a*x**2 + b*x + c) + d
+
+def voigt_profile_emission_double(x, x0, sigma, gamma, scale, x1, sigma1, gamma1, scale1, a, b, c, d):
+    """
+    Return a spectral line emission with a second order 
+    polynomial and two Voigt line shape absorption at x0 and x2
+    with Lorentzian component HWHM gamma and Gaussian component
+    HWHM alpha (the latter is absorbed in the amp parameter.
+
+    """
+    #sigma  = alpha / np.sqrt(2 * np.log(2))
+    #sigma1 = alpha / np.sqrt(2 * np.log(2))
+
+    voigt_profile = (1 + scale * np.real(wofz((x - x0 + 1j*gamma)/sigma/np.sqrt(2))) / sigma /np.sqrt(2*np.pi) \
+        + scale1 * np.real(wofz((x - x1 + 1j*gamma1)/sigma1/np.sqrt(2))) / sigma1 /np.sqrt(2*np.pi))
+
+    return voigt_profile * (a*x**2 + b*x + c) + d
 
 def sineFit(wavelength,frequency,amplitude,phase,offset):
     """

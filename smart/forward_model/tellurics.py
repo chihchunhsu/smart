@@ -3,6 +3,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 import smart
+#import fringe_model
 import sys, os, os.path, time
 import copy
 
@@ -157,6 +158,175 @@ def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, 
     telluric_model      = convolveTelluric(lsf, airmass, pwv, data2)
     
     model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
+    if niter is not None:
+        for i in range(niter):
+            model               = smart.continuum(data=data2, mdl=model, deg=deg)
+    
+    model.flux         += flux_offset
+
+    return model
+
+def convolveTelluricFringe(lsf, airmass, pwv, telluric_data, 
+    a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
+    a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 
+    a1_3, k1_3, p1_3, a2_3, k2_3, p2_3):
+    """
+    Return a convolved, normalized telluric transmission model given a telluric data and lsf.
+
+    The telluric model is dependent on airmass and precipitable water vapor (pwv), and a fringe model
+    as a function of wavelength dependent fringe amplitude, wave number, and phase (mostly constant).
+
+    The wavelength dependent fringe model is approximately three chunks, currently set as the first 29 percent 
+    and the last 21 percent of the pixels (s1, s2, s3, and s4).
+
+    """
+    # get a telluric standard model
+    wavelow               = telluric_data.wave[0]  - 50
+    wavehigh              = telluric_data.wave[-1] + 50
+    modelwave, modelflux  = InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
+    #modelflux           **= alpha
+
+    # define three piece-wise slices to model the fringe pattern (wavelength-dependent wave number k)
+    s1, s2, s3, s4 = 0, int(len(modelflux)*0.29), -int(len(modelflux)*0.21), -1
+
+    # apply fringe correction
+    modelflux[s1:s2] = modelflux[s1:s2]*(1+smart.double_sine(wave=modelwave[s1:s2], a1=a1_1, k1=k1_1, p1=p1_1, a2=a2_1, k2=k2_1, p2=p2_1))
+    modelflux[s2:s3] = modelflux[s2:s3]*(1+smart.double_sine(wave=modelwave[s2:s3], a1=a1_2, k1=k1_2, p1=p1_2, a2=a2_2, k2=k2_2, p2=p2_2))
+    modelflux[s3:s4] = modelflux[s3:s4]*(1+smart.double_sine(wave=modelwave[s3:s4], a1=a1_3, k1=k1_3, p1=p1_3, a2=a2_3, k2=k2_3, p2=p2_3))
+
+    # lsf
+    modelflux             = smart.broaden(wave=modelwave, flux=modelflux, vbroad=lsf, rotate=False, gaussian=True)
+    # resample
+    modelflux             = np.array(smart.integralResample(xh=modelwave, yh=modelflux, xl=telluric_data.wave))
+    modelwave             = telluric_data.wave
+    telluric_model        = smart.Model()
+    telluric_model.flux   = modelflux
+    telluric_model.wave   = modelwave
+
+    return telluric_model
+
+def convolveTelluricFringe(lsf, airmass, pwv, telluric_data, 
+    a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
+    a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 
+    a1_3, k1_3, p1_3, a2_3, k2_3, p2_3):
+    """
+    Return a convolved, normalized telluric transmission model given a telluric data and lsf.
+
+    The telluric model is dependent on airmass and precipitable water vapor (pwv), and a fringe model
+    as a function of wavelength dependent fringe amplitude, wave number, and phase (mostly constant).
+
+    The wavelength dependent fringe model is approximately three chunks, currently set as the first 29 percent 
+    and the last 21 percent of the pixels (s1, s2, s3, and s4).
+
+    """
+    # get a telluric standard model
+    wavelow               = telluric_data.wave[0]  - 50
+    wavehigh              = telluric_data.wave[-1] + 50
+    modelwave, modelflux  = InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
+    #modelflux           **= alpha
+
+    # define three piece-wise slices to model the fringe pattern (wavelength-dependent wave number k)
+    s1, s2, s3, s4 = 0, int(len(modelflux)*0.29), -int(len(modelflux)*0.21), -1
+
+    # apply fringe correction
+    modelflux[s1:s2] = modelflux[s1:s2]*(1+smart.double_sine(wave=modelwave[s1:s2], a1=a1_1, k1=k1_1, p1=p1_1, a2=a2_1, k2=k2_1, p2=p2_1))
+    modelflux[s2:s3] = modelflux[s2:s3]*(1+smart.double_sine(wave=modelwave[s2:s3], a1=a1_2, k1=k1_2, p1=p1_2, a2=a2_2, k2=k2_2, p2=p2_2))
+    modelflux[s3:s4] = modelflux[s3:s4]*(1+smart.double_sine(wave=modelwave[s3:s4], a1=a1_3, k1=k1_3, p1=p1_3, a2=a2_3, k2=k2_3, p2=p2_3))
+
+    # lsf
+    modelflux             = smart.broaden(wave=modelwave, flux=modelflux, vbroad=lsf, rotate=False, gaussian=True)
+    # resample
+    modelflux             = np.array(smart.integralResample(xh=modelwave, yh=modelflux, xl=telluric_data.wave))
+    modelwave             = telluric_data.wave
+    telluric_model        = smart.Model()
+    telluric_model.flux   = modelflux
+    telluric_model.wave   = modelwave
+
+    return telluric_model
+
+
+def makeTelluricModelFringe(lsf, airmass, pwv, flux_offset, wave_offset, 
+    a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
+    a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 
+    a1_3, k1_3, p1_3, a2_3, k2_3, p2_3,
+    data, deg=2, niter=None):
+    """
+    Make a continuum-corrected telluric model as a function of LSF, airmass, pwv, and flux and wavelength offsets.
+
+    The model assumes a second-order polynomail for the continuum.
+    """
+    data2               = copy.deepcopy(data)
+    data2.wave          = data2.wave + wave_offset
+    #telluric_model      = convolveTelluric(lsf, airmass, pwv, data2)
+    # three piece-wise slices to model the fringe pattern (wavelength-dependent wave number k)
+    telluric_model      = convolveTelluricFringe(   lsf, airmass, pwv, data2, 
+                                                    a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 
+                                                    a1_2, k1_2, p1_2, a2_2, k2_2, p2_2, 
+                                                    a1_3, k1_3, p1_3, a2_3, k2_3, p2_3)
+
+    model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
+
+    if niter is not None:
+        for i in range(niter):
+            model               = smart.continuum(data=data2, mdl=model, deg=deg)
+    
+    model.flux         += flux_offset
+
+    return model
+
+#### Wavelength dependent amplitude and wavenumber implementation
+
+def convolveTelluricFringeWaveDependent(lsf, airmass, pwv, telluric_data, 
+    a1_1, a1_0, k1_1, k1_0, p1, a2_1, a2_0, k2_2, k2_1, k2_0, p2):
+    """
+    Return a convolved, normalized telluric transmission model given a telluric data and lsf.
+
+    The telluric model is dependent on airmass and precipitable water vapor (pwv), and a fringe model
+    as a function of wavelength dependent fringe amplitude, wave number, and phase (mostly constant).
+
+    Amplitudes "a1" and "a2" are modeled as a linear function of wavelength. 
+    The wavenumbers "k1" (~2.1 Angstrom) is best described as a lienar function and 
+    "k2" (~0.85 Angstrom) is best modeled as a second order polynomial.
+
+    """
+    # get a telluric standard model
+    wavelow               = telluric_data.wave[0]  - 50
+    wavehigh              = telluric_data.wave[-1] + 50
+    modelwave, modelflux  = InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
+    #modelflux           **= alpha
+
+    # apply fringe correction
+    modelflux             = modelflux * (1+smart.doub_sine_wave_dependent(wave=modelwave, a1_1=a1_1, a1_0=a1_0, k1_1=k1_1, k1_0=k1_0, p1=p1, 
+                                                                            a2_1=a2_1, a2_0=a2_0, k2_2=k2_2, k2_1=k2_1, k2_0=k2_0, p2=p2))
+
+    # lsf
+    modelflux             = smart.broaden(wave=modelwave, flux=modelflux, vbroad=lsf, rotate=False, gaussian=True)
+    # resample
+    modelflux             = np.array(smart.integralResample(xh=modelwave, yh=modelflux, xl=telluric_data.wave))
+    modelwave             = telluric_data.wave
+    telluric_model        = smart.Model()
+    telluric_model.flux   = modelflux
+    telluric_model.wave   = modelwave
+
+    return telluric_model
+
+def makeTelluricModelFringeWaveDependent(lsf, airmass, pwv, flux_offset, wave_offset, 
+    a1_1, a1_0, k1_1, k1_0, p1, a2_1, a2_0, k2_2, k2_1, k2_0, p2,
+    data, deg=2, niter=None):
+    """
+    Make a continuum-corrected telluric model as a function of LSF, airmass, pwv, and flux and wavelength offsets.
+
+    The model assumes a second-order polynomail for the continuum.
+    """
+    data2               = copy.deepcopy(data)
+    data2.wave          = data2.wave + wave_offset
+    #telluric_model      = convolveTelluric(lsf, airmass, pwv, data2)
+    # apply fringe correction
+    telluric_model      = convolveTelluricFringeWaveDependent(   lsf, airmass, pwv, data2, 
+                                                    a1_1, a1_0, k1_1, k1_0, p1, a2_1, a2_0, k2_2, k2_1, k2_0, p2)
+
+    model               = smart.continuum(data=data2, mdl=telluric_model, deg=deg)
+
     if niter is not None:
         for i in range(niter):
             model               = smart.continuum(data=data2, mdl=model, deg=deg)
