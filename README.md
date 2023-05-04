@@ -22,8 +22,6 @@ Dependencies. The `SMART` has been tested under the following environments:
 * openpyxl 3.0.10
 * wavelets (for defringeflat)
 
-Please also cite [Carvalho & Johns-Krull (2023)](https://github.com/Adolfo1519/RotBroadInt) if you enable slow (but accurate) rotational broadening in the forward-modeling routine.
-
 Download the `SMART` and the forked and modified version of the NSDRP to your computer.
 
 There are two ways of setting up the code:
@@ -122,5 +120,10 @@ The required parameters order sorting filter `order`, data of observation `date_
 ## Citation:
 
 If you use this code in your research, please cite [Hsu et al. 2021; ApJS, 257, 45](https://ui.adsabs.harvard.edu/abs/2021ApJS..257...45H/abstract) and the frozen version is on [Hsu et al. 2021 Zenodo](https://ui.adsabs.harvard.edu/abs/2021zndo...4765258H/abstract)
+
+Depending on which model sets you choose, please also cite the corresponding references listed under [here](https://github.com/chihchunhsu/smart/tree/main/smart/libraries).
+
+Please also cite [Carvalho & Johns-Krull (2023)](https://github.com/Adolfo1519/RotBroadInt) if you enable slow (but accurate) rotational broadening in the forward-modeling routine.
+
 
 
