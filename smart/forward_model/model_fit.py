@@ -38,6 +38,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	instrument   = kwargs.get('instrument', 'nirspec')
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
+	flux_mult    = kwargs.get('flux_mult', 0)   # instrumental LSF
 	include_fringe_model = kwargs.get('include_fringe_model', False)
 
 	if instrument == 'apogee':
@@ -96,11 +97,22 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	
 	elif data is None and instrument in ['nirspec', 'hires']:
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
-	
+
+	else: # see if we have a model anyways
+		try:
+			model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
+		except:
+			print('No Model Available')
+	#print(teff, logg, metal, str(order), modelset, instrument)
+	#print(model.wave)
+	#print(model.flux)
+	#sys.exit()
+
 	# wavelength offset
 	#model.wave += wave_offset
 
 	# apply vsini
+	#print("TEST1", model.wave, model.flux)
 	model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vsini, rotate=True, gaussian=False)
 	
 	# apply rv (including the barycentric correction)
@@ -155,6 +167,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		# Remove the NANs
 		model.wave = model.wave[~np.isnan(model.flux)]
 		model.flux = model.flux[~np.isnan(model.flux)]
+	else:
+		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	if output_stellar_model:
 		stellar_model.flux = smart.broaden(wave=stellar_model.wave, flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
@@ -285,6 +299,21 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 			model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
 			model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
 
+		else: # Any other instrument
+
+			model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+			model.wave = data.wave
+
+			if output_stellar_model:
+				stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, yh=stellar_model.flux, xl=data.wave))
+				stellar_model.wave = data.wave
+				if binary:
+					model1.flux = np.array(smart.integralResample(xh=model1.wave, yh=model1.flux, xl=data.wave))
+					model1.wave = data.wave
+					model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
+					model2.wave = data.wave
+
+
 	if instrument in ['nirspec', 'hires']:
 		# flux offset
 		model.flux += flux_offset
@@ -293,6 +322,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 			if binary:
 				model2.flux += flux_offset
 	#model.flux **= (1 + flux_exponent_offset)
+	model.flux *= 10**flux_mult
 
 	if output_stellar_model:
 		if binary:

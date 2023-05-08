@@ -50,7 +50,7 @@ class Spectrum():
 	"""
 	def __init__(self, **kwargs):
 		self.instrument = kwargs.get('instrument','nirspec')
-		if self.instrument == 'nirspec':
+		if self.instrument.lower() == 'nirspec':
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
@@ -85,7 +85,7 @@ class Spectrum():
 			self.oriFlux  = hdulist[1].data
 			self.oriNoise = hdulist[2].data
 
-		elif self.instrument == 'apogee':
+		elif self.instrument.lower() == 'apogee':
 			self.name      = kwargs.get('name')
 			self.path      = kwargs.get('path')
 			self.datatype  = kwargs.get('datatype','aspcap')
@@ -95,7 +95,7 @@ class Spectrum():
 
 			hdulist        = fits.open(self.path)
 			
-			if self.datatype == 'aspcap':
+			if self.datatype.lower() == 'aspcap':
 				crval1         = hdulist[1].header['CRVAL1']
 				cdelt1         = hdulist[1].header['CDELT1']
 				naxis1         = hdulist[1].header['NAXIS1']
@@ -107,7 +107,7 @@ class Spectrum():
 				self.noise     = np.array(hdulist[2].data)
 
 			
-			elif self.datatype == 'ap1d':
+			elif self.datatype.lower() == 'ap1d':
 				self.header4   = hdulist[4].header
 				self.header5   = hdulist[5].header
 				# use aspcap data as wavelength calibrators
@@ -119,7 +119,7 @@ class Spectrum():
 				self.oriFlux  = np.array(hdulist[1].data)
 				self.oriNoise = np.array(hdulist[2].data)
 			
-			elif self.datatype == 'apvisit':
+			elif self.datatype.lower() == 'apvisit':
 				self.header1   = hdulist[1].header
 				self.header2   = hdulist[2].header
 				self.header3   = hdulist[3].header
@@ -136,7 +136,7 @@ class Spectrum():
 
 				#import bitmask
 				# chip a
-				if self.chip == 'all' or self.chip == 'a':
+				if self.chip.lower() == 'all' or self.chip.lower() == 'a':
 					mask_0 = []
 					for i in range(len(hdulist[3].data[0])):
 						bitmask = smart.bits_set(hdulist[3].data[0][i])
@@ -146,7 +146,7 @@ class Spectrum():
 							mask_0.append(i)
 				
 				# chip b
-				if self.chip == 'all' or self.chip == 'b':
+				if self.chip.lower() == 'all' or self.chip.lower() == 'b':
 					mask_1 = []
 					for i in range(len(hdulist[3].data[1])):
 						bitmask = smart.bits_set(hdulist[3].data[1][i])
@@ -156,7 +156,7 @@ class Spectrum():
 							mask_1.append(i)
 				
 				# chip c
-				if self.chip == 'all' or self.chip == 'c':
+				if self.chip.lower() == 'all' or self.chip.lower() == 'c':
 					mask_2 = []
 					for i in range(len(hdulist[3].data[2])):
 						bitmask = smart.bits_set(hdulist[3].data[2][i])
@@ -166,7 +166,7 @@ class Spectrum():
 							mask_2.append(i)
 
 
-				if self.chip == 'all':
+				if self.chip.lower() == 'all':
 					self.wave      = np.array(list(np.delete(hdulist[4].data[0], mask_0))+list(np.delete(hdulist[4].data[1], mask_1))+list(np.delete(hdulist[4].data[2], mask_2)))
 					self.flux      = np.array(list(np.delete(hdulist[1].data[0], mask_0))+list(np.delete(hdulist[1].data[1], mask_1))+list(np.delete(hdulist[1].data[2], mask_2)))
 					self.noise     = np.array(list(np.delete(hdulist[2].data[0], mask_0))+list(np.delete(hdulist[2].data[1], mask_1))+list(np.delete(hdulist[2].data[2], mask_2)))
@@ -180,7 +180,7 @@ class Spectrum():
 					self.oriFlux   = np.array(list(hdulist[1].data[0])+list(hdulist[1].data[1])+list(hdulist[1].data[2]))
 					self.oriNoise  = np.array(list(hdulist[2].data[0])+list(hdulist[2].data[1])+list(hdulist[2].data[2]))
 
-				elif self.chip == 'a':
+				elif self.chip.lower() == 'a':
 					self.wave      = np.array(list(np.delete(hdulist[4].data[0], mask_0)))
 					self.flux      = np.array(list(np.delete(hdulist[1].data[0], mask_0)))
 					self.noise     = np.array(list(np.delete(hdulist[2].data[0], mask_0)))
@@ -194,7 +194,7 @@ class Spectrum():
 					self.oriFlux   = np.array(list(hdulist[1].data[0]))
 					self.oriNoise  = np.array(list(hdulist[2].data[0]))
 
-				elif self.chip == 'b':
+				elif self.chip.lower() == 'b':
 					self.wave      = np.array(list(np.delete(hdulist[4].data[1], mask_1)))
 					self.flux      = np.array(list(np.delete(hdulist[1].data[1], mask_1)))
 					self.noise     = np.array(list(np.delete(hdulist[2].data[1], mask_1)))
@@ -208,7 +208,7 @@ class Spectrum():
 					self.oriFlux   = np.array(list(hdulist[1].data[1]))
 					self.oriNoise  = np.array(list(hdulist[2].data[1]))
 
-				elif self.chip == 'c':
+				elif self.chip.lower() == 'c':
 					self.wave      = np.array(list(np.delete(hdulist[4].data[2], mask_2)))
 					self.flux      = np.array(list(np.delete(hdulist[1].data[2], mask_2)))
 					self.noise     = np.array(list(np.delete(hdulist[2].data[2], mask_2)))
@@ -248,7 +248,7 @@ class Spectrum():
 				## APOGEE APVISIT has corrected the telluric absorption; the forward-modeling routine needs to put it back
 				#self.flux     *= self.tell
 
-			elif self.datatype == 'apstar':
+			elif self.datatype.lower() == 'apstar':
 				# see the description of the data model: 
 				# https://data.sdss.org/datamodel/files/APOGEE_REDUX/APRED_VERS/APSTAR_VERS-DR14/TELESCOPE/LOCATION_ID/apStar.html
 				crval1         = hdulist[0].header['CRVAL1']
@@ -306,7 +306,7 @@ class Spectrum():
 			self.model    = np.array(hdulist[3].data)
 			self.mask     = []
 
-		elif self.instrument == 'igrins':
+		elif self.instrument.lower() == 'igrins':
 			"""
 			Follow the IGRINS PIP data product convention; default is to read the flattened spectra
 			
@@ -363,7 +363,7 @@ class Spectrum():
 			# define a list for storing the best wavelength shift
 			self.bestshift = []
 
-		elif self.instrument == 'hires':
+		elif self.instrument.lower() == 'hires':
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
@@ -391,6 +391,36 @@ class Spectrum():
 			self.oriNoise = hdulist[2].data
 			self.mask     = []
 
+		elif self.instrument.lower() == 'jwst_nirspec': 
+			print('IT IS JWST NIRSPEC')
+			self.name      = kwargs.get('name')
+			self.order     = kwargs.get('order')
+			self.path      = kwargs.get('path')
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
+			#self.manaulmask = kwargs('manaulmask', False)
+
+			#if self.path == None:
+		#		self.path = './'
+
+			#fullpath = self.path + '/' + self.name + '_' + str(self.order) + '_all.fits'
+
+			#hdulist = fits.open(fullpath, ignore_missing_end=True)
+
+			# correct back the MAKEE computed heliocentric velocity scale factor (hvsf)
+			#from smart.utils import hires_tool
+			#hvsf = hires_tool.get_hvsf(float(hdulist[0].header['HELIOVEL']))
+
+			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
+			#self.header   = hdulist[0].header
+			self.wave     = kwargs.get('wave')
+			self.flux     = kwargs.get('flux')
+			self.noise    = kwargs.get('noise')
+			#self.oriWave  = hdulist[0].data/hvsf # correct for hvsf
+			#self.oriFlux  = hdulist[1].data
+			#self.oriNoise = hdulist[2].data
+			self.mask     = []
+
+
 		if self.apply_sigma_mask:
 			# set up masking criteria
 			self.avgFlux = np.mean(self.flux)
@@ -403,14 +433,14 @@ class Spectrum():
 		
 			self.mask  = np.where(np.abs(self.flux - self.avgFlux ) >= 3. * self.stdFlux)[0]
 
-			if self.instrument == 'apogee':
+			if self.instrument.lower() == 'apogee':
 				noise_median = np.median(self.noise)
 				self.mask = np.union1d(self.mask, np.where(self.noise >= 3. * noise_median)[0])
 			self.wave  = np.delete(self.wave, self.mask)
 			self.flux  = np.delete(self.flux, self.mask)
 			self.noise = np.delete(self.noise, self.mask)
 			
-			if self.instrument == 'nirspec':
+			if self.instrument.lower() == 'nirspec':
 				self.sky   = np.delete(self.sky, self.mask)
 
 	def mask_custom(self, custom_mask):
@@ -420,9 +450,9 @@ class Spectrum():
 		## combine the list and remove the duplicates
 		self.mask  =  list(set().union(self.mask, custom_mask))
 
-		self.wave  = np.delete(self.oriWave, list(self.mask))
-		self.flux  = np.delete(self.oriFlux, list(self.mask))
-		self.noise = np.delete(self.oriNoise, list(self.mask))
+		self.wave  = np.delete(self.wave, list(self.mask))
+		self.flux  = np.delete(self.flux, list(self.mask))
+		self.noise = np.delete(self.noise, list(self.mask))
 
 		return self
 
