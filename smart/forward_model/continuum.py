@@ -35,7 +35,7 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     #print('model wave:', type(mdl.wave), mdl.wave[-1])
     #print(data.wave)
     #print(mdl.wave)
-    if data.instrument in ['nirspec', 'hires', 'igrins']:
+    if data.instrument in ['nirspec', 'hires', 'igrins', 'kpic']:
         mdl_range      = np.where((mdl.wave >= data.wave[0]) & (mdl.wave <= data.wave[-1]))
         mdl_wave       = mdl.wave[mdl_range]
         mdl_flux       = mdl.flux[mdl_range]
@@ -67,7 +67,7 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     std_mdldiv      = np.std(mdldiv)
     
     ## replace outliers with average value for nirspec
-    if data.instrument in ['nirspec', 'hires']:
+    if data.instrument in ['nirspec', 'hires', 'kpic']:
         mdldiv[mdldiv  <= mean_mdldiv - 2 * std_mdldiv] = mean_mdldiv
         mdldiv[mdldiv  >= mean_mdldiv + 2 * std_mdldiv] = mean_mdldiv
         try:
@@ -408,7 +408,8 @@ def continuumTelluric(data, model=None):
     else:
         # this second order polynomial continnum correction 
         # works for the O33, O34, O36, and O37
-        popt, pcov = curve_fit(_continuumFit, data.wave, data.flux)
+        idx = np.isfinite(data.wave) & np.isfinite(data.flux)
+        popt, pcov = curve_fit(_continuumFit, data.wave[idx], data.flux[idx])
         const      = np.mean(data.flux/_continuumFit(data.wave, *popt)) - np.mean(model.flux)
         if data.order == 57: const = 0
         data.flux  = data.flux/_continuumFit(data.wave, *popt) - const

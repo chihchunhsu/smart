@@ -93,7 +93,7 @@ parser.add_argument("-pixel_end",type=int,
 #parser.add_argument("-alpha_tell",type=float,
 #    default=1.0, help="telluric alpha; default 1.0")
 
-parser.add_argument("-applymask",type=bool,
+parser.add_argument("-apply_sigma_mask",type=bool,
     default=False, help="apply a simple mask based on the STD of the average flux; default is False")
 
 parser.add_argument("-plot_show",type=bool,
@@ -129,7 +129,7 @@ lsf                    = float(args.lsf[0])
 ndim, nwalkers, step   = int(args.ndim), int(args.nwalkers), int(args.step)
 burn                   = int(args.burn)
 moves                  = float(args.moves)
-applymask              = args.applymask
+apply_sigma_mask              = args.apply_sigma_mask
 pixel_start, pixel_end = int(args.pixel_start), int(args.pixel_end)
 #pwv                    = float(args.pwv)
 #alpha_tell             = float(args.alpha_tell[0])
@@ -154,17 +154,19 @@ dt_string = now.strftime("%H:%M:%S")
 
 #####################################
 
-data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
+data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask, instrument=instrument)
 
 if instrument != 'hires':
 	tell_data_name2 = tell_data_name + '_calibrated'
-	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument)
+	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, apply_sigma_mask=apply_sigma_mask, instrument=instrument)
 
-	data.updateWaveSol(tell_sp)
+	# TBD if the improved wavecal for KPIC data is possible
+	if instrument != 'kpic':
+		data.updateWaveSol(tell_sp)
 
 # MJD for logging
 # upgraded NIRSPEC
-if instrument == 'nirspec':
+if instrument in ['nirspec', 'kpic']:
 	if len(data.oriWave) == 2048:
 		mjd = data.header['MJD']
 	# old NIRSPEC
@@ -179,7 +181,7 @@ if coadd:
 	if not os.path.exists(save_to_path):
 		os.makedirs(save_to_path)
 	data1       = copy.deepcopy(data)
-	data2       = smart.Spectrum(name=sci_data_name2, order=order, path=data_path, applymask=applymask)
+	data2       = smart.Spectrum(name=sci_data_name2, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask)
 	data.coadd(data2, method='pixel')
 
 	plt.figure(figsize=(16,6))
@@ -271,7 +273,9 @@ data          = copy.deepcopy(sci_data)
 
 if instrument != 'hires':
 	tell_sp       = copy.deepcopy(tell_data)
-	data.updateWaveSol(tell_sp)
+	
+	if instrument != 'kpic':
+		data.updateWaveSol(tell_sp)
 
 # barycentric corrction
 #barycorr      = smart.barycorr(data.header).value
@@ -279,7 +283,7 @@ if instrument != 'hires':
 
 ## read the input custom mask and priors
 lines          = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
-if instrument == 'nirspec':
+if instrument in ['nirspec', 'kpic']:
 	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[6].split('priors ')[1])
 	barycorr       = json.loads(lines[13].split('barycorr')[1])
@@ -291,6 +295,9 @@ elif instrument == 'hires':
 # no logg 5.5 for teff lower than 900
 if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
 else: logg_max = 5.5
+
+## apply a custom mask
+data.mask_custom(custom_mask=custom_mask)
 
 # limit of the flux nuisance parameter: 5 percent of the median flux
 A_const       = 0.05 * abs(np.median(data.flux))
@@ -355,9 +362,6 @@ if data.instrument == 'hires':
 if final_mcmc:
 	limits['rv_min'] = priors['rv_min'] - 10
 	limits['rv_max'] = priors['rv_max'] + 10
-
-## apply a custom mask
-data.mask_custom(custom_mask=custom_mask)
 
 ## add a pixel label for plotting
 length1     = len(data.oriWave)
@@ -480,11 +484,10 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 					priors['A_min']     + (priors['A_max']      - priors['A_min'])     * np.random.uniform(),
 					priors['B_min']     + (priors['B_max']      - priors['B_min'])     * np.random.uniform(),
 					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform()]) for i in range(nwalkers)]
-
 ## multiprocessing
 
 with Pool() as pool:
-	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
+	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
 			moves=emcee.moves.KDEMove())
 	time1 = time.time()

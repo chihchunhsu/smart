@@ -41,6 +41,9 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	include_fringe_model = kwargs.get('include_fringe_model', False)
 	slow_rotation_broaden = kwargs.get('slow_rotation_broaden', False)
 
+	if instrument == 'kpic':
+		instrument = 'nirspec' # dirty fix
+
 	if instrument == 'apogee':
 		try:
 			import apogee_tools as ap
@@ -200,7 +203,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 					model2.wave = data.wave
 
 		# contunuum correction
-		if data.instrument in ['nirspec', 'hires', 'igrins']:
+		if data.instrument in ['nirspec', 'hires', 'igrins', 'kpic']:
 			niter = 5 # continuum iteration
 			if output_stellar_model:
 				model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)

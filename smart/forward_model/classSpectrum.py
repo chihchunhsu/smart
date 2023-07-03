@@ -50,7 +50,7 @@ class Spectrum():
 	"""
 	def __init__(self, **kwargs):
 		self.instrument = kwargs.get('instrument','nirspec')
-		if self.instrument == 'nirspec':
+		if (self.instrument == 'nirspec') or (self.instrument == 'kpic'):
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
@@ -69,11 +69,12 @@ class Spectrum():
 			self.wave   = hdulist[0].data
 			self.flux   = hdulist[1].data
 			self.noise  = hdulist[2].data
-			try:
-				self.sky = hdulist[3].data
-			except IndexError:
-				print("No sky line data.")
-				self.sky = np.zeros(self.wave.shape)
+			if self.instrument == 'nirspec':
+				try:
+					self.sky = hdulist[3].data
+				except IndexError:
+					print("No sky line data.")
+					self.sky = np.zeros(self.wave.shape)
 
 			self.mask  = []
 
