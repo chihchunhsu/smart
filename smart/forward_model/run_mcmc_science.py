@@ -302,6 +302,12 @@ data.mask_custom(custom_mask=custom_mask)
 # limit of the flux nuisance parameter: 5 percent of the median flux
 A_const       = 0.05 * abs(np.median(data.flux))
 
+# KPIC DRP has underestimated noise (no read/dark current noise)
+if instrument == 'kpic':
+	N_max = 20.0
+else:
+	N_max = 5.0
+
 if modelset == 'btsettl08':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,500), 'teff_max':min(priors['teff_max']+300,3500),
@@ -312,7 +318,7 @@ if modelset == 'btsettl08':
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,                              	'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.0 				
+						'N_min':0.10,                               'N_max':N_max 				
 					}
 
 elif modelset == 'sonora':
@@ -325,7 +331,7 @@ elif modelset == 'sonora':
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,                              	'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.0 				
+						'N_min':0.10,                               'N_max':N_max 				
 					}
 
 elif modelset == 'phoenixaces':
@@ -338,7 +344,7 @@ elif modelset == 'phoenixaces':
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,								'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.50 				
+						'N_min':0.10,                               'N_max':N_max 				
 					}
 
 elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
@@ -351,7 +357,7 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,								'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.50 				
+						'N_min':0.10,                               'N_max':N_max				
 					}
 
 # HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter

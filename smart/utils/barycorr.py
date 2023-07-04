@@ -43,7 +43,7 @@ def barycorr(header, instrument='nirspec'):
 
 	"""
 	print(instrument)
-	if (instrument == 'nirspec') or (instrument == 'hires'):
+	if (instrument == 'nirspec') or (instrument == 'hires') or (instrument == 'kpic'):
 		longitude = 360 - (155 + 28.7/60 ) # degrees
 		latitude  = 19 + 49.7/60 #degrees
 		altitude  = 4160.
