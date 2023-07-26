@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 import scipy.signal as signal
 from scipy.interpolate import interp1d
 import pandas as pd
@@ -39,6 +40,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
 	flux_mult    = kwargs.get('flux_mult', 0)   # instrumental LSF
+	smooth       = kwargs.get('smooth', False)   # smooth the spectrum, either with a defined kernel or an optional one []
 	include_fringe_model = kwargs.get('include_fringe_model', False)
 
 	if instrument == 'apogee':
@@ -313,6 +315,36 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 					model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
 					model2.wave = data.wave
 
+
+	if smooth:
+		
+		smoothfluxmed = sp.ndimage.filters.uniform_filter(model.flux, size=80) # smooth by this many spectral bins
+		model.flux   -= smoothfluxmed
+		'''
+		import scipy.signal as signal
+		def butter_highpass(cutoff, fs, btype, order=5):
+		    nyq = 0.5 * fs
+		    normal_cutoff = cutoff / nyq
+		    b, a = signal.butter(order, normal_cutoff, btype=btype, analog=False)
+		    return b, a
+
+		def butter_highpass_filter(data, cutoff, fs, btype, order=5):
+		    b, a = butter_highpass(cutoff, fs, btype, order=order)
+		    y = signal.filtfilt(b, a, data)
+		    return y
+
+
+		cutoff = 10e-3
+		fs = 2
+		# saavif, saavipsd = signal.welch(model.flux, fs, nperseg=2**12)
+		# plt.loglog(saavif, saavipsd)
+
+		model.flux = butter_highpass_filter(model.flux, cutoff, fs, ‘high’, order=5)	
+		# saavif, saavipsd = signal.welch(model.flux, fs, nperseg=2**12)
+		# plt.loglog(saavif, saavipsd)
+		# plt.plot(model.flux)
+		# plt.show()
+		'''
 
 	if instrument in ['nirspec', 'hires']:
 		# flux offset
