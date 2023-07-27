@@ -517,7 +517,7 @@ plt.close()
 
 snr_tell = np.nanmedian(tell_sp.flux/tell_sp.noise)
 
-cat = pd.DataFrame({'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
+cat = pd.DataFrame({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
 					'tell_mask':custom_mask, 'order':order, 'mjd_tell':mjd, 
 					'ndim_tell':ndim, 'nwalker_tell':nwalkers, 'step_tell':step, 'burn_tell':burn,
 					'pixel_start_tell':pixel_start, 'pixel_end_tell':pixel_end,

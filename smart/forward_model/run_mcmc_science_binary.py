@@ -892,7 +892,7 @@ if instrument == 'nirspec':
 elif instrument == 'hires':
 	wave_cal_err = np.nan
 
-cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
+cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
 					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':custom_mask,
 					'order':order,'coadd':coadd,'mjd':mjd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
