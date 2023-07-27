@@ -574,17 +574,17 @@ plt.close()
 
 """
 # excel summary file
-cat = pd.DataFrame(columns=[	'date_obs', 'tell_name', 'tell_path', 'snr_tell', 'tell_mask', 'order',
-								'mjd_tell', 'ndim_tell', 'nwalker_tell', 'step_tell', 'burn_tell', 
-								'pixel_start_tell', 'pixel_end_tell',
-								'lsf_tell', 'lsf_tell_ue', 'lsf_tell_le', 
-								'am_tell', 'am_tell_ue', 'am_tell_le', 
-								'pwv_tell', 'pwv_tell_ue', 'pwv_tell_le',
-								'A_tell', 'A_tell_ue', 'A_tell_le', 'B_tell', 'B_tell_ue', 'B_tell_le'])
+#cat = pd.DataFrame(columns=[	'date_obs', 'tell_name', 'tell_path', 'snr_tell', 'tell_mask', 'order',
+#								'mjd_tell', 'ndim_tell', 'nwalker_tell', 'step_tell', 'burn_tell', 
+#								'pixel_start_tell', 'pixel_end_tell',
+#								'lsf_tell', 'lsf_tell_ue', 'lsf_tell_le', 
+#								'am_tell', 'am_tell_ue', 'am_tell_le', 
+#								'pwv_tell', 'pwv_tell_ue', 'pwv_tell_le',
+#								'A_tell', 'A_tell_ue', 'A_tell_le', 'B_tell', 'B_tell_ue', 'B_tell_le'])
 
 snr_tell = np.nanmedian(tell_sp.flux/tell_sp.noise)
 
-cat = cat.append({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
+cat = pd.DataFrame(({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
 					'tell_mask':custom_mask, 'order':order, 'mjd_tell':mjd, 
 					'ndim_tell':ndim, 'nwalker_tell':nwalkers, 'step_tell':step, 'burn_tell':burn,
 					'pixel_start_tell':pixel_start, 'pixel_end_tell':pixel_end,
@@ -592,7 +592,7 @@ cat = cat.append({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':
 					'am_tell':airmass_mcmc[0], 'am_tell_ue':airmass_mcmc[1], 'am_tell_le':airmass_mcmc[2], 
 					'pwv_tell':pwv_mcmc[0], 'pwv_tell_ue':pwv_mcmc[1], 'pwv_tell_le':pwv_mcmc[2],
 					'A_tell':A_mcmc[0], 'A_tell_ue':A_mcmc[1], 'A_tell_le':A_mcmc[2], 
-					'B_tell':B_mcmc[0], 'B_tell_ue':B_mcmc[1], 'B_tell_le':B_mcmc[2]}, ignore_index=True)
+					'B_tell':B_mcmc[0], 'B_tell_ue':B_mcmc[1], 'B_tell_le':B_mcmc[2]})
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 

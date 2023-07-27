@@ -872,19 +872,19 @@ file_log.close()
 
 
 # excel summary file
-cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
-							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
-							'barycorr','modelset','priors','limits','ndim','nwalkers','step','burn',
-							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
-							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
-							'rv2','e_rv2','ue_rv2','le_rv2','vsini2','e_vsini2','ue_vsini2','le_vsini2',
-							'teff2','e_teff2','ue_teff2','le_teff2','logg2','e_logg2','ue_logg2','le_logg2',
-							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
-							'cflux','e_cflux','ue_cflux','le_cflux','cwave','e_cwave','ue_cwave','le_cwave',
-							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
-							'flux_scale','e_flux_scale','ue_flux_scale','le_flux_scale',
-							'wave_cal_err','chi2','dof','acceptance_fraction','autocorr_time'])
-
+#cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
+#							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
+#							'barycorr','modelset','priors','limits','ndim','nwalkers','step','burn',
+#							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
+#							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
+#							'rv2','e_rv2','ue_rv2','le_rv2','vsini2','e_vsini2','ue_vsini2','le_vsini2',
+#							'teff2','e_teff2','ue_teff2','le_teff2','logg2','e_logg2','ue_logg2','le_logg2',
+#							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
+#							'cflux','e_cflux','ue_cflux','le_cflux','cwave','e_cwave','ue_cwave','le_cwave',
+#							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
+#							'flux_scale','e_flux_scale','ue_flux_scale','le_flux_scale',
+#							'wave_cal_err','chi2','dof','acceptance_fraction','autocorr_time'])
+#
 
 med_snr      = np.nanmedian(data.flux/data.noise)
 if instrument == 'nirspec':
@@ -912,7 +912,7 @@ cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tel
 					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2],
 					'flux_scale':flux_scale_mcmc[0],'e_flux_scale':max(flux_scale_mcmc[1], flux_scale_mcmc[2]),'ue_flux_scale':flux_scale_mcmc[1],'le_flux_scale':flux_scale_mcmc[2],
 					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
-					'wave_cal_err':wave_cal_err, }, ignore_index=True)
+					'wave_cal_err':wave_cal_err, })
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 

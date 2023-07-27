@@ -697,22 +697,22 @@ if plot_show:
 plt.close()
 
 # excel summary file
-cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
-							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
-							'barycorr','modelset','priors','limits','ndim','nwalkers','step','burn',
-							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
-							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
-							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
-							'cflux','e_cflux','ue_cflux','le_cflux',
-							'cwave','e_cwave','ue_cwave','le_cwave',
-							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
-							'wave_cal_err'])
+#cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
+#							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
+#							'barycorr','modelset','priors','limits','ndim','nwalkers','step','burn',
+#							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
+#							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
+#							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
+#							'cflux','e_cflux','ue_cflux','le_cflux',
+#							'cwave','e_cwave','ue_cwave','le_cwave',
+#							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
+#							'wave_cal_err'])
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
 wave_cal_err = tell_sp.header['STD']
 
-cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
+cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
 					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':custom_mask,
 					'order':order,'coadd':coadd,'mjd':mjd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
@@ -727,7 +727,7 @@ cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tel
 					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
 					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2], 
 					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
-					'wave_cal_err':wave_cal_err}, ignore_index=True)
+					'wave_cal_err':wave_cal_err})
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 
