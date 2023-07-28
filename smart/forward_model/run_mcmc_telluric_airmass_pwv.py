@@ -477,15 +477,15 @@ plt.close()
 
 snr_tell = np.nanmedian(tell_sp.flux/tell_sp.noise)
 
-cat = pd.DataFrame({	'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
-					'tell_mask':custom_mask, 'order':order, 'mjd_tell':mjd, 
+cat = pd.DataFrame({'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path':tell_path, 'snr_tell':snr_tell,
+					'tell_mask':str(custom_mask), 'order':order, 'mjd_tell':mjd, 
 					'ndim_tell':ndim, 'nwalker_tell':nwalkers, 'step_tell':step, 'burn_tell':burn,
 					'pixel_start_tell':pixel_start, 'pixel_end_tell':pixel_end,
 					'lsf_tell':lsf_mcmc[0], 'lsf_tell_ue':lsf_mcmc[1], 'lsf_tell_le':lsf_mcmc[2], 
 					'am_tell':airmass_mcmc[0], 'am_tell_ue':airmass_mcmc[1], 'am_tell_le':airmass_mcmc[2], 
 					'pwv_tell':pwv_mcmc[0], 'pwv_tell_ue':pwv_mcmc[1], 'pwv_tell_le':pwv_mcmc[2],
 					'A_tell':A_mcmc[0], 'A_tell_ue':A_mcmc[1], 'A_tell_le':A_mcmc[2], 
-					'B_tell':B_mcmc[0], 'B_tell_ue':B_mcmc[1], 'B_tell_le':B_mcmc[2]})
+					'B_tell':B_mcmc[0], 'B_tell_ue':B_mcmc[1], 'B_tell_le':B_mcmc[2]}, index=[0])
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 

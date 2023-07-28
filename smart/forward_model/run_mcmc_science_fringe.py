@@ -803,9 +803,9 @@ wave_cal_err = tell_sp.header['STD']
 
 cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
-					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':custom_mask,
+					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':str(custom_mask),
 					'order':order,'coadd':coadd,'mjd':mjd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
-					'modelset':modelset, 'priors':priors, 'limits':limits, 
+					'modelset':modelset, 'priors':str(priors), 'limits':str(limits), 
 					'ndim':ndim, 'nwalkers':nwalkers,'step':step, 'burn':burn,
 					'rv':rv_mcmc[0]+barycorr, 'e_rv':max(rv_mcmc[1], rv_mcmc[2]), 'ue_rv':rv_mcmc[1], 'le_rv':rv_mcmc[2],
 					'vsini':vsini_mcmc[0], 'e_vsini':max(vsini_mcmc[1], vsini_mcmc[2]), 'ue_vsini':vsini_mcmc[1], 'le_vsini':vsini_mcmc[2],
@@ -832,7 +832,7 @@ cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':te
 					'k1_4':k1_4_mcmc[0], 'e_k1_4':max(k1_4_mcmc[1], k1_4_mcmc[2]), 'ue_k1_4':k1_4_mcmc[1], 'le_k1_4':k1_4_mcmc[2], 
 					'a2_4':a2_4_mcmc[0], 'e_a2_4':max(a2_4_mcmc[1], a2_4_mcmc[2]), 'ue_a2_4':a2_4_mcmc[1], 'le_a2_4':a2_4_mcmc[2], 
 					'k2_4':k2_4_mcmc[0], 'e_k2_4':max(k2_4_mcmc[1], k2_4_mcmc[2]), 'ue_k2_4':k2_4_mcmc[1], 'le_k2_4':k2_4_mcmc[2], 
-					'wave_cal_err':wave_cal_err})
+					'wave_cal_err':wave_cal_err}, index=[0])
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 

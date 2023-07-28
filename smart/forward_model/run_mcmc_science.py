@@ -734,9 +734,9 @@ else:
 
 cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
-					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':custom_mask,
+					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':str(custom_mask),
 					'order':order,'coadd':coadd,'mjd':mjd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
-					'modelset':modelset, 'priors':priors, 'limits':limits, 
+					'modelset':modelset, 'priors':str(priors), 'limits':str(limits), 
 					'ndim':ndim, 'nwalkers':nwalkers,'step':step, 'burn':burn,
 					'rv':rv_mcmc[0]+barycorr, 'e_rv':max(rv_mcmc[1], rv_mcmc[2]), 'ue_rv':rv_mcmc[1], 'le_rv':rv_mcmc[2],
 					'vsini':vsini_mcmc[0], 'e_vsini':max(vsini_mcmc[1], vsini_mcmc[2]), 'ue_vsini':vsini_mcmc[1], 'le_vsini':vsini_mcmc[2],
@@ -747,7 +747,7 @@ cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':te
 					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
 					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2], 
 					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
-					'wave_cal_err':wave_cal_err, })
+					'wave_cal_err':wave_cal_err, }, index=[0])
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 
