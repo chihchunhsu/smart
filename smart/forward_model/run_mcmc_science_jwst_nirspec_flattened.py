@@ -9,6 +9,7 @@ from astropy.io import fits
 import emcee
 #from schwimmbad import MPIPool
 from multiprocessing import Pool
+from multiprocessing import set_start_method
 import smart
 import model_fit
 import mcmc_utils
@@ -180,12 +181,13 @@ flux  *= speedoflight.cgs / (wave.to(u.m) * wave.to(u.angstrom))
 noise *= speedoflight.cgs / (wave.to(u.m) * wave.to(u.angstrom)) 
 flux  = flux.to(u.erg/u.s/u.cm**2/u.angstrom)
 noise = noise.to(u.erg/u.s/u.cm**2/u.angstrom)
+'''
 print(wave)
 print(flux)
 print(noise)
-#plt.plot(wave, flux)
-#plt.show()
-
+plt.plot(wave, flux)
+plt.show()
+'''
 data        = smart.Spectrum(flux=flux.value, wave=wave.value, noise=noise.value, path=data_path, order=order, applymask=applymask, instrument=instrument)
 #data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
 
@@ -193,7 +195,7 @@ import scipy as sp
 smoothfluxmed = sp.ndimage.filters.uniform_filter(data.flux, size=80) # smooth by this many spectral bins
 
 data.flux   -= smoothfluxmed
-data.noise = 0.1*data.flux
+data.noise *= 0.1
 
 sci_data  = data
 
@@ -293,8 +295,8 @@ if 'btsettl08' in modelset.lower():
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-50,							    'A_max':-1,
 						'B_min':-50,                              	'B_max':50,
-						'N_min':0.10,                               'N_max':5.0,
-						'lsf_min':1,                                'lsf_max':50 				
+						'N_min':0.10,                               'N_max':10.0,
+						'lsf_min':1,                                'lsf_max':200 				
 					}
 
 elif modelset.lower() == 'phoenix-btsettl-cifist2011-2015':
@@ -305,10 +307,10 @@ elif modelset.lower() == 'phoenix-btsettl-cifist2011-2015':
 						'rv_min':-1000.0,                           'rv_max':1000.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-21,							    'A_max':-20,
+						'A_min':-50,							    'A_max':-1,
 						'B_min':-50,                              	'B_max':50,
-						'N_min':0.10,                               'N_max':50.0,
-						'lsf_min':1,                                'lsf_max':50 				
+						'N_min':0.10,                               'N_max':10.0,
+						'lsf_min':1,                                'lsf_max':200 				
 					}
 
 
@@ -322,8 +324,8 @@ elif 'sonora' in modelset.lower():
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-50,								'A_max':-1,
 						'B_min':-50,                              	'B_max':50,
-						'N_min':0.10,                               'N_max':5.0,
-						'lsf_min':1,                                'lsf_max':50 				
+						'N_min':0.10,                               'N_max':10.0,
+						'lsf_min':1,                                'lsf_max':200 				
 					}
 
 elif modelset.lower() == 'phoenixaces':
@@ -334,10 +336,10 @@ elif modelset.lower() == 'phoenixaces':
 						'rv_min':-1000.0,                           'rv_max':1000.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-A_const,							'A_max':A_const,
+						'A_min':-50,								'A_max':-1,
 						'B_min':-0.6,								'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.50, 	
-						'lsf_min':1,                                'lsf_max':50 				
+						'N_min':0.10,                               'N_max':10.0, 	
+						'lsf_min':1,                                'lsf_max':200 				
 					}
 
 
@@ -397,7 +399,7 @@ def lnlike(theta, data, lsf0):
 
 	## Parameters MCMC
 	#print('THETA:', theta)
-	teff, logg, rv, A, lsf = theta #N noise prefactor
+	teff, logg, rv, A, N, lsf = theta #N noise prefactor
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
 	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, rv=rv, flux_mult=A, #wave_offset=B, 
@@ -429,19 +431,21 @@ def lnlike(theta, data, lsf0):
 	plt.pause(0.1)
 	plt.close()
 	'''
-	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*(data.noise)**2)))
+	chi0 = -0.5 * np.sum( ( data.flux - model.flux )**2/(data.noise*N)**2 + np.log( (data.noise*N)**2) ) 
+	return chi0#-0.5 * (chisquare + np.sum(np.log(2*np.pi*(data.noise)**2)))
 
 def lnprior(theta, limits=limits):
 	"""
 	Specifies a flat prior
 	"""
 	## Parameters for theta
-	teff, logg, rv, A, lsf = theta
+	teff, logg, rv, A, N, lsf = theta
 
 	if  limits['teff_min']  < teff  < limits['teff_max'] \
 	and limits['logg_min']  < logg  < limits['logg_max'] \
 	and limits['rv_min']    < rv    < limits['rv_max']   \
 	and limits['A_min']     < A     < limits['A_max']\
+	and limits['N_min']     < N     < limits['N_max']\
 	and limits['lsf_min']   < lsf   < limits['lsf_max']:
 		return 0.0
 
@@ -463,20 +467,23 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 					priors['rv_min']    + (priors['rv_max']     - priors['rv_min']   ) * np.random.uniform(), 
 					priors['A_min']     + (priors['A_max']      - priors['A_min'])     * np.random.uniform(),
 					#priors['B_min']     + (priors['B_max']      - priors['B_min'])     * np.random.uniform(),
-					#priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform(),
+					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform(),
 					priors['lsf_min']   + (priors['lsf_max']    - priors['lsf_min'])   * np.random.uniform()
 					]) for i in range(nwalkers)]
 
 ## TEST
+
+print('Priors:',priors)
+print('Limits:',limits)
 '''
-print(priors)
 sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf0), a=moves, moves=emcee.moves.KDEMove())
 time1 = time.time()
 sampler.run_mcmc(pos, step, progress=True)
 time2 = time.time()
-'''
-## multiprocessing
 
+## multiprocessing
+'''
+set_start_method('fork')
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf0), a=moves, pool=pool,
@@ -508,6 +515,7 @@ ylabels = ["$T_{\mathrm{eff}} (K)$",
            "$\log{g}$(dex)",
            "$RV(km/s)$",
            "$C_{F_{\lambda}}$ (cnt/s)",
+           "$C_\mathrm{Noise}$",
            "LSF"
            ]
 
@@ -538,11 +546,11 @@ triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
-teff_mcmc, logg_mcmc, rv_mcmc, A_mcmc, lsf_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
+teff_mcmc, logg_mcmc, rv_mcmc, A_mcmc, N_mcmc, lsf_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
 
 
-print(teff_mcmc, logg_mcmc, rv_mcmc, A_mcmc, lsf_mcmc)
+print(teff_mcmc, logg_mcmc, rv_mcmc, A_mcmc, N_mcmc, lsf_mcmc)
 
 # add the summary to the txt file
 
@@ -558,7 +566,7 @@ file_log2.write("rv_mcmc {}\n".format(str(rv_mcmc[0]+barycorr)))
 #file_log2.write("pwv_mcmc {}\n".format(str(pwv_mcmc[0])))
 file_log2.write("A_mcmc {}\n".format(str(A_mcmc[0])))
 #file_log2.write("B_mcmc {}\n".format(str(B_mcmc[0])))
-#file_log2.write("N_mcmc {}\n".format(str(N_mcmc[0])))
+file_log2.write("N_mcmc {}\n".format(str(N_mcmc[0])))
 file_log2.write("lsf_mcmc {}\n".format(str(lsf_mcmc[0])))
 file_log2.write("teff_mcmc_e {}\n".format(str(max(abs(teff_mcmc[1]), abs(teff_mcmc[2])))))
 file_log2.write("logg_mcmc_e {}\n".format(str(max(abs(logg_mcmc[1]), abs(logg_mcmc[2])))))
@@ -568,7 +576,7 @@ file_log2.write("rv_mcmc_e {}\n".format(str(max(abs(rv_mcmc[1]), abs(rv_mcmc[2])
 #file_log2.write("pwv_mcmc_e {}\n".format(str(max(abs(pwv_mcmc[1]), abs(pwv_mcmc[2])))))
 file_log2.write("A_mcmc_e {}\n".format(str(max(abs(A_mcmc[1]), abs(A_mcmc[2])))))
 #file_log2.write("B_mcmc_e {}\n".format(str(max(abs(B_mcmc[1]), abs(B_mcmc[2])))))
-#file_log2.write("N_mcmc_e {}\n".format(str(max(abs(N_mcmc[1]), abs(N_mcmc[2])))))
+file_log2.write("N_mcmc_e {}\n".format(str(max(abs(N_mcmc[1]), abs(N_mcmc[2])))))
 file_log2.write("lsf_mcmc_e {}\n".format(str(max(abs(lsf_mcmc[1]), abs(lsf_mcmc[2])))))
 # upper and lower uncertainties
 # upper uncertainties
@@ -580,7 +588,7 @@ file_log2.write("rv_mcmc_ue {}\n".format(str(abs(rv_mcmc[1]))))
 #file_log2.write("pwv_mcmc_ue {}\n".format(str(abs(pwv_mcmc[1]))))
 file_log2.write("A_mcmc_ue {}\n".format(str(abs(A_mcmc[1]))))
 #file_log2.write("B_mcmc_ue {}\n".format(str(abs(B_mcmc[1]))))
-#file_log2.write("N_mcmc_ue {}\n".format(str(abs(N_mcmc[1]))))
+file_log2.write("N_mcmc_ue {}\n".format(str(abs(N_mcmc[1]))))
 file_log2.write("lsf_mcmc_ue {}\n".format(str(abs(lsf_mcmc[1]))))
 # lower uncertainties
 file_log2.write("teff_mcmc_le {}\n".format(str(abs(teff_mcmc[2]))))
@@ -591,7 +599,7 @@ file_log2.write("rv_mcmc_le {}\n".format(str(abs(rv_mcmc[2]))))
 #file_log2.write("pwv_mcmc_le {}\n".format(str(abs(pwv_mcmc[2]))))
 file_log2.write("A_mcmc_le {}\n".format(str(abs(A_mcmc[2]))))
 #file_log2.write("B_mcmc_le {}\n".format(str(abs(B_mcmc[2]))))
-#file_log2.write("N_mcmc_le {}\n".format(str(abs(N_mcmc[2]))))
+file_log2.write("N_mcmc_le {}\n".format(str(abs(N_mcmc[2]))))
 file_log2.write("lsf_mcmc_le {}\n".format(str(abs(lsf_mcmc[2]))))
 file_log2.close()
 
@@ -608,6 +616,7 @@ fig = corner.corner(triangle_samples,
 	logg_mcmc[0], 
 	rv_mcmc[0]+barycorr, 
 	A_mcmc[0],
+	N_mcmc[0],
 	lsf_mcmc[0]
 	],
 	quantiles=[0.16, 0.84],
@@ -625,7 +634,7 @@ z     = 0.0
 rv    = rv_mcmc[0]
 A     = A_mcmc[0]
 #B     = B_mcmc[0]
-#N     = N_mcmc[0]
+N     = N_mcmc[0]
 lsf   = lsf_mcmc[0]
 
 print('Creating model and data plot')
@@ -642,9 +651,10 @@ ax1.plot(model.wave, 10*np.std(diff) + model.flux, color='C3', linestyle='-', la
 #ax1.plot(model_notell.wave,model_notell.flux, color='C0', linestyle='-', label='model no telluric',alpha=0.8)
 ax1.plot(data.wave, 10*np.std(diff) + data.flux,'k-', label='data',alpha=0.5)
 ax1.plot(data.wave, diff,'k-',alpha=0.8, label='residual')
-N=1
+#N=1
+plt.fill_between(data.wave,-data.noise,data.noise,facecolor='C1',alpha=0.5)
 plt.fill_between(data.wave,-data.noise*N,data.noise*N,facecolor='C0',alpha=0.5)
-#plt.axhline(y=0,color='k',linestyle='-',linewidth=0.5)
+plt.axhline(y=0, color='k', linestyle=':',linewidth=0.5)
 #plt.ylim(-np.max(np.append(np.abs(data.noise),np.abs(data.flux-model.flux)))*1.2,np.max(data.flux)*1.2)
 plt.ylabel("Flux ($cnts/s$)",fontsize=15)
 plt.xlabel("$\lambda$ ($\AA$)",fontsize=15)
@@ -685,6 +695,7 @@ ax2.minorticks_on()
 	
 #plt.legend()
 plt.savefig(save_to_path + '/spectrum.png', dpi=300, bbox_inches='tight')
+plt.savefig(save_to_path + '/spectrum.pdf', bbox_inches='tight')
 if plot_show:
 	plt.show()
 plt.close()
@@ -706,11 +717,11 @@ file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
 #file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
 file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
 #file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
-#file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
+file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
 file_log.write("lsf_mcmc {}\n".format(str(lsf_mcmc)))
 file_log.close()
 
-
+'''
 # excel summary file
 cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path''save_path',
 							'model_date','model_time','data_mask','order','coadd','med_snr','lsf',
@@ -718,30 +729,34 @@ cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path''save_
 							'rv','e_rv','ue_rv','le_rv',#'vsini','e_vsini','ue_vsini','le_vsini',
 							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
 							'cflux','e_cflux','ue_cflux','le_cflux',#'cwave','e_cwave','ue_cwave','le_cwave',
-							#'cnoise','e_cnoise','ue_cnoise','le_cnoise',
+							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
 							'wave_cal_err','chi2','dof','acceptance_fraction','autocorr_time'])
 
-
+'''
 med_snr      = np.nanmedian(data.flux/data.noise)
 if instrument == 'nirspec':
 	wave_cal_err = tell_sp.header['STD']
 else:
 	wave_cal_err = np.nan
-
-cat = cat.append({	'date_obs':date_obs,'date_name':sci_data_name,
-					'data_path':data_path,'save_path':save_to_path,
+'''
+cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,#'tell_name':tell_data_name,
+					'data_path':data_path,#'tell_path':tell_path,
+					'save_path':save_to_path,
 					'model_date':today.isoformat(),'model_time':dt_string,'data_mask':custom_mask,
-					'order':order,'coadd':coadd,'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
+					#'order':order,'coadd':coadd,'mjd':mjd,
+					'med_snr':med_snr,'lsf':lsf, 'barycorr':barycorr,
 					'modelset':modelset, 'priors':priors, 'limits':limits, 
 					'ndim':ndim, 'nwalkers':nwalkers,'step':step, 'burn':burn,
 					'rv':rv_mcmc[0]+barycorr, 'e_rv':max(rv_mcmc[1], rv_mcmc[2]), 'ue_rv':rv_mcmc[1], 'le_rv':rv_mcmc[2],
 					#'vsini':vsini_mcmc[0], 'e_vsini':max(vsini_mcmc[1], vsini_mcmc[2]), 'ue_vsini':vsini_mcmc[1], 'le_vsini':vsini_mcmc[2],
 					'teff':teff_mcmc[0], 'e_teff':max(teff_mcmc[1],teff_mcmc[2]), 'ue_teff':teff_mcmc[1], 'le_teff':teff_mcmc[2],
 					'logg':logg_mcmc[0], 'e_logg':max(logg_mcmc[1], logg_mcmc[2]), 'ue_logg':logg_mcmc[1], 'le_logg':logg_mcmc[2],
+					#'am':am_mcmc[0], 'e_am':max(am_mcmc[1], am_mcmc[2]), 'ue_am':am_mcmc[1], 'le_am':am_mcmc[2], 
+					#'pwv':pwv_mcmc[0], 'e_pwv':max(pwv_mcmc[1], pwv_mcmc[2]), 'ue_pwv':pwv_mcmc[1], 'le_pwv':pwv_mcmc[2],
 					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
 					#'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2], 
-					#'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
-					'wave_cal_err':wave_cal_err, }, ignore_index=True)
+					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
+					'wave_cal_err':wave_cal_err, }, index=[0])
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
-
+'''
