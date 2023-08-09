@@ -91,7 +91,7 @@ class Spectrum():
 			self.path      = kwargs.get('path')
 			self.datatype  = kwargs.get('datatype','aspcap')
 			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
-			self.apply_tell = kwargs.get('apply_tell', False)
+			self.apply_tell = kwargs.get('apply_tell', True)
 			self.chip      = kwargs.get('chip', 'all')
 
 			hdulist        = fits.open(self.path)
