@@ -85,7 +85,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	#elif data is not None and instrument == 'apogee':
 	elif instrument == 'apogee':
 		# not z; this should be keyword "metal"
-		if modelset == 'sonora':
+		if 'sonora' in modelset:
 			model    = smart.Model(teff=teff, logg=logg, z=0.0, order='ALL', modelset=modelset, instrument=instrument)
 		else:
 			model    = smart.Model(teff=teff, logg=logg, metal=metal, order='ALL', modelset=modelset, instrument=instrument)
