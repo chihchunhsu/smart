@@ -17,7 +17,10 @@ ModelSets = {
     'marcs-apogee-dr15' : 'MARCS_APOGEE_DR15',
     'marcs-pp' : 'MARCS_PP',
     'btsettl08' : 'BTSETTL08',
-    'phoenix-btsettl08' : 'PHOENIX_BTSETTL08'
+    'phoenix-btsettl08' : 'PHOENIX_BTSETTL08',
+    'atmo-2020-ceq' : 'ATMO_2020_CEQ',
+    'atmo-2020-neq-strong' : 'ATMO_2020_NEQ_STRONG',
+    'atmo-2020-neq-weak' : 'ATMO_2020_NEQ_WEAK'
 }
 
 def getModelgrid(modelset = 'phoenix-aces-agss-cond-2011'):
@@ -26,7 +29,8 @@ def getModelgrid(modelset = 'phoenix-aces-agss-cond-2011'):
     # Get the gridfile for the requested modelset    
     FULL_PATH  = os.path.realpath(__file__)
     BASE, NAME = os.path.split(FULL_PATH)
-    Gridfile = BASE + '/libraries/%s/%s_gridparams.csv'%(smart.ModelSets[modelset.upper()], smart.ModelSets[modelset.upper()])
+    Gridfile = BASE + '/libraries/%s/%s_gridparams.csv'%(smart.ModelSets[modelset.lower()], smart.ModelSets[modelset.lower()])
+    print('Gridfile:', Gridfile)
     # Read the grid file
     T1 = Table.read(Gridfile)
 
