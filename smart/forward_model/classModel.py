@@ -134,21 +134,26 @@ class Model():
             self.wave = wave # Angstrom
             self.flux = flux # erg/s/cm^2/Angstrom
 
-        else:
-            try:
-                self.teff     = kwargs.get('teff', 2500)
-                self.logg     = kwargs.get('logg', 5.00)
-                self.metal    = kwargs.get('metal', 0.00)
-                self.en       = kwargs.get('en', 0.00)
-                self.modelset = kwargs.get('modelset', 'btsettl08')
+        elif self.order == None and self.instrument == None:
 
-                wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg, self.metal, self.en,
-                                                                              modelset=self.modelset, order=self.order, instrument=self.instrument)
-                self.wave = wave # Angstrom
-                self.flux = flux # erg/s/cm^2/Angstrom
-            except:
-                self.wave   = kwargs.get('wave', [])
-                self.flux   = kwargs.get('flux', [])
+            self.wave = [] 
+            self.flux = [] 
+
+        else:
+            #try:
+            self.teff     = kwargs.get('teff', 2500)
+            self.logg     = kwargs.get('logg', 5.00)
+            self.metal    = kwargs.get('metal', 0.00)
+            self.en       = kwargs.get('en', 0.00)
+            self.modelset = kwargs.get('modelset', 'btsettl08')
+
+            wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg, self.metal, self.en,
+                                                                          modelset=self.modelset, order=self.order, instrument=self.instrument)
+            self.wave = wave # Angstrom
+            self.flux = flux # erg/s/cm^2/Angstrom
+            #except:
+            #    self.wave   = kwargs.get('wave', [])
+            #    self.flux   = kwargs.get('flux', [])
         
 
     def plot(self, **kwargs):

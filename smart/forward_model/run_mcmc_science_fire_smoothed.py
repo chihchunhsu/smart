@@ -25,6 +25,8 @@ import warnings
 from datetime import date, datetime
 warnings.filterwarnings("ignore")
 
+telluric = False
+
 ##############################################################################################
 ## This is the script to make the code multiprocessing, using arcparse to pass the arguments
 ## The code is run with 8 parameters, including Teff, logg, RV, vsini, telluric alpha, and 
@@ -154,11 +156,6 @@ now       = datetime.now()
 dt_string = now.strftime("%H:%M:%S")	
 
 #####################################
-print(1)
-print(sci_data_name)
-print(data_path)
-print(data_path + sci_data_name)
-print(data_path + sci_data_name + '_F.fits')
 hdu           = fits.open(data_path + sci_data_name + '_F.fits')
 hdu2          = fits.open(data_path + sci_data_name + '_E.fits')
 header = hdu[0].header
@@ -270,10 +267,10 @@ if modelset.lower() == 'phoenix-btsettl08':
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,								'A_max':-10, # Flux mult
+						'A_min':-50,								'A_max':50, # Flux mult
 						'B_min':-100,                              	'B_max':100, # wave offset
 						'N_min':0.10,                               'N_max':N_max,	
-						'lsf_min':10,                               'lsf_max':100 				
+						'lsf_min':1,                                'lsf_max':100 				
 					}
 
 elif modelset.lower() == 'sonora':
@@ -336,6 +333,17 @@ pixel       = pixel[pixel_start:pixel_end]
 data.wave     = data.wave[pixel_start:pixel_end]
 data.flux     = data.flux[pixel_start:pixel_end]
 data.noise    = data.noise[pixel_start:pixel_end]
+
+import scipy as sp
+smoothfluxmed = sp.ndimage.filters.uniform_filter(data.flux, size=80) # smooth by this many spectral bins
+
+data.flux   -= smoothfluxmed
+#data.noise = 0.1*data.flux
+#data.noise  -= smoothfluxmed
+
+#plt.plot(data.wave, data.flux)
+#plt.plot(data.wave, data.noise)
+#plt.plot(data.wave, smoothfluxmed)
 
 
 #if final_mcmc:
@@ -401,7 +409,7 @@ def lnlike(theta, data, lsf):
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
 	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, rv=rv, wave_offset=B, flux_mult=A, airmass=am, pwv=pwv, 
-		lsf=lsf, order=str(data.order), data=data, modelset=modelset, include_fringe_model=False, instrument=instrument, tell=True)
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, include_fringe_model=False, instrument=instrument, tell=telluric, smooth=True)
 	'''
 	print('MODEL')
 	print(model.wave)
@@ -623,23 +631,36 @@ lsf   = lsf_mcmc[0]
 
 print(teff, logg, rv, am, pwv, A, B, N, lsf)
 
-
+'''
 model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
 	rv=rv, wave_offset=B, flux_mult=A,
 	airmass=am, pwv=pwv, 
 	lsf=lsf, order=str(data.order), data=data, modelset=modelset, output_stellar_model=True, 
-	include_fringe_model=False, instrument=instrument, tell=True)
-
+	include_fringe_model=False, instrument=instrument, tell=True, smooth=True)
+'''
+if telluric:
+	model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
+		rv=rv, wave_offset=B, flux_mult=A,
+		airmass=am, pwv=pwv, 
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, output_stellar_model=True, 
+		include_fringe_model=False, instrument=instrument, tell=True, smooth=True)
+else:
+	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
+		rv=rv, wave_offset=B, flux_mult=A,
+		airmass=am, pwv=pwv, 
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, 
+		include_fringe_model=False, instrument=instrument, tell=False, smooth=True)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=15)
-ax1.plot(model.wave, model.flux, color='C3', linestyle='-', label='model',alpha=0.8)
-ax1.plot(model_notell.wave,model_notell.flux*10**A, color='C0', linestyle='-', label='model no telluric',alpha=0.8)
+diff = data.flux - model.flux
+ax1.plot(model.wave, 10*np.std(diff) + model.flux, color='C3', linestyle='-', label='model',alpha=0.8)
+if telluric: ax1.plot(model_notell.wave, 10*np.std(diff) + model_notell.flux, color='C0', linestyle='-', label='model no telluric',alpha=0.8)
 print(data.wave)
 print(data.flux)
-ax1.plot(data.wave,data.flux,'k-', label='data',alpha=0.5)
+ax1.plot(data.wave,10*np.std(diff) + data.flux,'k-', label='data',alpha=0.5)
 ax1.plot(data.wave,data.flux-model.flux,'k-',alpha=0.8)
 plt.fill_between(data.wave,-data.noise*N,data.noise*N,facecolor='C0',alpha=0.5)
 plt.axhline(y=0,color='k',linestyle='-',linewidth=0.5)

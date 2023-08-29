@@ -2,6 +2,7 @@ import numpy as np
 import scipy.signal as signal
 from scipy.interpolate import interp1d
 import pandas as pd
+import scipy as sp
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from astropy.io import fits
@@ -38,6 +39,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	instrument   = kwargs.get('instrument', 'nirspec')
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
+	flux_mult    = kwargs.get('flux_mult', 0)   # flux multiplier
+	smooth       = kwargs.get('smooth', False)   # smooth the spectrum, either with a defined kernel or an optional one []
 	include_fringe_model = kwargs.get('include_fringe_model', False)
 	slow_rotation_broaden = kwargs.get('slow_rotation_broaden', False)
 
@@ -105,6 +108,12 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	elif data is None and instrument in ['nirspec', 'hires', 'igrins']:
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 	
+	else: # see if we have a model anyway
+		try:
+			model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
+		except:
+			raise Exception('No Model Available for %s'%instrument)
+
 	# wavelength offset
 	#model.wave += wave_offset
 
@@ -153,7 +162,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	# apply telluric
 	if tell is True:
-		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv, instrument=data.instrument)
+		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv, instrument=data.instrument, order=order)
 
 	# fringe 
 	if include_fringe_model is True:
@@ -171,6 +180,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		# Remove the NANs
 		model.wave = model.wave[~np.isnan(model.flux)]
 		model.flux = model.flux[~np.isnan(model.flux)]
+	else:
+		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 
 	if output_stellar_model:
 		stellar_model.flux = smart.broaden(wave=stellar_model.wave, flux=stellar_model.flux, vbroad=lsf, rotate=False, gaussian=True)
@@ -300,6 +311,58 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 			model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
 			model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
+		
+		else: # Any other instrument
+
+			model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
+			model.wave = data.wave
+
+			if output_stellar_model:
+				stellar_model.flux = np.array(smart.integralResample(xh=stellar_model.wave, yh=stellar_model.flux, xl=data.wave))
+				stellar_model.wave = data.wave
+				if binary:
+					model1.flux = np.array(smart.integralResample(xh=model1.wave, yh=model1.flux, xl=data.wave))
+					model1.wave = data.wave
+					model2.flux = np.array(smart.integralResample(xh=model2.wave, yh=model2.flux, xl=data.wave))
+					model2.wave = data.wave
+
+	if smooth:
+		
+		smoothfluxmed = sp.ndimage.filters.uniform_filter(model.flux, size=80) # smooth by this many spectral bins
+		'''
+		plt.plot(model.wave, model.flux, alpha=0.5)
+		plt.plot(model.wave, smoothfluxmed, alpha=0.5)
+		#plt.plot(model.wave, model.flux-smoothfluxmed, alpha=0.5)
+		plt.show()
+		sys.exit()
+		'''
+		model.flux   -= smoothfluxmed
+		if output_stellar_model: stellar_model.flux   -= smoothfluxmed
+		'''
+		import scipy.signal as signal
+		def butter_highpass(cutoff, fs, btype, order=5):
+		    nyq = 0.5 * fs
+		    normal_cutoff = cutoff / nyq
+		    b, a = signal.butter(order, normal_cutoff, btype=btype, analog=False)
+		    return b, a
+
+		def butter_highpass_filter(data, cutoff, fs, btype, order=5):
+		    b, a = butter_highpass(cutoff, fs, btype, order=order)
+		    y = signal.filtfilt(b, a, data)
+		    return y
+
+
+		cutoff = 10e-3
+		fs = 2
+		# saavif, saavipsd = signal.welch(model.flux, fs, nperseg=2**12)
+		# plt.loglog(saavif, saavipsd)
+
+		model.flux = butter_highpass_filter(model.flux, cutoff, fs, ‘high’, order=5)	
+		# saavif, saavipsd = signal.welch(model.flux, fs, nperseg=2**12)
+		# plt.loglog(saavif, saavipsd)
+		# plt.plot(model.flux)
+		# plt.show()
+		'''
 
 	if instrument in ['nirspec', 'hires', 'igrins']:
 		# flux offset
@@ -308,7 +371,11 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 			stellar_model.flux += flux_offset
 			if binary:
 				model2.flux += flux_offset
+	
 	#model.flux **= (1 + flux_exponent_offset)
+	
+	model.flux *= 10**flux_mult
+	if output_stellar_model: stellar_model.flux *= 10**flux_mult
 
 	if output_stellar_model:
 		if binary:
@@ -642,7 +709,7 @@ def rvShift(wavelength, rv):
 	"""
 	return wavelength * ( 1 + rv / 299792.458)
 
-def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, instrument=None):
+def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, instrument=None, order=None):
 	"""
 	Apply the telluric model on the science model.
 
@@ -669,7 +736,7 @@ def applyTelluric(model, tell_alpha=1.0, airmass=1.5, pwv=0.5, instrument=None):
 		wavehigh = model.wave[-1] + 10
 	#telluric_model = smart.getTelluric(wavelow=wavelow, wavehigh=wavehigh, alpha=alpha, airmass=airmass)
 
-	telluric_model = smart.Model()
+	telluric_model = smart.Model(instrument=None, order=None)
 	telluric_model.wave, telluric_model.flux = 	smart.InterpTelluricModel(wavelow=wavelow, wavehigh=wavehigh, airmass=airmass, pwv=pwv)
 
 	# apply the telluric alpha parameter

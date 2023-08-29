@@ -21,6 +21,11 @@ def bilinear_interpolation(x, y, points):
 
     (x0, y0, q00), (x0, y1, q01), (x1, y0, q10), (x1, y1, q11) = points
 
+    x0 = x0.data[0]
+    x1 = x1.data[0]
+    y0 = y0.data[0]
+    y1 = y1.data[0]
+
     # Check if we just need linear interpolation!
     if x0 == x1:
         interpFlux = 10**( ( q00 * ( y1 - y ) + q11 * ( y - y0 ) ) / ( ( y1 - y0 ) ) )
