@@ -72,7 +72,7 @@ def GetModel(wavelow, wavehigh, method='pwv', wave=False, **kwargs):
     
     tellurics = fits.open(tfile)
 
-    telluric      = smart.Model()
+    telluric      = smart.Model(order=None, instrument=None)
     telluric.wave = np.array(tellurics[1].data['lam'] * 10000) # convert to Angstrom
     telluric.flux = np.array(tellurics[1].data['trans'])**(alpha)
 
