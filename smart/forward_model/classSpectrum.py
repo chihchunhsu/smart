@@ -421,6 +421,36 @@ class Spectrum():
 			self.mask     = []
 
 
+		elif self.instrument.lower() == 'sphere': 
+			print('IT IS CHARIS')
+			self.name      = kwargs.get('name')
+			self.order     = kwargs.get('order')
+			self.path      = kwargs.get('path')
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
+			#self.manaulmask = kwargs('manaulmask', False)
+
+			#if self.path == None:
+		#		self.path = './'
+
+			#fullpath = self.path + '/' + self.name + '_' + str(self.order) + '_all.fits'
+
+			#hdulist = fits.open(fullpath, ignore_missing_end=True)
+
+			# correct back the MAKEE computed heliocentric velocity scale factor (hvsf)
+			#from smart.utils import hires_tool
+			#hvsf = hires_tool.get_hvsf(float(hdulist[0].header['HELIOVEL']))
+
+			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
+			#self.header   = hdulist[0].header
+			self.wave     = kwargs.get('wave')
+			self.flux     = kwargs.get('flux')
+			self.noise    = kwargs.get('noise')
+			#self.oriWave  = hdulist[0].data/hvsf # correct for hvsf
+			#self.oriFlux  = hdulist[1].data
+			#self.oriNoise = hdulist[2].data
+			self.mask     = []
+
+
 		if self.apply_sigma_mask:
 			# set up masking criteria
 			self.avgFlux = np.mean(self.flux)
