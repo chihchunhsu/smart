@@ -20,7 +20,8 @@ ModelSets = {
     'phoenix-btsettl08' : 'PHOENIX_BTSETTL08',
     'atmo-2020-ceq' : 'ATMO_2020_CEQ',
     'atmo-2020-neq-strong' : 'ATMO_2020_NEQ_STRONG',
-    'atmo-2020-neq-weak' : 'ATMO_2020_NEQ_WEAK'
+    'atmo-2020-neq-weak' : 'ATMO_2020_NEQ_WEAK',
+    'barman-20230830' : 'BARMAN_20230830'
 }
 
 def getModelgrid(modelset = 'phoenix-aces-agss-cond-2011'):
