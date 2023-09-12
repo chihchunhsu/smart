@@ -39,7 +39,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	instrument   = kwargs.get('instrument', 'nirspec')
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
-	flux_mult    = kwargs.get('flux_mult', 0)   # instrumental LSF
+	kzz          = kwargs.get('kzz', 0)   # kzz parameter
+	flux_mult    = kwargs.get('flux_mult', 0)   # Flux multiplicative scaling
 	smooth       = kwargs.get('smooth', False)   # smooth the spectrum, either with a defined kernel or an optional one []
 	include_fringe_model = kwargs.get('include_fringe_model', False)
 
@@ -102,7 +103,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	else: # see if we have a model anyways
 		try:
-			model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
+			model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument, kzz=kzz)
 		except:
 			print('No Model Available')
 	#print(teff, logg, metal, str(order), modelset, instrument)
