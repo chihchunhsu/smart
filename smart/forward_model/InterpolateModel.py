@@ -92,6 +92,14 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, modelset='phoenix-aces-ag
             flux2  = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['FeH'][index0], alpha=T1['Y'][index0], instrument=instrument, order=order, gridfile=T1)
             waves2 = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['FeH'][index0], alpha=T1['Y'][index0], instrument=instrument, order=order, gridfile=T1, wave=True)
             return waves2, flux2
+    elif kzz != 0:
+        if (teff, logg, metal, alpha, kzz) in zip(T1['teff'], T1['logg'], T1['M_H'], T1['en'], T1['kzz']): 
+            index0 = np.where( (T1['teff'] == teff) & (T1['logg'] == logg) & (T1['M_H'] == metal) & (T1['en'] == alpha) )
+            #flux2  = GetModel(T1['teff'][index0], T1['logg'][index0], T1['M_H'][index0], modelset=modelset )
+            #waves2 = GetModel(T1['teff'][index0], T1['logg'][index0], T1['M_H'][index0], modelset=modelset, wave=True)
+            flux2  = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['M_H'][index0], alpha=T1['en'][index0], kzz=T1['kzz'][index0], instrument=instrument, order=order, gridfile=T1)
+            waves2 = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['M_H'][index0], alpha=T1['en'][index0], kzz=T1['kzz'][index0], instrument=instrument, order=order, gridfile=T1, wave=True)
+            return waves2, flux2
     else:
         if (teff, logg, metal, alpha) in zip(T1['teff'], T1['logg'], T1['M_H'], T1['en']): 
             index0 = np.where( (T1['teff'] == teff) & (T1['logg'] == logg) & (T1['M_H'] == metal) & (T1['en'] == alpha) )
@@ -131,9 +139,9 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, modelset='phoenix-aces-ag
                              set(T1['Y'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['FeH'] == z1) & (T1['Y'] >= alpha) )])))
             #print(t0, t1)
 
-        elif 'barman-20230830' in modelset.lower():
+        elif kzz != 0:
 
-            #print('BARMAN')
+            #print('KZZ Models')
             # Get the nearest models to the gridpoint (teff)
             #print(teff, logg, metal, alpha, kzz)
             x0 = np.max(T1['teff'][np.where( (T1['teff'] <= teff) )])
@@ -162,7 +170,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, modelset='phoenix-aces-ag
             #print(t0, t1)
             
         else:
-
+            #print('HERE'*10)
             # Get the nearest models to the gridpoint (teff)
             x0 = np.max(T1['teff'][np.where(T1['teff'] <= teff)])
             x1 = np.min(T1['teff'][np.where(T1['teff'] >= teff)])
@@ -257,7 +265,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, modelset='phoenix-aces-ag
         #print(Points)
         waves2 = GetModel(T1['teff'][ind1111], logg=T1['logg'][ind1111], metal=T1['FeH'][ind1111], alpha=T1['Y'][ind1111], instrument=instrument, order=order, gridfile=T1, wave=True)
     
-    elif 'barman-20230830' in modelset.lower():
+    elif kzz != 0:
 
         # Get the 16 points
         ind0000 = np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] == z0) & (T1['kzz'] == t0) )[0] # 0000

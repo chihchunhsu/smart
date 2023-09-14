@@ -21,7 +21,8 @@ ModelSets = {
     'atmo-2020-ceq' : 'ATMO_2020_CEQ',
     'atmo-2020-neq-strong' : 'ATMO_2020_NEQ_STRONG',
     'atmo-2020-neq-weak' : 'ATMO_2020_NEQ_WEAK',
-    'barman-20230830' : 'BARMAN_20230830'
+    'barman-20230830' : 'BARMAN_20230830',
+    'pheonix-newera-aces-cond-2023' : 'PHOENIX_NEWERA_ACES_COND_2023'
 }
 
 def getModelgrid(modelset = 'phoenix-aces-agss-cond-2011'):
