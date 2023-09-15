@@ -357,6 +357,21 @@ elif 'barman' in modelset.lower():
 						'lsf_min':1,                                'lsf_max':200 				
 					}
 
+elif modelset.lower() == 'pheonix-newera-aces-cond-2023':
+	limits         = { 
+						'teff_min':max(priors['teff_min']-300,800), 'teff_max':min(priors['teff_max']+300,1350),
+						'logg_min':4.5,                             'logg_max':5.5,
+						'kzz_min':1e2,                              'kzz_max':1e10,
+						'vsini_min':0.0,                            'vsini_max':100.0,
+						'rv_min':-1000.0,                           'rv_max':1000.0,
+						'am_min':1.0,                               'am_max':3.0,
+						'pwv_min':0.5,                            	'pwv_max':20.0,
+						'A_min':-50,								'A_max':-1,
+						'B_min':-0.6,								'B_max':0.6,
+						'N_min':0.10,                               'N_max':10.0, 	
+						'lsf_min':1,                                'lsf_max':200 				
+					}
+
 
 
 # HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter
@@ -536,7 +551,7 @@ samples       = np.load(save_to_path + '/samples.npy')
 
 ylabels = ["$T_{\mathrm{eff}} (K)$",
            "$\log{g}$(dex)",
-           "kzz",
+           "log10(kzz)",
            "$RV(km/s)$",
            "$C_{F_{\lambda}}$ (cnt/s)",
            "$C_\mathrm{Noise}$",
@@ -548,15 +563,16 @@ ylabels = ["$T_{\mathrm{eff}} (K)$",
 print('Creating walker plot')
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=10)
-fig = plt.figure(tight_layout=True)
+fig = plt.figure(tight_layout=True, figsize=(8,8))
 gs  = gridspec.GridSpec(ndim, 1)
 gs.update(hspace=0.1)
 
 for i in range(ndim):
 	ax = fig.add_subplot(gs[i, :])
 	for j in range(nwalkers):
-		ax.plot(np.arange(1,int(step+1)), sampler_chain[j,:,i],'k',alpha=0.2)
-		ax.set_ylabel(ylabels[i])
+		if i == 2: ax.plot(np.arange(1,int(step+1)), np.log10(sampler_chain[j,:,i]),'k',alpha=0.2)
+		else: ax.plot(np.arange(1,int(step+1)), sampler_chain[j,:,i],'k',alpha=0.2)
+		ax.set_ylabel(ylabels[i],fontsize=8)
 fig.align_labels()
 plt.minorticks_on()
 plt.xlabel('nstep')
@@ -567,6 +583,9 @@ plt.close()
 
 # create array triangle plots
 triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
+logkzz = sampler_chain[:, burn:, 2].flatten()
+logkzz_mcmc = [np.percentile(logkzz, 50), np.percentile(logkzz, 84)-np.percentile(logkzz, 50), np.percentile(logkzz, 50)-np.percentile(logkzz, 16)]
+print(logkzz_mcmc)
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
@@ -633,7 +652,8 @@ file_log2.close()
 
 #print(teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc)
 
-triangle_samples[:,2] += barycorr
+triangle_samples[:,2] = np.log10(triangle_samples[:,2])
+triangle_samples[:,3] += barycorr
 
 ## triangular plots
 print('Creating corner plot')
@@ -642,7 +662,7 @@ fig = corner.corner(triangle_samples,
 	labels=ylabels,
 	truths=[teff_mcmc[0], 
 	logg_mcmc[0],  
-	kzz_mcmc[0], 
+	np.log10(kzz_mcmc[0]), 
 	rv_mcmc[0]+barycorr, 
 	A_mcmc[0],
 	N_mcmc[0],
@@ -700,9 +720,9 @@ plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{
 	round(logg_mcmc[0],1),
 	round(logg_mcmc[1],3),
 	round(logg_mcmc[2],3),
-	round(np.log10(kzz_mcmc[0]),3),
-	round(np.log10(kzz_mcmc[1]),3),
-	round(np.log10(kzz_mcmc[2]),3),
+	round(logkzz_mcmc[0],3),
+	round(logkzz_mcmc[1],3),
+	round(logkzz_mcmc[2],3),
 	round(rv_mcmc[0]+barycorr,2),
 	round(rv_mcmc[1],2),
 	round(rv_mcmc[2],2)),
