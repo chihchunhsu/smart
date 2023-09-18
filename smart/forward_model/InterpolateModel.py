@@ -93,7 +93,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, modelset='phoenix-aces-ag
             waves2 = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['FeH'][index0], alpha=T1['Y'][index0], instrument=instrument, order=order, gridfile=T1, wave=True)
             return waves2, flux2
     elif kzz != 0:
-        print(teff, logg, metal, alpha, kzz)
+        #print(teff, logg, metal, alpha, kzz)
         if (teff, logg, metal, alpha, kzz) in zip(T1['teff'], T1['logg'], T1['M_H'], T1['en'], T1['kzz']): 
             index0 = np.where( (T1['teff'] == teff) & (T1['logg'] == logg) & (T1['M_H'] == metal) & (T1['en'] == alpha) & (T1['kzz'] == kzz) )
             #flux2  = GetModel(T1['teff'][index0], T1['logg'][index0], T1['M_H'][index0], modelset=modelset )
