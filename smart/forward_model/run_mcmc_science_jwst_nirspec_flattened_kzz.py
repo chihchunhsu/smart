@@ -360,7 +360,7 @@ elif 'barman' in modelset.lower():
 elif modelset.lower() == 'pheonix-newera-aces-cond-2023':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,800), 'teff_max':min(priors['teff_max']+300,1350),
-						'logg_min':4.5,                             'logg_max':5.5,
+						'logg_min':4.,                              'logg_max':5.5,
 						'kzz_min':1e2,                              'kzz_max':1e10,
 						'vsini_min':0.0,                            'vsini_max':100.0,
 						'rv_min':-1000.0,                           'rv_max':1000.0,
@@ -499,8 +499,8 @@ def lnprob(theta, data, lsf0):
 	return lnp + lnlike(theta, data, lsf0)
 
 pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min'] ) * np.random.uniform(), 
-					priors['logg_min']  + (priors['logg_max']   - priors['logg_min'] ) * np.random.uniform(), 
-					priors['kzz_min']   + (priors['kzz_max']    - priors['kzz_min'] ) * np.random.uniform(), 
+					priors['logg_min']  + (priors['logg_max']   - priors['logg_min'] ) * np.random.uniform(),
+					10**(np.log10(priors['kzz_min'])   + (np.log10(priors['kzz_max'])    - np.log10(priors['kzz_min']) ) * np.random.uniform()),
 					#priors['vsini_min'] + (priors['vsini_max']  - priors['vsini_min']) * np.random.uniform(),
 					priors['rv_min']    + (priors['rv_max']     - priors['rv_min']   ) * np.random.uniform(), 
 					priors['A_min']     + (priors['A_max']      - priors['A_min'])     * np.random.uniform(),
@@ -573,6 +573,7 @@ for i in range(ndim):
 		if i == 2: ax.plot(np.arange(1,int(step+1)), np.log10(sampler_chain[j,:,i]),'k',alpha=0.2)
 		else: ax.plot(np.arange(1,int(step+1)), sampler_chain[j,:,i],'k',alpha=0.2)
 		ax.set_ylabel(ylabels[i],fontsize=8)
+		ax.minorticks_on()
 fig.align_labels()
 plt.minorticks_on()
 plt.xlabel('nstep')
@@ -583,7 +584,7 @@ plt.close()
 
 # create array triangle plots
 triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
-logkzz = sampler_chain[:, burn:, 2].flatten()
+logkzz = np.log10(sampler_chain[:, burn:, 2].flatten())
 logkzz_mcmc = [np.percentile(logkzz, 50), np.percentile(logkzz, 84)-np.percentile(logkzz, 50), np.percentile(logkzz, 50)-np.percentile(logkzz, 16)]
 print(logkzz_mcmc)
 #print(triangle_samples.shape)

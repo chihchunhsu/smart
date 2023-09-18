@@ -168,7 +168,7 @@ hdu   = fits.open(data_path + sci_data_name + '.fits')
 print(hdu.info())
 wave  = hdu[0].data*10000
 flux  = hdu[1].data 
-noise = hdu[2].data 
+noise = hdu[3].data 
 ind   = np.where( 
 	            (flux > 0) & (~np.isnan(flux) 
 	            #& ( (wave < 41000) | (wave > 44000) ) 
@@ -354,7 +354,7 @@ elif 'barman' in modelset.lower():
 elif modelset.lower() == 'pheonix-newera-aces-cond-2023':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,800), 'teff_max':min(priors['teff_max']+300,1350),
-						'logg_min':4.5,                             'logg_max':5.5,
+						'logg_min':4.,                              'logg_max':5.5,
 						'kzz_min':1e2,                              'kzz_max':1e10,
 						'vsini_min':0.0,                            'vsini_max':100.0,
 						'rv_min':-1000.0,                           'rv_max':1000.0,
@@ -493,7 +493,7 @@ def lnprob(theta, data, lsf0):
 
 pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min'] ) * np.random.uniform(), 
 					priors['logg_min']  + (priors['logg_max']   - priors['logg_min'] ) * np.random.uniform(), 
-					priors['kzz_min']   + (priors['kzz_max']    - priors['kzz_min'] ) * np.random.uniform(), 
+					10**(np.log10(priors['kzz_min'])   + (np.log10(priors['kzz_max'])    - np.log10(priors['kzz_min']) ) * np.random.uniform()), 
 					#priors['vsini_min'] + (priors['vsini_max']  - priors['vsini_min']) * np.random.uniform(),
 					priors['rv_min']    + (priors['rv_max']     - priors['rv_min']   ) * np.random.uniform(), 
 					priors['A_min']     + (priors['A_max']      - priors['A_min'])     * np.random.uniform(),
@@ -568,8 +568,8 @@ for i in range(ndim):
 		if i == 2: ax.plot(np.arange(1,int(step+1)), np.log10(sampler_chain[j,:,i]),'k',alpha=0.2)
 		else: ax.plot(np.arange(1,int(step+1)), sampler_chain[j,:,i],'k',alpha=0.2)
 		ax.set_ylabel(ylabels[i],fontsize=8)
+		ax.minorticks_on()
 fig.align_labels()
-plt.minorticks_on()
 plt.xlabel('nstep')
 plt.savefig(save_to_path+'/walker.png', dpi=300, bbox_inches='tight')
 if plot_show:
@@ -578,6 +578,9 @@ plt.close()
 
 # create array triangle plots
 triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
+logkzz = np.log10(sampler_chain[:, burn:, 2].flatten())
+logkzz_mcmc = [np.percentile(logkzz, 50), np.percentile(logkzz, 84)-np.percentile(logkzz, 50), np.percentile(logkzz, 50)-np.percentile(logkzz, 16)]
+print(logkzz_mcmc)
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
@@ -712,9 +715,9 @@ plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{
 	round(logg_mcmc[0],1),
 	round(logg_mcmc[1],3),
 	round(logg_mcmc[2],3),
-	round(np.log10(kzz_mcmc[0]),3),
-	round(np.log10(kzz_mcmc[1]),3),
-	round(np.log10(kzz_mcmc[2]),3),
+	round(logkzz_mcmc[0],3),
+	round(logkzz_mcmc[1],3),
+	round(logkzz_mcmc[2],3),
 	round(rv_mcmc[0]+barycorr,2),
 	round(rv_mcmc[1],2),
 	round(rv_mcmc[2],2)),
