@@ -29,7 +29,7 @@ There are two ways of setting up the code:
 <br/>(i) In the terminal under the `SMART` folder, 
 
 ```
-python setup.py install
+pip install -e .
 ```
 
 <br/>(ii) Set up the environment variables in the `.bashrc` or `.bash_profile`
