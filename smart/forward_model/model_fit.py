@@ -219,6 +219,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 				model = smart.continuum(data=data, mdl=model)
 				for i in range(niter):
 					model = smart.continuum(data=data, mdl=model)
+					
 		elif data.instrument == 'apogee':
 			## set the order in the continuum fit
 			deg         = 5
