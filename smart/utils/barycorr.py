@@ -67,9 +67,19 @@ def barycorr(header, instrument='nirspec'):
 		barycorr = sc.radial_velocity_correction(obstime=Time(ut, scale='utc'), location=keck)
 
 	elif instrument == 'apogee':
-		longitude = 360 - (105 + 49.2/60 ) # degrees
-		latitude  =  32 + 46.8/60 #degrees
-		altitude  = 2798.
+		# TELESCOP= 'apo25m' or 'lco25m'  
+		#print('survey', header['SURVEY'], header['TELESCOP'])
+		if header['TELESCOP'] == 'lco25m':
+			# Las Campanas Observatory (LCO) https://airmass.org/observatories/lco
+			longitude = 360 - (70 + 41/60 + 33.36/3600 ) # degrees
+			latitude  =  - (29 + 52.56/3660) #degrees
+			altitude  = 2282.
+
+		else: # apo25m apo1m
+			# https://www.sdss.org/instruments/
+			longitude = 360 - (105 + 49/60 + 13.5/3600 ) # degrees
+			latitude  =  32 + 46/60 + 49.3/3600 #degrees
+			altitude  = 2788.
 
 		apogee = EarthLocation.from_geodetic(lat=latitude*u.deg, lon=longitude*u.deg, height=altitude*u.m)
 
