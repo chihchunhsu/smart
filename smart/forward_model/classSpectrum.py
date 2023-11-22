@@ -436,6 +436,23 @@ class Spectrum():
 			self.noise    = kwargs.get('noise')
 			self.mask     = []
 
+		else: 
+			try: 
+				self.name      = kwargs.get('name')
+				self.order     = kwargs.get('order')
+				self.path      = kwargs.get('path')
+				self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
+				#self.manaulmask = kwargs('manaulmask', False)
+
+				# The indices 0 to 3 correspond to wavelength, flux, noise
+				self.wave     = kwargs.get('wave')
+				self.flux     = kwargs.get('flux')
+				self.noise    = kwargs.get('noise')
+				self.mask     = []
+			except:
+				raise Exception('Instrument not implemented in SMART yet. Contact devs.')
+
+
 
 		if self.apply_sigma_mask:
 
