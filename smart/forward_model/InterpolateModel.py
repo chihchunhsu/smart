@@ -26,9 +26,11 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, modelset='phoenix-aces-ag
             Gridfile = BASE + '/../libraries/btsettl08/btsettl08_gridparams.csv'
 
     # Read the grid file
-    T1 = Table.read(Gridfile, comment='#')
     #print(modelset)
+    #print(smart.ModelSets[modelset.lower()])
     #print(path)
+    #print(Gridfile)
+    T1 = Table.read(Gridfile, comment='#')
     #print(T1)
     #sys.exit()
 
@@ -62,11 +64,17 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, modelset='phoenix-aces-ag
             filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
 
         else: 
-            if instrument.lower()in ['nirspec', 'hires']:
+            if instrument.lower() in ['nirspec', 'hires']:
                 filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-O%s.fits'%(instrument.upper(), order.upper())
             else:
-                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
-        
+                #print('Here')
+                #print(modelset.lower(), temp, logg, metal, alpha)
+                if modelset == 'hd206893-qkbbhires':
+                    kzz = 1e8
+                    filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+                else:
+                    filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+                #print(filename)
         # Read in the model FITS file
         if modelset.lower() == 'btsettl08': 
             Tab = Table.read(path+filename, format='ascii.tab', names=['wave', 'flux'])
