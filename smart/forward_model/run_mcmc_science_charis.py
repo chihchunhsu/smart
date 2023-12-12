@@ -327,13 +327,13 @@ elif 'sonora' in modelset.lower():
 						'teff_min':max(priors['teff_min']-300,200), 'teff_max':min(priors['teff_max']+300,2400),
 						'logg_min':3.5,                             'logg_max':logg_max,
 						'vsini_min':0.0,                            'vsini_max':10.0,
-						'rv_min':-200.0,                            'rv_max':200.0,
+						'rv_min':-400.0,                            'rv_max':400.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-50,								'A_max':-1,
 						'B_min':-50,                              	'B_max':50,
 						'N_min':0.10,                               'N_max':10.0,
-						'lsf_min':1,                                'lsf_max':100 				
+						'lsf_min':1,                                'lsf_max':1000 				
 					}
 
 elif modelset == 'phoenixaces':
@@ -362,6 +362,20 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 						'B_min':-0.6,								'B_max':0.6,
 						'N_min':0.10,                               'N_max':10.0,
 						'lsf_min':1,                                'lsf_max':100 					
+					}
+
+elif 'DRIFT-PHOENIX' in modelset.upper():
+	limits         = { 
+						'teff_min':max(priors['teff_min']-300,1000), 'teff_max':min(priors['teff_max']+300,2400),
+						'logg_min':3.0,                             'logg_max':6.0,
+						'vsini_min':0.0,                            'vsini_max':10.0,
+						'rv_min':-200.0,                            'rv_max':200.0,
+						'am_min':1.0,                               'am_max':3.0,
+						'pwv_min':0.5,                            	'pwv_max':20.0,
+						'A_min':-50,								'A_max':-1,
+						'B_min':-50,                              	'B_max':50,
+						'N_min':0.10,                               'N_max':10.0,
+						'lsf_min':1,                                'lsf_max':300 				
 					}
 
 # HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter
