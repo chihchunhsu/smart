@@ -321,7 +321,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	if smooth:
 		
 		smoothfluxmed = sp.ndimage.filters.uniform_filter(model.flux, size=80) # smooth by this many spectral bins
-		model.flux   -= smoothfluxmed
+		model.flux   /= smoothfluxmed # Divide out the continuum
 		'''
 		import scipy.signal as signal
 		def butter_highpass(cutoff, fs, btype, order=5):
