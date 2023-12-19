@@ -194,8 +194,8 @@ data        = smart.Spectrum(flux=flux.value, wave=wave.value, noise=noise.value
 import scipy as sp
 smoothfluxmed = sp.ndimage.filters.uniform_filter(data.flux, size=80) # smooth by this many spectral bins
 
-data.flux   -= smoothfluxmed
-data.noise *= 0.1
+data.flux   /= smoothfluxmed
+data.noise  /= smoothfluxmed
 
 sci_data  = data
 
@@ -293,7 +293,7 @@ if 'btsettl08' in modelset.lower():
 						'rv_min':-1000.0,                           'rv_max':1000.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,							    'A_max':-1,
+						'A_min':-50,							    'A_max':50,
 						'B_min':-50,                              	'B_max':50,
 						'N_min':0.10,                               'N_max':10.0,
 						'lsf_min':1,                                'lsf_max':200 				
@@ -307,7 +307,7 @@ elif modelset.lower() == 'phoenix-btsettl-cifist2011-2015':
 						'rv_min':-1000.0,                           'rv_max':1000.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,							    'A_max':-1,
+						'A_min':-50,							    'A_max':50,
 						'B_min':-50,                              	'B_max':50,
 						'N_min':0.10,                               'N_max':10.0,
 						'lsf_min':1,                                'lsf_max':200 				
@@ -322,7 +322,7 @@ elif 'sonora' in modelset.lower():
 						'rv_min':-1000.0,                           'rv_max':1000.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,								'A_max':-1,
+						'A_min':-50,								'A_max':50,
 						'B_min':-50,                              	'B_max':50,
 						'N_min':0.10,                               'N_max':10.0,
 						'lsf_min':1,                                'lsf_max':200 				
@@ -336,7 +336,7 @@ elif modelset.lower() == 'phoenixaces':
 						'rv_min':-1000.0,                           'rv_max':1000.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,								'A_max':-1,
+						'A_min':-50,								'A_max':50,
 						'B_min':-0.6,								'B_max':0.6,
 						'N_min':0.10,                               'N_max':10.0, 	
 						'lsf_min':1,                                'lsf_max':200 				
