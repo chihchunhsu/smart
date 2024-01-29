@@ -308,7 +308,7 @@ if 'btsettl08' in modelset.lower():
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,							    'A_max':-1,
+						'A_min':-50,							    'A_max':10,
 						'B_min':-50,                              	'B_max':50,
 						'N_min':0.10,                               'N_max':10.0,
 						'lsf_min':1,                                'lsf_max':100 				
@@ -322,7 +322,7 @@ elif modelset.lower() == 'phoenix-btsettl-cifist2011-2015':
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,							    'A_max':-1,
+						'A_min':-50,							    'A_max':10,
 						'B_min':-50,                              	'B_max':50,
 						'N_min':0.10,                               'N_max':10.0,
 						'lsf_min':1,                                'lsf_max':100 				
@@ -337,7 +337,7 @@ elif 'sonora' in modelset.lower():
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,								'A_max':-1,
+						'A_min':-50,								'A_max':10,
 						'B_min':-50,                              	'B_max':50,
 						'N_min':0.10,                               'N_max':10.0,
 						'lsf_min':1,                                'lsf_max':100 				
@@ -351,7 +351,7 @@ elif modelset.lower() == 'phoenix-aces-agss-cond-2011':
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-50,								'A_max':-1,
+						'A_min':-50,								'A_max':10,
 						'B_min':-0.6,								'B_max':0.6,
 						'N_min':0.10,                               'N_max':10.0,
 						'lsf_min':1,                                'lsf_max':100 					
