@@ -1,14 +1,15 @@
 import pandas as pd
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-plt.ioff()
+#plt.ioff()
 import matplotlib.gridspec as gridspec
 from astropy.io import fits
 import emcee
 #from schwimmbad import MPIPool
 from multiprocessing import Pool
+from multiprocessing import set_start_method
 import smart
 import model_fit
 import mcmc_utils
@@ -314,8 +315,8 @@ if modelset == 'btsettl08' or modelset == 'phoenix-btsettl08':
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,                              	'B_max':0.6,
+						'A_min':-10,							    'A_max':10,
+						'B_min':-5,                              	'B_max':5,
 						'N_min':0.10,                               'N_max':5.0 				
 					}
 
@@ -420,6 +421,31 @@ file_log.write("med_snr {} \n".format(med_snr))
 file_log.close()
 """
 
+"""
+print('TEST'*30)
+import smart
+#import model_fit
+teff = 1424.35589731251
+logg = 4.040064200683195
+vsini = 8.25701288
+rv = -8.50785951e+01
+am = 2.66367465
+pwv = 1.31189184
+A  = 6.79162749e-04
+B  = -1.19734900e+00
+N  = 9.91839037e-01
+print(lsf)
+model = smart.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
+
+plt.plot(model.wave, model.flux, label='model')
+plt.plot(data.wave, data.flux, label='data')
+#plt.plot(data.wave, data.flux/data.noise, label='data')
+plt.legend()
+plt.show()
+sys.exit()
+"""
+
 #########################################################################################
 ## for multiprocessing
 #########################################################################################
@@ -445,10 +471,18 @@ def lnlike(theta, data, lsf):
 	## Parameters MCMC
 	teff, logg, vsini, rv, am, pwv, A, B, N = theta #N noise prefactor
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
+	#print('THETALN', theta)
 
 	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
 		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
-
+	'''
+	print('PLOTTING')
+	plt.plot(model.wave, model.flux, label='model')
+	plt.plot(data.wave, data.flux, label='data')
+	plt.legend()
+	plt.show()
+	sys.exit()
+	'''
 	chisquare = smart.chisquare(data, model)/N**2
 
 	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*(data.noise*N)**2)))
@@ -459,6 +493,19 @@ def lnprior(theta, limits=limits):
 	"""
 	## Parameters for theta
 	teff, logg, vsini, rv, am, pwv, A, B, N = theta
+	'''
+	print('THETAPR', theta)
+	print(limits)
+	print(limits['teff_min']  < teff  < limits['teff_max'])
+	print(limits['logg_min']  < logg  < limits['logg_max'])
+	print(limits['vsini_min'] < vsini < limits['vsini_max'])
+	print(limits['rv_min']    < rv    < limits['rv_max'])
+	print(limits['am_min']    < am    < limits['am_max'])
+	print(limits['pwv_min']   < pwv   < limits['pwv_max'])
+	print(limits['A_min']     < A     < limits['A_max'])
+	print(limits['B_min']     < B     < limits['B_max'])
+	print(limits['N_min']     < N     < limits['N_max'])
+	'''
 
 	if  limits['teff_min']  < teff  < limits['teff_max'] \
 	and limits['logg_min']  < logg  < limits['logg_max'] \
@@ -469,6 +516,7 @@ def lnprior(theta, limits=limits):
 	and limits['A_min']     < A     < limits['A_max']\
 	and limits['B_min']     < B     < limits['B_max']\
 	and limits['N_min']     < N     < limits['N_max']:
+		#print('YES')
 		return 0.0
 
 	return -np.inf
@@ -476,6 +524,7 @@ def lnprior(theta, limits=limits):
 def lnprob(theta, data, lsf):
 		
 	lnp = lnprior(theta)
+	#print('THETA0', theta)
 		
 	if not np.isfinite(lnp):
 		return -np.inf
@@ -491,9 +540,14 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 					priors['A_min']     + (priors['A_max']      - priors['A_min'])     * np.random.uniform(),
 					priors['B_min']     + (priors['B_max']      - priors['B_min'])     * np.random.uniform(),
 					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform()]) for i in range(nwalkers)]
-
+'''
+sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, moves=emcee.moves.KDEMove())
+time1 = time.time()
+sampler.run_mcmc(pos, step, progress=True)
+time2 = time.time()
+'''
 ## multiprocessing
-
+set_start_method('fork')
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,

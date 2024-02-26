@@ -471,7 +471,7 @@ def pixelWaveShift(data, model, start_pixel, window_width=40, delta_wave_range=2
 			testname = 'test'
 		plt.savefig('{}_{}.png'.format(testname,start_pixel))#), bbox_inches='tight')
 		plt.close()
-
+	print()
 	return best_shift
 
 
@@ -593,12 +593,13 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	pixel_range_start  = kwargs.get('pixel_range_start',0)
 	pixel_range_end    = kwargs.get('pixel_range_end',-1)
 	instrument         = kwargs.get('instrument', 'nirspec')
-	pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
-	#pixel0             = np.arange(length1)
+	#pixel0             = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
+	pixel0             = np.arange(length1)
 	#if mask_custom != []:
 	#pixel              = pixel0
 	pixel              = pixel0[pixel_range_start:pixel_range_end]
 	print('len(pixel)', len(pixel))
+	#sys.exit()
 
 	# LSF of the intrument
 	vbroad = (299792.458)*np.mean(np.diff(data.wave))/np.mean(data.wave)
@@ -613,6 +614,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	#	data.flux[index] = (data.flux[index_left] + data.flux[index_right])/2
 	data2       = copy.deepcopy(data)
 	model2      = copy.deepcopy(model)
+	print('LENGTHS:', len(pixel), len(data2.wave), len(model2.wave))
 
 	# apply the custom mask
 	#plt.figure()
@@ -774,6 +776,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 				print("xcorr time: {} s".format(round(time3-time2, 4)))
 
 			best_shift_list.append(best_shift)
+		#print(best_shift_list)
+		#sys.exit()
 
 		# TEST
 		#fig = plt.figure()
@@ -790,6 +794,11 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		
 		# We don't want values that didn't converge
 		mask1            = np.where(abs(best_shift_list2) != delta_wave_range) 
+
+		#plt.figure(111)
+		#plt.scatter(width_range_centers[mask1], best_shift_list2[mask1], alpha=0.5)
+		#plt.show()
+		#sys.exit()
 
 		popt, pcov = curve_fit(waveSolution, width_range_centers[mask1], 
 				                   best_shift_list2[mask1], p0)
@@ -859,6 +868,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 
 		# fit the wavelength again after the outlier rejections
 		popt2, pcov2 = curve_fit(waveSolution, width_range_center2, best_shift_array2, p0)
+		#plt.scatter(width_range_center2, best_shift_array2, alpha=0.5, label='after')
+		#plt.legend()
+		#plt.show()
 
 		for num_fit in range(5):
 			## re-fit again after the second outlier rejection
@@ -885,6 +897,20 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 				break
 
 
+		print(c0, c1, c2, c3, c4)
+		print(waveSolution(pixel, c0, c1, c2, c3, c4))
+		print(waveSolution(pixel0, c0, c1, c2, c3, c4))
+
+		#data3.flux             = data3.flux[pixel_range_start:pixel_range_end]
+		#data3.wave             = data3.wave[pixel_range_start:pixel_range_end]
+
+		#plt.figure(222)
+		#plt.plot(waveSolution(pixel, c0, c1, c2, c3, c4), data3.flux, color='black', linestyle='-', 
+		#		 label='polynomial  data', alpha=1, linewidth=0.5)
+		#plt.plot(data3.wave, data3.flux, color='green', linestyle='-', 
+		#		 label='raw  data', alpha=1, linewidth=0.5)
+		#plt.show()
+		#sys.exit()
 		# update the parameters
 		c0 += popt2[0]
 		c1 += popt2[1]
@@ -892,6 +918,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		c3 += popt2[3]
 		c4 += popt2[4]
 		p0 = np.array([c0, c1, c2, c3, c4])
+		print(c0, c1, c2, c3, c4)
+		print(waveSolution(pixel, c0, c1, c2, c3, c4))
+		print(waveSolution(pixel0, c0, c1, c2, c3, c4))
 		
 		# update the fits header keywords WFIT0-5, c3, c4
 		data2.header['COMMENT']  = 'Keys C0--C4 added by SMART.'
@@ -921,13 +950,31 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		## plot for analysis
 		data3       = copy.deepcopy(data)
 		#data3.wave  = new_wave_sol0
-		data3.wave  = new_wave_sol
+		print(len(data3.wave))
+		print(len(new_wave_sol0))
+		print(len(new_wave_sol))
+		print(c0)
+		print(data3.wave)
+		print(new_wave_sol0)
+		#sys.exit()
+		#data3.wave  = new_wave_sol0
 		model3      = copy.deepcopy(model)
 		model3.flux = smart.broaden(wave=model3.wave, flux=model3.flux, vbroad=vbroad, 
 			                      rotate=False, gaussian=True)
+
+		# DIRTY FIX HERE
+		#data3.flux             = np.delete(data3.flux, np.union1d(data.mask, mask_custom).astype(int) )
+		#data3.flux             = data3.flux[pixel_range_start:pixel_range_end]
+		#data3.wave             = np.delete(data3.wave, np.union1d(data.mask, mask_custom).astype(int) )
+		print(len(data3.wave))
+		print(len(data3.flux))
+		#sys.exit()
+
 		# model resample and LSF broadening
 		model3.flux = np.array(smart.integralResample(xh=model3.wave, 
-			                                        yh=model3.flux, xl=data3.wave))
+			                                          yh=model3.flux, xl=data3.wave))
+		#model3.flux = np.array(smart.integralResample(xh=model3.wave, 
+		#	                                          yh=model3.flux, xl=new_wave_sol0))
 		model3.wave = data3.wave
 
 		#plt.rc('text', usetex=True)
@@ -937,18 +984,25 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		ax1 = plt.subplot(gs1[0:2,0:])
 		ax2 = plt.subplot(gs1[2:4,0:])
 		ax3 = plt.subplot(gs1[4:,0:], sharex=ax2)
+		#print(len(new_wave_sol0))
+		#print(len(new_wave_sol))
+		#print(len(data3.flux))
+		#print(len(data3.wave))
+		#print(len(model3.wave))
 		
 		ax1.xaxis.tick_top()
 		#ax1.plot(data.wave, data.flux, color='black',linestyle='-', label='telluric data',alpha=0.5,linewidth=0.8)
 		if not apply_sigma_mask:
 			#ax1.plot(new_wave_sol, data.flux[pixel], color='black', linestyle='-', 
 			#		 label='corrected telluric data', alpha=1, linewidth=0.5)
-			ax1.plot(new_wave_sol0, data3.flux, color='black', linestyle='-', 
+			ax1.plot(new_wave_sol, data3.flux[pixel_range_start:pixel_range_end], color='black', linestyle='-', 
 					 label='corrected telluric data', alpha=1, linewidth=0.5)
+			ax1.plot(data3.wave, data3.flux, color='green', linestyle='-', 
+					 label='raw telluric data', alpha=1, linewidth=0.5)
 		else:
 			#ax1.plot(new_wave_sol, data.flux[pixel], color='black', linestyle='-', 
 			#		 label='corrected telluric data', alpha=1, linewidth=0.5)
-			ax1.plot(new_wave_sol, data3.flux, color='black', linestyle='-', 
+			ax1.plot(new_wave_sol, data3.flux[pixel_range_start:pixel_range_end], color='black', linestyle='-', 
 					 label='corrected telluric data', alpha=1, linewidth=0.5)
 		ax1.plot(model3.wave, model3.flux, 'r-' , label='telluric model', alpha=0.7, lw=0.5)
 		ax1.set_xlabel("Wavelength ($\AA$)")
@@ -1000,6 +1054,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		plt.subplots_adjust(hspace=.0)
 		plt.savefig("pixel_to_delta_wavelength_loop_{}.png".format(i+1),
 					bbox_inches='tight')
+		#plt.show()
+		#sys.exit()
 		plt.close()
 
 		time6 = time.time()
@@ -1121,11 +1177,25 @@ def run_wave_cal(data_name, data_path, order_list,
 		# use median value to replace the masked values later
 		if instrument == 'igrins':
 			pix_start, pix_end = pixel_range_start, pixel_range_end # need to make it more flexible
+			#print(data_name)
+			#print(data_path)
 			data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask,
-									name2=data_name, flat_tell=True, instrument=instrument)
-			length1  = len(data.wave) # preserve the length of the array
+									  name2=data_name, flat_tell=True, instrument=instrument)
+			#print('1', data.mask)
+			#sys.exit()
+			length1  = len(data.oriWave) # preserve the length of the array
+			print('Length', length1)
+			print('TEST0', len(data.wave))
 
 			p_init = np.poly1d(np.polyfit(np.arange(len(data.wave))[pix_start:pix_end], data.wave[pix_start:pix_end], 4))
+
+			#plt.plot(data.wave, data.flux, label='original', alpha=0.5)
+			#plt.plot(p_init(np.arange(len(data.wave))), data.flux, label='interpolated', alpha=0.5)
+			print(len(data.wave))
+			print(len(data.wave[pix_start:pix_end]))
+			#plt.legend()
+			#plt.show()
+			#sys.exit()
 
 			data.header['C0'] = p_init[0]
 			data.header['C1'] = p_init[1]
@@ -1146,7 +1216,6 @@ def run_wave_cal(data_name, data_path, order_list,
 			#plt.show()
 			#plt.close()
 			#sys.exit()
-
 
 			data.header['AIRMASS'] = np.mean([data.header['AMSTART'], data.header['AMEND']])
 		else:
@@ -1210,7 +1279,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			plt.show()
 			plt.close()
 			#sys.exit()
-		
+
 		# continuum correction for the data
 		data1    = copy.deepcopy(data)
 		if instrument == 'nirspec':
@@ -1259,7 +1328,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		file_log.close()
 
 		data_path2 = data_path + '/' + data_name + '.spec_flattened.fits'
-		#print('data length:', len(data.oriWave), len(data.wave))
+		print('data length:', len(data.oriWave), len(data.wave))
 		time1 = time.time()
 
 		new_wave_sol, p0, width_range_center, residual, best_shift_list = \
@@ -1298,7 +1367,8 @@ def run_wave_cal(data_name, data_path, order_list,
 			data.noise = data.noise[pixel_range_start:pixel_range_end]
 		
 		# plotting
-		pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
+		#pixel       = np.delete(np.arange(length1), np.union1d(data.mask, mask_custom).astype(int) )
+		pixel       = np.arange(length1)
 		pixel       = pixel[pixel_range_start:pixel_range_end]
 		
 		data.wave   = data.wave[pixel_range_start:pixel_range_end]
@@ -1354,6 +1424,7 @@ def run_wave_cal(data_name, data_path, order_list,
 
 		# make a telluric model for the input data
 		telluric = smart.convolveTelluric(vbroad, data, alpha=alpha, airmass=airmass, pwv=pwv)
+		print('LENGTHS2:', len(pixel), len(data.wave), len(telluric.wave))
 		residual_telluric_data = smart.residual(data,telluric)
 		# add the final LSF and alpha to the txt file
 		file_log = open("input_params_for_cal.txt","a")
