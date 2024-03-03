@@ -1147,7 +1147,6 @@ def run_wave_cal(data_name, data_path, order_list,
 			#plt.close()
 			#sys.exit()
 
-
 			data.header['AIRMASS'] = np.mean([data.header['AMSTART'], data.header['AMEND']])
 		else:
 			data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask)

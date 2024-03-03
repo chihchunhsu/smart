@@ -353,7 +353,10 @@ class Spectrum():
 
 			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
 			if self.flat_tell:
-				self.header = wave[0].header
+				if '_calibrated' in self.name2:
+					self.header = wave[0].header
+				else:
+					self.header = hdulist[0].header
 			else:
 				self.header = hdulist[0].header
 
@@ -373,9 +376,9 @@ class Spectrum():
 			# masking out any NaNs in noise, wave, flux
 			mask_locs = np.any([np.isnan(self.noise).tolist(), np.isnan(self.wave).tolist(), np.isnan(self.flux).tolist()], axis=0)
 
-			self.wave  = self.wave[~mask_locs]
-			self.flux  = self.flux[~mask_locs]
-			self.noise = self.noise[~mask_locs]
+			#self.wave  = self.wave[~mask_locs]
+			#self.flux  = self.flux[~mask_locs]
+			#self.noise = self.noise[~mask_locs]
 			self.mask  = np.arange(len(self.oriWave))[mask_locs]
 
 			# define a list for storing the best wavelength shift
