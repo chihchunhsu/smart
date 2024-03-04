@@ -329,6 +329,7 @@ class Spectrum():
 			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
 			self.flat_tell = kwargs.get('flat_tell', False)
 			self.spec_a0v  = kwargs.get('spec_a0v', False)
+			self.applymask = kwargs.get('applymask',False)
 
 			# assign IGRINS data index
 			igrins_order_dict = {'77':6}
@@ -373,13 +374,15 @@ class Spectrum():
 			self.oriFlux  = self.flux
 			self.oriNoise = self.noise
 
-			# masking out any NaNs in noise, wave, flux
-			mask_locs = np.any([np.isnan(self.noise).tolist(), np.isnan(self.wave).tolist(), np.isnan(self.flux).tolist()], axis=0)
-
-			#self.wave  = self.wave[~mask_locs]
-			#self.flux  = self.flux[~mask_locs]
-			#self.noise = self.noise[~mask_locs]
-			self.mask  = np.arange(len(self.oriWave))[mask_locs]
+			self.mask = []
+			if self.applymask:
+				# masking out any NaNs in noise, wave, flux
+				mask_locs = np.any([np.isnan(self.noise).tolist(), np.isnan(self.wave).tolist(), np.isnan(self.flux).tolist()], axis=0)
+	
+				self.wave  = self.wave[~mask_locs]
+				self.flux  = self.flux[~mask_locs]
+				self.noise = self.noise[~mask_locs]
+				self.mask  = np.arange(len(self.oriWave))[mask_locs]
 
 			# define a list for storing the best wavelength shift
 			self.bestshift = []

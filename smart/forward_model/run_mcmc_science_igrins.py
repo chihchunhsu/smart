@@ -8,7 +8,7 @@ import matplotlib.gridspec as gridspec
 from astropy.io import fits
 import emcee
 #from schwimmbad import MPIPool
-from multiprocessing import Pool
+from multiprocessing import Pool, set_start_method
 import smart
 import model_fit
 import mcmc_utils
@@ -296,6 +296,7 @@ elif instrument == 'hires':
 	barycorr       = json.loads(lines[11].split('barycorr')[1])
 elif instrument == 'igrins':
 	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
+	print('custom_mask', custom_mask)
 	priors         = ast.literal_eval(lines[6].split('priors ')[1])
 	barycorr       = json.loads(lines[13].split('barycorr')[1])
 
@@ -476,7 +477,7 @@ def lnprior(theta, limits=limits):
 def lnprob(theta, data, lsf):
 		
 	lnp = lnprior(theta)
-		
+
 	if not np.isfinite(lnp):
 		return -np.inf
 		
@@ -494,6 +495,7 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 
 ## multiprocessing
 
+set_start_method('fork')
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,

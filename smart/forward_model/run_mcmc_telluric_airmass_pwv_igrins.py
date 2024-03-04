@@ -9,7 +9,7 @@ from astropy.io import fits
 import emcee
 import tellurics
 import smart
-from multiprocessing import Pool
+from multiprocessing import Pool, set_start_method
 import corner
 import os
 import sys
@@ -370,6 +370,7 @@ pos = [np.array([priors['lsf_min']       + (priors['lsf_max']        - priors['l
 				 priors['A_min']         + (priors['A_max']          - priors['A_min'])     * np.random.uniform(),
 				 priors['B_min']         + (priors['B_max']          - priors['B_min'])     * np.random.uniform()]) for i in range(nwalkers)]
 
+set_start_method('fork')
 with Pool() as pool:
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data,), a=moves, pool=pool, moves=emcee.moves.KDEMove())
 	time1 = time.time()

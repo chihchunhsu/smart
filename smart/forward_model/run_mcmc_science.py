@@ -8,7 +8,7 @@ import matplotlib.gridspec as gridspec
 from astropy.io import fits
 import emcee
 #from schwimmbad import MPIPool
-from multiprocessing import Pool
+from multiprocessing import Pool, set_start_method
 import smart
 import model_fit
 import mcmc_utils
@@ -492,6 +492,7 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform()]) for i in range(nwalkers)]
 ## multiprocessing
 
+set_start_method('fork')
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
