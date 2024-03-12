@@ -182,6 +182,19 @@ elif instrument == 'hires':
 elif instrument == 'igrins':
 	mjd = data.header['MJD-OBS']
 
+###### TEST
+'''
+teff = 750
+logg = 4.9
+vsini = 30
+rv = 10
+model = smart.Model(teff=teff, logg=logg, metal=0.0, modelset=modelset, instrument=instrument, order='116')
+plt.plot(model.wave, model.flux)
+plt.show()
+sys.exit()
+'''
+###### TEST
+
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
 	if not os.path.exists(save_to_path):
@@ -301,7 +314,7 @@ elif instrument == 'igrins':
 	barycorr       = json.loads(lines[13].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
-if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
+if 'btsettl08' in modelset.lower() and priors['teff_min'] < 900: logg_max = 5.0
 else: logg_max = 5.5
 
 # limit of the flux nuisance parameter: 5 percent of the median flux
@@ -381,6 +394,8 @@ data.wave     = data.wave[pixel_start:pixel_end]
 data.flux     = data.flux[pixel_start:pixel_end]
 data.noise    = data.noise[pixel_start:pixel_end]
 
+print('Median S/N:', np.nanmedian(data.flux/data.noise))
+
 if instrument == 'nirspec':
 	tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
 	tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
@@ -390,7 +405,7 @@ if instrument == 'nirspec':
 #	priors, limits         = mcmc_utils.generate_final_priors_and_limits(sp_type=sp_type, barycorr=barycorr, save_to_path1=save_to_path1)
 #else:
 #	priors, limits         = mcmc_utils.generate_initial_priors_and_limits(sp_type=sp_type)
-#print(priors, limits)
+print(priors, limits)
 
 if lsf is None:
 	lsf           = smart.getLSF(tell_sp, alpha=alpha_tell, test=True, save_path=save_to_path)
@@ -421,7 +436,7 @@ file_log.write("med_snr {} \n".format(med_snr))
 file_log.close()
 """
 
-"""
+'''
 print('TEST'*30)
 import smart
 #import model_fit
@@ -438,13 +453,13 @@ print(lsf)
 model = smart.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
 	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
 
-plt.plot(model.wave, model.flux, label='model')
-plt.plot(data.wave, data.flux, label='data')
+plt.plot(model.wave, model.flux, label='model', alpha=0.5)
+plt.plot(data.wave, data.flux, label='data', alpha=0.5)
 #plt.plot(data.wave, data.flux/data.noise, label='data')
 plt.legend()
 plt.show()
 sys.exit()
-"""
+'''
 
 #########################################################################################
 ## for multiprocessing
@@ -692,7 +707,7 @@ model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0,
 	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, 
 	include_fringe_model=include_fringe_model, instrument=instrument)
 
-fig = plt.figure(figsize=(16,6))
+fig = plt.figure(figsize=(13,5))
 ax1 = fig.add_subplot(111)
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=15)
@@ -706,12 +721,12 @@ plt.axhline(y=0,color='k',linestyle='-',linewidth=0.5)
 plt.ylim(-np.max(np.append(np.abs(data.noise),np.abs(data.flux-model.flux)))*1.2,np.max(data.flux)*1.2)
 plt.ylabel("Flux ($cnts/s$)",fontsize=15)
 plt.xlabel("$\lambda$ ($\AA$)",fontsize=15)
-plt.figtext(0.89,0.85,str(data.header['OBJECT'])+' '+data.name+' O'+str(data.order),
+plt.figtext(0.89,0.85,str(data.header['OBJECT'])+' '+' Order '+str(data.order),
 	color='k',
 	horizontalalignment='right',
 	verticalalignment='center',
-	fontsize=15)
-plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini \, {6}^{{+{7}}}_{{-{8}}}/ RV \, {9}^{{+{10}}}_{{-{11}}}$".format(\
+	fontsize=11)
+plt.figtext(0.89,0.81,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{5}}}/ en \, 0.0/ vsini \, {6}^{{+{7}}}_{{-{8}}}/ RV \, {9}^{{+{10}}}_{{-{11}}}$".format(\
 	round(teff_mcmc[0]),
 	round(teff_mcmc[1]),
 	round(teff_mcmc[2]),
@@ -727,13 +742,13 @@ plt.figtext(0.89,0.82,"$Teff \, {0}^{{+{1}}}_{{-{2}}}/ logg \, {3}^{{+{4}}}_{{-{
 	color='C0',
 	horizontalalignment='right',
 	verticalalignment='center',
-	fontsize=12)
-plt.figtext(0.89,0.79,r"$\chi^2$ = {}, DOF = {}".format(\
+	fontsize=11)
+plt.figtext(0.89,0.77,r"$\chi^2$ = {}, DOF = {}".format(\
 	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
 color='k',
 horizontalalignment='right',
 verticalalignment='center',
-fontsize=12)
+fontsize=11)
 plt.minorticks_on()
 
 ax2 = ax1.twiny()
@@ -745,6 +760,7 @@ ax2.minorticks_on()
 	
 #plt.legend()
 plt.savefig(save_to_path + '/spectrum.png', dpi=300, bbox_inches='tight')
+plt.savefig(save_to_path + '/spectrum.pdf', bbox_inches='tight')
 if plot_show:
 	plt.show()
 plt.close()

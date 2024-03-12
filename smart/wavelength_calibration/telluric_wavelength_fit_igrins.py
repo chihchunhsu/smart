@@ -1191,8 +1191,8 @@ def run_wave_cal(data_name, data_path, order_list,
 
 			#plt.plot(data.wave, data.flux, label='original', alpha=0.5)
 			#plt.plot(p_init(np.arange(len(data.wave))), data.flux, label='interpolated', alpha=0.5)
-			print(len(data.wave))
-			print(len(data.wave[pix_start:pix_end]))
+			#print(len(data.wave))
+			#print(len(data.wave[pix_start:pix_end]))
 			#plt.legend()
 			#plt.show()
 			#sys.exit()
@@ -1288,7 +1288,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			const    = np.median(data.flux) - np.median(model.flux)
 			data.flux -= const
 
-		#print(len(data.wave),len(data.flux),len(data.noise))
+		print(len(data.wave),len(data.flux),len(data.noise))
 		#plt.plot(data.wave, data.flux, 'r-', alpha=0.5, label='median combined mask data')
 		#plt.xlabel(r'$\lambda$ ($\AA)')
 		#plt.ylabel(r'$F_{\lambda}$')
@@ -1300,6 +1300,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		
 		# defringe
 		if order in defringe_list:
+			print('defringing')
 			data, fringe = smart.fringeTelluric(data)
 
 		#lsf0 = smart.getLSF(data,continuum=False,test=True)
@@ -1330,6 +1331,23 @@ def run_wave_cal(data_name, data_path, order_list,
 		data_path2 = data_path + '/' + data_name + '.spec_flattened.fits'
 		print('data length:', len(data.oriWave), len(data.wave))
 		time1 = time.time()
+
+		'''
+		print('TESTING0')
+		print(data.wave)
+		print(data.flux)
+		print(data.oriFlux)
+		print(data.oriNoise)
+		plt.figure(1)
+		plt.plot(data.wave, data.flux, label='flux')
+		plt.plot(data.wave, data.noise, label='noise')
+		plt.plot(data.wave, data.oriFlux, label='oriflux')
+		plt.plot(data.wave, data.oriNoise, label='orinoise')
+		plt.legend()
+		plt.show()
+		sys.exit()
+		print('TESTING0')
+		'''
 
 		new_wave_sol, p0, width_range_center, residual, best_shift_list = \
 		wavelengthSolutionFit(data, model,
@@ -1402,7 +1420,24 @@ def run_wave_cal(data_name, data_path, order_list,
 		#vbroad = (299792458/1000)*np.mean(np.diff(telluric.wave))/np.mean(telluric.wave)
 		# check the result for telluric
 		#residual_telluric_data = smart.residual(data,telluric)
-		
+		'''
+		print('TESTING')
+		print(pixel)
+		print(new_wave_sol)
+		print(data.wave)
+		print(data.flux)
+		print(data.oriFlux)
+		print(data.oriFlux[pixel])
+		print(data.oriNoise)
+		print(data.oriNoise[pixel])
+		plt.figure(333)
+		plt.plot(data.wave, data.flux, alpha=0.5)
+		plt.plot(data.wave, data.noise, alpha=0.5)
+		plt.plot(data.wave, data.oriFlux[pixel], alpha=0.5)
+		plt.plot(data.wave, data.oriNoise[pixel], alpha=0.5)
+		plt.show()
+		print('TESTING')
+		'''
 		vbroad            = (299792.458)*np.mean(np.diff(data.wave))/np.mean(data.wave)
 		telluric_new      = copy.deepcopy(data)
 		new_wave_sol      = waveSolution(pixel, *p0)
@@ -1433,13 +1468,17 @@ def run_wave_cal(data_name, data_path, order_list,
 		file_log.close()
 		
 		telluric_new2 = smart.convolveTelluric(lsf, telluric_new, alpha=alpha, airmass=airmass, pwv=pwv)
+		print('TELLURIC CHECK1')
+		print(telluric_new2.flux)
+		print(telluric_new2.wave)
 		if order in defringe_list:
 			# add back the fringe
 			telluric_new2_no_fringe = copy.deepcopy(telluric_new2)
 			telluric_new2.flux += fringe[pixel_range_start:pixel_range_end]
 
 		## constant offset correction
-		const    = np.mean(data.flux) - np.mean(telluric_new2.flux)
+		const    = np.nanmean(data.flux) - np.nanmean(telluric_new2.flux)
+		print('CONSTANT', const)
 		data.flux -= const
 
 		print("vbroad: ",lsf, " km/s")
@@ -1450,15 +1489,22 @@ def run_wave_cal(data_name, data_path, order_list,
 			# this is to handle a plotting bug for O38
 			pass
 		else:
-			select = np.absolute(residual_telluric_wavesol.flux) < 5*np.std(residual_telluric_wavesol.flux)
+			select = np.absolute(residual_telluric_wavesol.flux) < 5*np.nanstd(residual_telluric_wavesol.flux)
 
-			telluric_new_select = np.where((residual_telluric_wavesol.flux) < 5*np.std(residual_telluric_wavesol.flux))
+			telluric_new_select = np.where((residual_telluric_wavesol.flux) < 5*np.nanstd(residual_telluric_wavesol.flux))
+			print('TELLURIC CHECK2')
 			telluric_full       = copy.deepcopy(telluric_new2) # preserve the full wavelength range
+			print(telluric_new.flux)
+			print(telluric_new.wave)
 			telluric_new.flux   = telluric_new.flux[telluric_new_select]
 			telluric_new.wave   = telluric_new.wave[telluric_new_select]
+			print(telluric_new.flux)
+			print(telluric_new.wave)
 			telluric_new.noise  = telluric_new.noise[telluric_new_select]
 			telluric_new2.flux  = telluric_new2.flux[telluric_new_select]
 			telluric_new2.wave  = telluric_new2.wave[telluric_new_select]
+			print(telluric_new2.flux)
+			print(telluric_new2.wave)
 
 			residual_telluric_wavesol.flux = residual_telluric_wavesol.flux[select]
 			residual_telluric_wavesol.wave = residual_telluric_wavesol.wave[select]
@@ -1495,6 +1541,11 @@ def run_wave_cal(data_name, data_path, order_list,
 		fig.savefig("telluric_comparison_{}_O{}_1.png".format(data_name,order), 
 			        bbox_inches='tight')
 		plt.close()
+
+		print(telluric_new2.wave)
+		print(telluric_new2.flux)
+		print(new_wave_sol)
+		print(data.flux)
 
 		plt.tick_params(labelsize=20)
 		fig = plt.figure(figsize=(16,8))

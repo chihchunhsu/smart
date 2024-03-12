@@ -1,7 +1,7 @@
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-plt.ioff()
+#plt.ioff()
 import matplotlib.gridspec as gridspec
 import pandas as pd
 import numpy as np
@@ -224,11 +224,11 @@ if priors is None:
 		A_max = +1000.0
 		pwv_max = 5.0
 
-	priors      =	{	'lsf_min':3.0  		,  'lsf_max':8.0,
+	priors      =	{	'lsf_min':1.0  		,  'lsf_max':8.0,
 						'airmass_min':1.0   ,  'airmass_max':3.0,		
 						'pwv_min':0.5       ,  'pwv_max':pwv_max,
 						'A_min':A_min 		,  'A_max':A_max,
-						'B_min':-0.04  	    ,  'B_max':0.04    
+						'B_min':-2  	    ,  'B_max':2    
 					}
 
 
@@ -244,6 +244,11 @@ tell_sp.wave  = tell_sp.wave[np.invert(mask)]
 tell_sp.flux  = tell_sp.flux[np.invert(mask)]
 tell_sp.noise = tell_sp.noise[np.invert(mask)]
 pixel         = pixel[np.invert(mask)]
+
+#plt.plot(tell_sp.wave, tell_sp.flux)
+#plt.plot(tell_sp.wave, tell_sp.noise)
+#plt.show()
+#sys.exit()
 """
 ## perform outlier rejection based on the lowest chi-square grid model
 data_tmp       = copy.deepcopy(tell_sp)
@@ -326,7 +331,7 @@ def lnlike(theta, data=data):
 
 	chisquare = smart.chisquare(data, model)
 
-	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*data.noise**2)))
+	return -0.5 * (chisquare + np.nansum(np.log(2*np.pi*data.noise**2)))
 
 def lnprior(theta):
 	"""
@@ -343,7 +348,7 @@ def lnprior(theta):
 		pwv_max = 5.0
 		A_max   = 5000.0
 
-	limits =  { 'lsf_min':2.0  		,  'lsf_max':10.0,
+	limits =  { 'lsf_min':1.0  		,  'lsf_max':10.0,
 				'airmass_min':1.0   ,  'airmass_max':3.0,
 				'pwv_min':0.50 		,  'pwv_max':pwv_max,
 				'A_min':-A_max 		,  'A_max':A_max,

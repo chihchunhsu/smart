@@ -331,7 +331,11 @@ class Spectrum():
 			self.spec_a0v  = kwargs.get('spec_a0v', False)
 
 			# assign IGRINS data index
-			igrins_order_dict = {'77':6}
+			igrins_order_dict = {
+			                     '77':6, 
+			                     '98':0, '99':1, '100':2, '101':3, '102':4, '103':5, '104':6, '105':7, '106':8, '107':9, '108':10, 
+			                     '109':11, '110':12, '111':13, '112':14, '113':15, '114':16, '115':17, '116':18, '117':19, '118':20, 
+			                    }
 
 			if self.path == None:
 				self.path = './'
