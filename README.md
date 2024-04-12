@@ -8,6 +8,7 @@ Authors:
 * Adam Burgasser, PI (UCSD)
 * Chris Theissen (UCSD, BU)
 * Jessica Birky (UW, UCSD)
+* Lingfeng Wei (UCSD)
 
 ## Code Setup:
 Dependencies. The `SMART` has been tested under the following environments:
