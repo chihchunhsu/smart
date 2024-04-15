@@ -200,7 +200,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	# integral resampling
 	if data is not None:
-		if instrument in ['nirspec', 'hires', 'igrins']:
+		if instrument in ['nirspec', 'hires', 'igrins','fire']:
 			model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
 			model.wave = data.wave
 
@@ -214,7 +214,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 					model2.wave = data.wave
 
 		# contunuum correction
-		if data.instrument in ['nirspec', 'hires', 'igrins', 'kpic']:
+		if data.instrument in ['nirspec', 'hires', 'igrins', 'kpic', 'fire']:
 			niter = 5 # continuum iteration
 			if output_stellar_model:
 				model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
@@ -229,7 +229,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 				model = smart.continuum(data=data, mdl=model)
 				for i in range(niter):
 					model = smart.continuum(data=data, mdl=model)
-		elif data.instrument == 'apogee':
+
+		if data.instrument == 'apogee':
 			## set the order in the continuum fit
 			deg         = 5
 
@@ -251,6 +252,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 			model0.flux = np.array(smart.integralResample(xh=model0.wave, yh=model0.flux, xl=data0.wave))
 			model0.wave = data0.wave
 			model0      = smart.continuum(data=data0, mdl=model0, deg=deg)
+			
 			# flux corrections
 			#model0.flux = (model0.flux + c0_1) * np.e**(-c0_2)
 			model0.flux = (model0.flux + c0_1)
@@ -337,6 +339,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		sys.exit()
 		'''
 		model.flux   -= smoothfluxmed
+		#model.flux   /= smoothfluxmed # Divide out the continuum
+
 		if output_stellar_model: stellar_model.flux   -= smoothfluxmed
 		'''
 		import scipy.signal as signal
@@ -364,7 +368,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		# plt.show()
 		'''
 
-	if instrument in ['nirspec', 'hires', 'igrins']:
+	if instrument in ['nirspec', 'hires', 'igrins', 'fire']:
 		# flux offset
 		model.flux += flux_offset
 		if output_stellar_model: 
@@ -373,8 +377,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 				model2.flux += flux_offset
 	
 	#model.flux **= (1 + flux_exponent_offset)
-	
 	model.flux *= 10**flux_mult
+
 	if output_stellar_model: stellar_model.flux *= 10**flux_mult
 
 	if output_stellar_model:
