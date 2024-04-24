@@ -36,9 +36,11 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     #print(data.wave)
     #print(mdl.wave)
     if data.instrument in ['nirspec', 'hires', 'igrins', 'kpic', 'fire']:
+        #print('model',mdl.wave)
         mdl_range      = np.where((mdl.wave >= data.wave[0]) & (mdl.wave <= data.wave[-1]))
         mdl_wave       = mdl.wave[mdl_range]
         mdl_flux       = mdl.flux[mdl_range]
+        #sys.exit()
     #elif data.instrument in ['igrins']:
     #    # avoid the telluric CH4 region for order 6
     #    mdl_range      = np.where( ((mdl.wave >= data.wave[0]) & (mdl.wave <= data.wave[1350])) | (mdl.wave >= data.wave[1650]) & (mdl.wave <= data.wave[-1])  )
@@ -60,24 +62,26 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
         mdldiv          = flux/mdl_int
 
     else:
+
         mdl_int         = np.interp(data.wave, mdl_wave, mdl_flux)
         mdldiv          = data.flux/mdl_int
 
     ## find mean and stdev of mdldiv
-    mean_mdldiv     = np.mean(mdldiv)
-    std_mdldiv      = np.std(mdldiv)
+    mean_mdldiv     = np.nanmean(mdldiv)
+    std_mdldiv      = np.nanstd(mdldiv)
     
     ## replace outliers with average value for nirspec
-    if data.instrument in ['nirspec', 'hires', 'kpic', 'fire']:
+    if data.instrument in ['nirspec', 'hires', 'kpic','fire']:
         mdldiv[mdldiv  <= mean_mdldiv - 2 * std_mdldiv] = mean_mdldiv
         mdldiv[mdldiv  >= mean_mdldiv + 2 * std_mdldiv] = mean_mdldiv
-        try:
-            pcont           = np.polyfit(data.wave, mdldiv, deg, w=1/data.noise**2)
-        except:
-            ## if the length of the data flux and noise are not the same
-            pcont           = np.polyfit(data.wave, mdldiv, deg)
+        #try:
+        pcont           = np.polyfit(data.wave, mdldiv, deg, w=1/data.noise**2)
+    #except:
+        #    ## if the length of the data flux and noise are not the same
+        #    pcont           = np.polyfit(data.wave, mdldiv, deg)
     
-    if data.instrument in ['igrins']:
+
+    elif data.instrument in ['igrins']:
         #mdldiv[mdldiv  <= mean_mdldiv - 2 * std_mdldiv] = mean_mdldiv
         #mdldiv[mdldiv  >= mean_mdldiv + 2 * std_mdldiv] = mean_mdldiv
         #try:
@@ -92,7 +96,7 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
         mdldiv          = mdldiv[select_poly_fit]
         data_wave_fit   = data.wave[select_poly_fit]
         pcont           = np.polyfit(data_wave_fit, mdldiv, deg)
-    
+
     mdl.flux       *= np.polyval(pcont, mdl.wave)
 
     if data.instrument == 'apogee':
