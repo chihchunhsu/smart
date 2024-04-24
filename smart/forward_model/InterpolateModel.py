@@ -9,7 +9,7 @@ from ..utils.interpolations import trilinear_interpolation
 ##############################################################################################################
 
 
-def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond-2011', instrument='nirspec', order='O33'):
+def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, co=0, modelset='phoenix-aces-agss-cond-2011', instrument='nirspec', order='O33'):
     #print('Parameters', teff, logg, modelset, instrument, order)
     FULL_PATH  = os.path.realpath(__file__)
     BASE, NAME = os.path.split(FULL_PATH)
@@ -35,36 +35,57 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
         logg       = kwargs.get('logg', 4.5)
         metal      = kwargs.get('metal', 0)
         alpha      = kwargs.get('alpha', 0)
+        kzz        = kwargs.get('kzz', 0)
+        co         = kwargs.get('co', 1)
         gridfile   = kwargs.get('gridfile', None)
         instrument = kwargs.get('instrument', 'nirspec')
         order      = kwargs.get('order', None)
-        #print(temp, logg, metal, alpha)
+        #print('GETMODEL:', temp, logg, metal, alpha, kzz, co)
         if gridfile is None:
             raise ValueError('Model gridfile must be provided.') 
         
         if modelset.lower() == 'btsettl08' and instrument.lower() == 'nirspec': 
             filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'    
-        elif modelset.lower() == 'sonora':
+        
+        elif modelset.lower()=='sonora-2023':
+            if instrument.lower() == 'nirspec':
+                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_CO{0:.2f}'.format(float(co)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-O%s.fits'%(instrument.upper(), order.upper())
+            else:
+                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_CO{0:.2f}'.format(float(co)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+        
+        elif 'sonora' in modelset.lower():
             if instrument.lower() == 'nirspec':
                 filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-O%s.fits'%(instrument.upper(), order.upper())
             else:
                 filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-%s.fits'%(instrument.upper(), order.upper())
+        
         elif modelset.lower() == 'marcs-apogee-dr15':
             cm      = kwargs.get('cm', 0)
             nm      = kwargs.get('nm', 0) 
             filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_cm{0:.2f}'.format(float(cm)) + '_nm{0:.2f}'.format(float(nm)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+        
+        elif kzz != 0:
+            filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+
         else: 
-            if instrument.lower()in ['nirspec', 'hires', 'igrins']:
+            if instrument.lower() in ['nirspec', 'hires']:
                 filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-O%s.fits'%(instrument.upper(), order.upper())
             else:
-                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
-        
+                #print('Here')
+                #print(modelset.lower(), temp, logg, metal, alpha)
+                if modelset == 'hd206893-qkbbhires':
+                    kzz = 1e8
+                    filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+                else:
+                    filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+                #print(filename)
         # Read in the model FITS file
         if modelset.lower() == 'btsettl08': 
             Tab = Table.read(path+filename, format='ascii.tab', names=['wave', 'flux'])
         else: 
             Tab = Table.read(path+filename)
 
+        #print(Tab)
         # Return the model (wave of flux)
         if wave:
             return Tab['wave']
@@ -74,7 +95,19 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
     ###################################################################################
 
     # Check if the model already exists (grid point)
-    if modelset.lower() == 'sonora':
+
+    if modelset.lower() == 'sonora-2023':
+        #print("YES" ,teff, logg, metal, kzz, co)
+        if (teff, logg, metal, kzz, co) in zip(T1['teff'], T1['logg'], T1['M_H'], T1['kzz'], T1['CO']):
+            #metal, ys = 0, 0.28
+            index0 = np.where( (T1['teff'] == teff) & (T1['logg'] == logg) & (T1['M_H'] == metal) & (T1['kzz'] == kzz) & (T1['CO'] == co) )
+            #flux2  = GetModel(T1['teff'][index0], T1['logg'][index0], T1['M_H'][index0], modelset=modelset )
+            #waves2 = GetModel(T1['teff'][index0], T1['logg'][index0], T1['M_H'][index0], modelset=modelset, wave=True)
+            #print(index0)
+            flux2  = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['M_H'][index0], kzz=T1['kzz'][index0], co=T1['CO'][index0], instrument=instrument, order=order, gridfile=T1)
+            waves2 = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['M_H'][index0], kzz=T1['kzz'][index0], co=T1['CO'][index0], instrument=instrument, order=order, gridfile=T1, wave=True)
+            return waves2, flux2
+    elif 'sonora' in modelset.lower():
         if (teff, logg) in zip(T1['teff'], T1['logg']):
             metal, ys = 0, 0.28
             index0 = np.where( (T1['teff'] == teff) & (T1['logg'] == logg) & (T1['FeH'] == metal) & (T1['Y'] == ys) )
@@ -82,6 +115,15 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
             #waves2 = GetModel(T1['teff'][index0], T1['logg'][index0], T1['M_H'][index0], modelset=modelset, wave=True)
             flux2  = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['FeH'][index0], alpha=T1['Y'][index0], instrument=instrument, order=order, gridfile=T1)
             waves2 = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['FeH'][index0], alpha=T1['Y'][index0], instrument=instrument, order=order, gridfile=T1, wave=True)
+            return waves2, flux2
+    elif kzz != 0:
+        #print(teff, logg, metal, alpha, kzz)
+        if (teff, logg, metal, alpha, kzz) in zip(T1['teff'], T1['logg'], T1['M_H'], T1['en'], T1['kzz']): 
+            index0 = np.where( (T1['teff'] == teff) & (T1['logg'] == logg) & (T1['M_H'] == metal) & (T1['en'] == alpha) & (T1['kzz'] == kzz) )
+            #flux2  = GetModel(T1['teff'][index0], T1['logg'][index0], T1['M_H'][index0], modelset=modelset )
+            #waves2 = GetModel(T1['teff'][index0], T1['logg'][index0], T1['M_H'][index0], modelset=modelset, wave=True)
+            flux2  = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['M_H'][index0], alpha=T1['en'][index0], kzz=T1['kzz'][index0], instrument=instrument, order=order, gridfile=T1)
+            waves2 = GetModel(T1['teff'][index0], logg=T1['logg'][index0], metal=T1['M_H'][index0], alpha=T1['en'][index0], kzz=T1['kzz'][index0], instrument=instrument, order=order, gridfile=T1, wave=True)
             return waves2, flux2
     else:
         if (teff, logg, metal, alpha) in zip(T1['teff'], T1['logg'], T1['M_H'], T1['en']): 
@@ -94,11 +136,39 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
 
 
     try:
-        if modelset.lower() == 'sonora':
-            metal, alpha = 0, 0.28
+        if modelset.lower() == 'sonora-2023':
+            #metal, alpha, co = 0, 0.28, 1
             # Get the nearest models to the gridpoint (teff)
-            x0 = np.max(T1['teff'][np.where(T1['teff'] <= teff)])
-            x1 = np.min(T1['teff'][np.where(T1['teff'] >= teff)])
+            x0 = np.max(T1['teff'][np.where( (T1['teff'] <= teff) )])
+            x1 = np.min(T1['teff'][np.where( (T1['teff'] >= teff) )])
+            #print(x0, x1)
+            
+            # Get the nearest grid point to logg
+            y0 = np.max(list(set(T1['logg'][np.where( (T1['teff'] == x0) & (T1['logg'] <= logg) )]) & 
+                             set(T1['logg'][np.where( (T1['teff'] == x1) & (T1['logg'] <= logg) )])))
+            y1 = np.min(list(set(T1['logg'][np.where( (T1['teff'] == x0) & (T1['logg'] >= logg) )]) & 
+                             set(T1['logg'][np.where( (T1['teff'] == x1) & (T1['logg'] >= logg) )])))
+            #print(y0, y1)
+            
+            # Get the nearest grid point to [M/H]
+            z0 = np.max(list(set(T1['FeH'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] <= metal) )]) & 
+                             set(T1['FeH'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] <= metal) )])))
+            z1 = np.min(list(set(T1['FeH'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] >= metal) )]) & 
+                             set(T1['FeH'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] >= metal) )])))
+            #print(z0, z1)
+            
+            # Get the nearest grid point to kzz
+            t0 = np.max(list(set(T1['Y'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] == z0) & (T1['kzz'] <= kzz) )]) & 
+                             set(T1['Y'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] == z1) & (T1['kzz'] <= kzz) )])))
+            t1 = np.min(list(set(T1['Y'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] == z0) & (T1['kzz'] >= kzz) )]) & 
+                             set(T1['Y'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] == z1) & (T1['kzz'] >= kzz) )])))
+            #print(t0, t1)
+
+        elif 'sonora' in modelset.lower():
+            metal, alpha, co = 0, 0.28, 1
+            # Get the nearest models to the gridpoint (teff)
+            x0 = np.max(T1['teff'][np.where( (T1['teff'] <= teff) & (T1['CO'] == co) )])
+            x1 = np.min(T1['teff'][np.where( (T1['teff'] >= teff) & (T1['CO'] == co) )])
             #print(x0, x1)
             
             # Get the nearest grid point to logg
@@ -121,8 +191,39 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
             t1 = np.min(list(set(T1['Y'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['FeH'] == z0) & (T1['Y'] >= alpha) )]) & 
                              set(T1['Y'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['FeH'] == z1) & (T1['Y'] >= alpha) )])))
             #print(t0, t1)
+
+        elif kzz != 0:
+
+            #print('KZZ Models')
+            # Get the nearest models to the gridpoint (teff)
+            #print(teff, logg, metal, alpha, kzz)
+            x0 = np.max(T1['teff'][np.where( (T1['teff'] <= teff) )])
+            x1 = np.min(T1['teff'][np.where( (T1['teff'] >= teff) )])
+            #print(x0, x1)
+            
+            # Get the nearest grid point to logg
+            y0 = np.max(list(set(T1['logg'][np.where( (T1['teff'] == x0) & (T1['logg'] <= logg) )]) & 
+                             set(T1['logg'][np.where( (T1['teff'] == x1) & (T1['logg'] <= logg) )])))
+            y1 = np.min(list(set(T1['logg'][np.where( (T1['teff'] == x0) & (T1['logg'] >= logg) )]) & 
+                             set(T1['logg'][np.where( (T1['teff'] == x1) & (T1['logg'] >= logg) )])))
+            #print(y0, y1)
+            
+            # Get the nearest grid point to [M/H]
+            z0 = np.max(list(set(T1['M_H'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] <= metal) )]) & 
+                             set(T1['M_H'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] <= metal) )])))
+            z1 = np.min(list(set(T1['M_H'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] >= metal) )]) & 
+                             set(T1['M_H'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] >= metal) )])))
+            #print(z0, z1)
+            
+            # Get the nearest grid point to Kzz
+            t0 = np.max(list(set(T1['kzz'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] == z0) & (T1['kzz'] <= kzz) )]) & 
+                             set(T1['kzz'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] == z1) & (T1['kzz'] <= kzz) )])))
+            t1 = np.min(list(set(T1['kzz'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['M_H'] == z0) & (T1['kzz'] >= kzz) )]) & 
+                             set(T1['kzz'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] == z1) & (T1['kzz'] >= kzz) )])))
+            #print(t0, t1)
             
         else:
+            #print('HERE'*10)
             # Get the nearest models to the gridpoint (teff)
             x0 = np.max(T1['teff'][np.where(T1['teff'] <= teff)])
             x1 = np.min(T1['teff'][np.where(T1['teff'] >= teff)])
@@ -162,7 +263,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
         raise ValueError('Model Parameters Teff: %0.3f, logg: %0.3f, [M/H]: %0.3f, Alpha: %0.3f are outside the model grid.'%(teff, logg, metal, alpha))
 
 
-    if modelset.lower() == 'sonora':
+    if 'sonora' in modelset.lower():
         # Get the 16 points
         ind0000 = np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['FeH'] == z0) & (T1['Y'] == t0) ) # 0000
         ind1000 = np.where( (T1['teff'] == x1) & (T1['logg'] == y0) & (T1['FeH'] == z0) & (T1['Y'] == t0) ) # 1000
