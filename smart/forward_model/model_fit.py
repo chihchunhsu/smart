@@ -104,7 +104,13 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	
 	elif data is None and instrument in ['nirspec', 'hires', 'igrins']:
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
-	
+
+	else: # see if we have a model anyway
+		try:
+			model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
+		except:
+			raise Exception('No Model Available for %s'%instrument)
+			
 	# wavelength offset
 	#model.wave += wave_offset
 
