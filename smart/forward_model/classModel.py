@@ -151,6 +151,21 @@ class Model():
                 self.flux   = kwargs.get('flux', [])
         
 
+    def normalize(self, filter_size=500, **kwargs):
+        """
+        Normalize the continuum by fitting a linear slope to local max over a range of model fluxes, parameterized by filter_size.
+        """
+        max_list = []
+        for i in range(int(len(self.wave)/filter_size)):
+            max_list.append(max(self.flux[i*filter_size:(i+1)*filter_size]))
+
+        x, y = self.wave[[i*filter_size+int(filter_size/2) for i in range(int(len(self.wave)/500))]], max_list
+        z = np.polyfit(x, y, 1)
+        p = np.poly1d(z)
+
+        self.flux = self.flux/p(self.wave)
+
+
     def plot(self, **kwargs):
         """
         Plot the model spectrum.
