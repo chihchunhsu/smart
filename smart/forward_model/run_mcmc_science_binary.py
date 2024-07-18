@@ -157,12 +157,13 @@ dt_string = now.strftime("%H:%M:%S")
 
 data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
 
-if instrument == 'nirspec':
+if (instrument == 'nirspec') or (instrument == 'kpic'):
 	tell_data_name2 = tell_data_name + '_calibrated'
 
 	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument)
 
-	data.updateWaveSol(tell_sp)
+	if instrument == 'nirspec':
+		data.updateWaveSol(tell_sp)
 
 	# MJD for logging
 	# upgraded NIRSPEC
@@ -279,7 +280,7 @@ if instrument == 'nirspec':
 
 ## read the input custom mask and priors
 lines          = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
-if instrument == 'nirspec':
+if (instrument == 'nirspec') or (instrument == 'kpic'):
 	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[6].split('priors ')[1])
 	barycorr       = json.loads(lines[13].split('barycorr')[1])
@@ -293,7 +294,7 @@ if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
 else: logg_max = 5.5
 
 # limit of the flux nuisance parameter: 5 percent of the median flux
-A_const       = 0.05 * abs(np.median(data.flux))
+A_const       = 0.05 * abs(np.nanmedian(data.flux))
 
 if modelset == 'btsettl08':
 	limits         = { 
@@ -301,15 +302,15 @@ if modelset == 'btsettl08':
 						'logg_min':3.5,                              'logg_max':logg_max,
 						'vsini_min':0.0,                             'vsini_max':100.0,
 						'rv_min':-200.0,                             'rv_max':200.0,
+						'teff2_min':max(priors['teff2_min']-300,500),'teff2_max':min(priors['teff2_max']+300,3500),
+						'logg2_min':3.5,                             'logg2_max':logg_max,
+						'vsini2_min':0.0,                            'vsini2_max':100.0,
+						'rv2_min':-200.0,                            'rv2_max':200.0,	
 						'am_min':1.0,                                'am_max':3.0,
 						'pwv_min':0.5,                            	 'pwv_max':20.0,
 						'A_min':-A_const,							 'A_max':A_const,
 						'B_min':-0.6,                              	 'B_max':0.6,
-						'N_min':0.10,                                'N_max':5.0,
-						'teff2_min':max(priors['teff2_min']-300,500), 'teff2_max':min(priors['teff2_max']+300,3500),
-						'logg2_min':3.5,                             'logg2_max':logg_max,
-						'vsini2_min':0.0,                            'vsini2_max':100.0,
-						'rv2_min':-200.0,                            'rv2_max':200.0,	
+						'N_min':0.10,                                'N_max':5.0,	
 						'flux_scale_min':0.1,                        'flux_scale_max':1.0,		
 					}
 
@@ -471,6 +472,7 @@ def lnprior(theta, limits=limits):
 	"""
 	## Parameters for theta
 	teff, logg, vsini, rv, teff2, logg2, vsini2, rv2, am, pwv, A, B, N, flux_scale = theta
+	#print(teff, logg, vsini, rv, teff2, logg2, vsini2, rv2, am, pwv, A, B, N, flux_scale)
 
 	if  limits['teff_min']       < teff       < limits['teff_max'] \
 	and limits['logg_min']       < logg       < limits['logg_max'] \
@@ -887,9 +889,9 @@ file_log.close()
 #
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-if instrument == 'nirspec':
+if (instrument == 'nirspec'):
 	wave_cal_err = tell_sp.header['STD']
-elif instrument == 'hires':
+elif (instrument == 'hires') or (instrument == 'kpic'):
 	wave_cal_err = np.nan
 
 cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
