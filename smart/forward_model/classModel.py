@@ -140,9 +140,11 @@ class Model():
                 self.logg     = kwargs.get('logg', 5.00)
                 self.metal    = kwargs.get('metal', 0.00)
                 self.en       = kwargs.get('en', 0.00)
+                self.kzz      = kwargs.get('kzz', 0.00)
+                self.co       = kwargs.get('co', 0.00)
                 self.modelset = kwargs.get('modelset', 'btsettl08')
 
-                wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg, self.metal, self.en,
+                wave, flux = smart.forward_model.InterpolateModel.InterpModel(self.teff, self.logg, self.metal, self.en, self.kzz, self.co,
                                                                               modelset=self.modelset, order=self.order, instrument=self.instrument)
                 self.wave = wave # Angstrom
                 self.flux = flux # erg/s/cm^2/Angstrom

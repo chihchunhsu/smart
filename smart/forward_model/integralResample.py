@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 import os
 from scipy import interpolate
 from scipy.interpolate import interp1d
-from scipy.integrate import trapz
-
+try:
+    from scipy.integrate import trapezoid as trapz
+except:
+    from scipy.integrate import trapz
 
 def integralResample(xh, yh, xl, nsamp=100, **kwargs):
 
