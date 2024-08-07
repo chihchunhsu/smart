@@ -347,7 +347,7 @@ elif modelset == 'phoenixaces':
 						'N_min':0.10,                               'N_max':N_max 				
 					}
 
-elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
+elif (modelset.upper() == 'PHOENIX-BTSETTL-CIFIST2011-2015') or (modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015'):
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,2300), 'teff_max':min(priors['teff_max']+300,7000),
 						'logg_min':3.5,                             'logg_max':logg_max,
