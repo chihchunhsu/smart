@@ -41,6 +41,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
 	include_fringe_model = kwargs.get('include_fringe_model', False)
 	fringe_mcmc  =  kwargs.get('fringe_mcmc', True)
+	piece_wise_fringe_model_list = kwargs.get('piece_wise_fringe_model_list', [0, 700, -800, -1])
 	slow_rotation_broaden = kwargs.get('slow_rotation_broaden', False)
 
 	if instrument == 'kpic':
@@ -182,7 +183,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	# fringe model; this is only optimized for Keck/NIRSPEC and Keck/KPIC for now!
 	if (include_fringe_model is True) and (fringe_mcmc is True):
 		#print('adding the fringe model')
-		s1, s2, s3, s4 = 0, 700, -700, -1
+		s1, s2, s3, s4 = piece_wise_fringe_model_list
 		#piecewise_fringe_model_range = [s1, s2, s3, s4]
 
 		popt1 = np.array([A1, Dos1, R1, phi1])
