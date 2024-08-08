@@ -8,7 +8,7 @@ import matplotlib.gridspec as gridspec
 from astropy.io import fits
 import emcee
 #from schwimmbad import MPIPool
-from multiprocessing import Pool
+from multiprocessing import Pool, set_start_method
 import smart
 import model_fit
 import mcmc_utils
@@ -30,7 +30,7 @@ warnings.filterwarnings("ignore")
 ## nuisance parameters for wavelength, flux and noise.
 ##############################################################################################
 
-parser = argparse.ArgumentParser(description="Run the forward-modeling routine for science files with a fringe model",
+parser = argparse.ArgumentParser(description="Run the forward-modeling routine for science files",
 	usage="run_mcmc_science.py order date_obs sci_data_name tell_data_name data_path tell_path save_to_path lsf priors limits")
 
 #parser.add_argument("source",metavar='src',type=str,
@@ -60,11 +60,14 @@ parser.add_argument("save_to_path",type=str,
 parser.add_argument("lsf",type=float,
     default=None, help="line spread function", nargs="+")
 
+parser.add_argument("-instrument",metavar='--inst',type=str,
+    default='nirspec', help="spectrometer name of the instrument; default nirspec")
+
 parser.add_argument("-outlier_rejection",metavar='--rej',type=float,
     default=3.0, help="outlier rejection based on the multiple of standard deviation of the residual; default 3.0")
 
 parser.add_argument("-ndim",type=int,
-    default=8, help="number of dimension; default 25")
+    default=8, help="number of dimension; default 8")
 
 parser.add_argument("-nwalkers",type=int,
     default=50, help="number of walkers of MCMC; default 50")
@@ -90,7 +93,7 @@ parser.add_argument("-pixel_end",type=int,
 #parser.add_argument("-alpha_tell",type=float,
 #    default=1.0, help="telluric alpha; default 1.0")
 
-parser.add_argument("-applymask",type=bool,
+parser.add_argument("-apply_sigma_mask",type=bool,
     default=False, help="apply a simple mask based on the STD of the average flux; default is False")
 
 parser.add_argument("-plot_show",type=bool,
@@ -107,23 +110,26 @@ parser.add_argument("-modelset",type=str,
 
 parser.add_argument("-final_mcmc", action='store_true', help="run final mcmc; default False")
 
+#parser.add_argument("-include_fringe_model", action='store_true', help="model the fringe pattern; default False")
+
 args = parser.parse_args()
 
 ######################################################################################################
 
 #source                 = str(args.source[0])
 order                  = int(args.order[0])
+instrument             = str(args.instrument)
 date_obs               = str(args.date_obs[0])
 sci_data_name          = str(args.sci_data_name[0])
-tell_data_name         = str(args.tell_data_name[0])
 data_path              = str(args.data_path[0])
+tell_data_name         = str(args.tell_data_name[0])
 tell_path              = str(args.tell_path[0])
 save_to_path_base      = str(args.save_to_path[0])
 lsf                    = float(args.lsf[0])
 ndim, nwalkers, step   = int(args.ndim), int(args.nwalkers), int(args.step)
 burn                   = int(args.burn)
 moves                  = float(args.moves)
-applymask              = args.applymask
+apply_sigma_mask              = args.apply_sigma_mask
 pixel_start, pixel_end = int(args.pixel_start), int(args.pixel_end)
 #pwv                    = float(args.pwv)
 #alpha_tell             = float(args.alpha_tell[0])
@@ -132,13 +138,14 @@ coadd                  = args.coadd
 outlier_rejection      = float(args.outlier_rejection)
 modelset               = str(args.modelset)
 final_mcmc             = args.final_mcmc
+include_fringe_model   = True #args.include_fringe_model
 
 if final_mcmc:
 	#save_to_path1  = save_to_path_base + '/init_mcmc'
-	save_to_path   = save_to_path_base + '/final_mcmc_fringe'
+	save_to_path   = save_to_path_base + '/final_mcmc'
 
 else:
-	save_to_path   = save_to_path_base + '/init_mcmc_fringe'
+	save_to_path   = save_to_path_base + '/init_mcmc'
 
 # date
 today     = date.today()
@@ -147,27 +154,34 @@ dt_string = now.strftime("%H:%M:%S")
 
 #####################################
 
-data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask)
-tell_data_name2 = tell_data_name + '_calibrated'
+data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask, instrument=instrument)
 
-tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask)
+if instrument != 'hires':
+	tell_data_name2 = tell_data_name + '_calibrated'
+	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, apply_sigma_mask=apply_sigma_mask, instrument=instrument)
 
-data.updateWaveSol(tell_sp)
+	# TBD if the improved wavecal for KPIC data is possible
+	if instrument != 'kpic':
+		data.updateWaveSol(tell_sp)
 
 # MJD for logging
 # upgraded NIRSPEC
-if len(data.oriWave) == 2048:
+if instrument in ['nirspec', 'kpic']:
+	if len(data.oriWave) == 2048:
+		mjd = data.header['MJD']
+	# old NIRSPEC
+	else:
+		mjd = data.header['MJD-OBS']
+
+elif instrument == 'hires':
 	mjd = data.header['MJD']
-# old NIRSPEC
-else:
-	mjd = data.header['MJD-OBS']
 
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
 	if not os.path.exists(save_to_path):
 		os.makedirs(save_to_path)
 	data1       = copy.deepcopy(data)
-	data2       = smart.Spectrum(name=sci_data_name2, order=order, path=data_path, applymask=applymask)
+	data2       = smart.Spectrum(name=sci_data_name2, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask)
 	data.coadd(data2, method='pixel')
 
 	plt.figure(figsize=(16,6))
@@ -189,7 +203,9 @@ if coadd:
 	plt.close()
 
 sci_data  = data
-tell_data = tell_sp 
+
+if instrument != 'hires':
+	tell_data = tell_sp 
 
 """
 MCMC run for the science spectra. See the parameters in the makeModel function.
@@ -254,8 +270,12 @@ else:
 #if limits is None: limits = priors
 
 data          = copy.deepcopy(sci_data)
-tell_sp       = copy.deepcopy(tell_data)
-data.updateWaveSol(tell_sp)
+
+if instrument != 'hires':
+	tell_sp       = copy.deepcopy(tell_data)
+	
+	if instrument != 'kpic':
+		data.updateWaveSol(tell_sp)
 
 # barycentric corrction
 #barycorr      = smart.barycorr(data.header).value
@@ -263,16 +283,30 @@ data.updateWaveSol(tell_sp)
 
 ## read the input custom mask and priors
 lines          = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
-custom_mask    = json.loads(lines[5].split('custom_mask')[1])
-priors         = ast.literal_eval(lines[6].split('priors ')[1])
-barycorr       = json.loads(lines[13].split('barycorr')[1])
+if instrument in ['nirspec', 'kpic']:
+	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
+	priors         = ast.literal_eval(lines[6].split('priors ')[1])
+	barycorr       = json.loads(lines[13].split('barycorr')[1])
+elif instrument == 'hires':
+	custom_mask    = json.loads(lines[3].split('custom_mask')[1])
+	priors         = ast.literal_eval(lines[4].split('priors ')[1])
+	barycorr       = json.loads(lines[11].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
 if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
 else: logg_max = 5.5
 
+## apply a custom mask
+data.mask_custom(custom_mask=custom_mask)
+
 # limit of the flux nuisance parameter: 5 percent of the median flux
 A_const       = 0.05 * abs(np.median(data.flux))
+
+# KPIC DRP has underestimated noise (no read/dark current noise)
+if instrument == 'kpic':
+	N_max = 20.0
+else:
+	N_max = 5.0
 
 if modelset == 'btsettl08':
 	limits         = { 
@@ -284,7 +318,19 @@ if modelset == 'btsettl08':
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,                              	'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.0 				
+						'N_min':0.10,                               'N_max':N_max,
+						'A1_min':0.04,								'A1_max':0.06,
+						'A2_min':0.04,								'A2_max':0.06,
+						'A3_min':0.04,								'A3_max':0.06,
+						'Dos1_min':1.25,							'Dos1_max':1.35,
+						'Dos2_min':1.25,							'Dos2_max':1.35,
+						'Dos3_min':1.25,							'Dos3_max':1.35,
+						'R1_min':0.01,								'R1_max':0.05,
+						'R2_min':0.01,								'R2_max':0.05,
+						'R3_min':0.01,								'R3_max':0.05,
+						'phi1_min':-np.pi,							'phi1_max':np.pi,
+						'phi2_min':-np.pi,							'phi2_max':np.pi,
+						'phi3_min':-np.pi,							'phi3_max':np.pi,				
 					}
 
 elif modelset == 'sonora':
@@ -297,7 +343,19 @@ elif modelset == 'sonora':
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,                              	'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.0 				
+						'N_min':0.10,                               'N_max':N_max,
+						'A1_min':0.04,								'A1_max':0.06,
+						'A2_min':0.04,								'A2_max':0.06,
+						'A3_min':0.04,								'A3_max':0.06,
+						'Dos1_min':1.25,							'Dos1_max':1.35,
+						'Dos2_min':1.25,							'Dos2_max':1.35,
+						'Dos3_min':1.25,							'Dos3_max':1.35,
+						'R1_min':0.01,								'R1_max':0.05,
+						'R2_min':0.01,								'R2_max':0.05,
+						'R3_min':0.01,								'R3_max':0.05,
+						'phi1_min':-np.pi,							'phi1_max':np.pi,
+						'phi2_min':-np.pi,							'phi2_max':np.pi,
+						'phi3_min':-np.pi,							'phi3_max':np.pi,		
 					}
 
 elif modelset == 'phoenixaces':
@@ -310,10 +368,22 @@ elif modelset == 'phoenixaces':
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,								'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.50 				
+						'N_min':0.10,                               'N_max':N_max,
+						'A1_min':0.04,								'A1_max':0.06,
+						'A2_min':0.04,								'A2_max':0.06,
+						'A3_min':0.04,								'A3_max':0.06,
+						'Dos1_min':1.25,							'Dos1_max':1.35,
+						'Dos2_min':1.25,							'Dos2_max':1.35,
+						'Dos3_min':1.25,							'Dos3_max':1.35,
+						'R1_min':0.01,								'R1_max':0.05,
+						'R2_min':0.01,								'R2_max':0.05,
+						'R3_min':0.01,								'R3_max':0.05,
+						'phi1_min':-np.pi,							'phi1_max':np.pi,
+						'phi2_min':-np.pi,							'phi2_max':np.pi,
+						'phi3_min':-np.pi,							'phi3_max':np.pi,
 					}
 
-elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
+elif (modelset.upper() == 'PHOENIX-BTSETTL-CIFIST2011-2015') or (modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015'):
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,2300), 'teff_max':min(priors['teff_max']+300,7000),
 						'logg_min':3.5,                             'logg_max':logg_max,
@@ -323,28 +393,29 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 						'pwv_min':0.5,                            	'pwv_max':20.0,
 						'A_min':-A_const,							'A_max':A_const,
 						'B_min':-0.6,								'B_max':0.6,
-						'N_min':0.10,                               'N_max':5.50 				
+						'N_min':0.10,                               'N_max':N_max,
+						'A1_min':0.04,								'A1_max':0.06,
+						'A2_min':0.04,								'A2_max':0.06,
+						'A3_min':0.04,								'A3_max':0.06,
+						'Dos1_min':1.25,							'Dos1_max':1.35,
+						'Dos2_min':1.25,							'Dos2_max':1.35,
+						'Dos3_min':1.25,							'Dos3_max':1.35,
+						'R1_min':0.01,								'R1_max':0.05,
+						'R2_min':0.01,								'R2_max':0.05,
+						'R3_min':0.01,								'R3_max':0.05,
+						'phi1_min':-np.pi,							'phi1_max':np.pi,
+						'phi2_min':-np.pi,							'phi2_max':np.pi,
+						'phi3_min':-np.pi,							'phi3_max':np.pi,
 					}
 
-for fringe_slice in ['1', '2', '3', '4']:
-	# fringe amplitdue
-	limits['a1_'+fringe_slice+'_min'] = 0.00
-	limits['a1_'+fringe_slice+'_max'] = 0.10
-	limits['a2_'+fringe_slice+'_min'] = 0.00
-	limits['a2_'+fringe_slice+'_max'] = 0.10
-	# fringe frequency
-	limits['k1_'+fringe_slice+'_min'] = 1.80
-	limits['k1_'+fringe_slice+'_max'] = 2.50
-	limits['k2_'+fringe_slice+'_min'] = 0.50
-	limits['k2_'+fringe_slice+'_max'] = 1.50
-
+# HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter
+if data.instrument == 'hires':
+	limits['B_min'] = -3.0 # Angstrom
+	limits['B_max'] = +3.0 # Angstrom
 
 if final_mcmc:
 	limits['rv_min'] = priors['rv_min'] - 10
 	limits['rv_max'] = priors['rv_max'] + 10
-
-## apply a custom mask
-data.mask_custom(custom_mask=custom_mask)
 
 ## add a pixel label for plotting
 length1     = len(data.oriWave)
@@ -356,9 +427,10 @@ data.wave     = data.wave[pixel_start:pixel_end]
 data.flux     = data.flux[pixel_start:pixel_end]
 data.noise    = data.noise[pixel_start:pixel_end]
 
-tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
-tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
-tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
+if instrument != 'hires':
+	tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
+	tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
+	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
 
 #if final_mcmc:
 #	priors, limits         = mcmc_utils.generate_final_priors_and_limits(sp_type=sp_type, barycorr=barycorr, save_to_path1=save_to_path1)
@@ -399,6 +471,8 @@ file_log.close()
 ## for multiprocessing
 #########################################################################################
 
+print('include_fringe_model', include_fringe_model)
+
 def lnlike(theta, data, lsf):
 	"""
 	Log-likelihood, computed from chi-squared.
@@ -415,14 +489,13 @@ def lnlike(theta, data, lsf):
 
 	"""
 
-	## Parameters MCMC; no wave offset A
-	teff, logg, vsini, rv, am, pwv, B, N, a1_1, k1_1, a2_1, k2_1, \
-	a1_2, k1_2, a2_2, k2_2, a1_3, k1_3, a2_3, k2_3, a1_4, k1_4, a2_4, k2_4 = theta #N noise prefactor
+	## Parameters MCMC
+	teff, logg, vsini, rv, am, pwv, A, B, N, A1, A2, A3, Dos1, Dos2, Dos3, R1, R2, R3, phi1, phi2, phi3 = theta #N noise prefactor
+	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
-	model = model_fit.makeModelFringe(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=0,
-		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv,
-		a1_1=a1_1, k1_1=k1_1, a2_1=a2_1, k2_1=k2_1, a1_2=a1_2, k1_2=k1_2, a2_2=a2_2, k2_2=k2_2, 
-		a1_3=a1_3, k1_3=k1_3, a2_3=a2_3, k2_3=k2_3, a1_4=a1_4, k1_4=k1_4, a2_4=a2_4, k2_4=k2_4)
+	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+		A1=A1, A2=A2, A3=A3, Dos1=Dos1, Dos2=Dos2, Dos3=Dos3, R1=R1, R2=R2, R3=R3, phi1=phi1, phi2=phi2, phi3=phi3, 
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
 
 	chisquare = smart.chisquare(data, model)/N**2
 
@@ -433,8 +506,7 @@ def lnprior(theta, limits=limits):
 	Specifies a flat prior
 	"""
 	## Parameters for theta
-	teff, logg, vsini, rv, am, pwv, B, N, a1_1, k1_1, a2_1, k2_1, \
-	a1_2, k1_2, a2_2, k2_2, a1_3, k1_3, a2_3, k2_3, a1_4, k1_4, a2_4, k2_4 = theta
+	teff, logg, vsini, rv, am, pwv, A, B, N, A1, A2, A3, Dos1, Dos2, Dos3, R1, R2, R3, phi1, phi2, phi3 = theta
 
 	if  limits['teff_min']  < teff  < limits['teff_max'] \
 	and limits['logg_min']  < logg  < limits['logg_max'] \
@@ -442,24 +514,21 @@ def lnprior(theta, limits=limits):
 	and limits['rv_min']    < rv    < limits['rv_max']   \
 	and limits['am_min']    < am    < limits['am_max']\
 	and limits['pwv_min']   < pwv   < limits['pwv_max']\
+	and limits['A_min']     < A     < limits['A_max']\
 	and limits['B_min']     < B     < limits['B_max']\
 	and limits['N_min']     < N     < limits['N_max']\
-	and limits['a1_1_min']  < a1_1  < limits['a1_1_max']\
-	and limits['k1_1_min']  < k1_1  < limits['k1_1_max']\
-	and limits['a2_1_min']  < a2_1  < limits['a2_1_max']\
-	and limits['k2_1_min']  < k2_1  < limits['k2_1_max']\
-	and limits['a1_2_min']  < a1_2  < limits['a1_2_max']\
-	and limits['k1_2_min']  < k1_2  < limits['k1_2_max']\
-	and limits['a2_2_min']  < a2_2  < limits['a2_2_max']\
-	and limits['k2_2_min']  < k2_2  < limits['k2_2_max']\
-	and limits['a1_3_min']  < a1_3  < limits['a1_3_max']\
-	and limits['k1_3_min']  < k1_3  < limits['k1_3_max']\
-	and limits['a2_3_min']  < a2_3  < limits['a2_3_max']\
-	and limits['k2_3_min']  < k2_3  < limits['k2_3_max']\
-	and limits['a1_4_min']  < a1_4  < limits['a1_4_max']\
-	and limits['k1_4_min']  < k1_4  < limits['k1_4_max']\
-	and limits['a2_4_min']  < a2_4  < limits['a2_4_max']\
-	and limits['k2_4_min']  < k2_4  < limits['k2_4_max']:
+	and limits['A1_min']    < A1    < limits['A1_max']\
+	and limits['A2_min']    < A2    < limits['A2_max']\
+	and limits['A3_min']    < A3    < limits['A3_max']\
+	and limits['Dos1_min']  < Dos1  < limits['Dos1_max']\
+	and limits['Dos2_min']  < Dos2  < limits['Dos2_max']\
+	and limits['Dos3_min']  < Dos3  < limits['Dos3_max']\
+	and limits['R1_min']    < R1    < limits['R1_max']\
+	and limits['R2_min']    < R2    < limits['R2_max']\
+	and limits['R3_min']    < R3    < limits['R3_max']\
+	and limits['phi1_min']  < phi1  < limits['phi1_max']\
+	and limits['phi2_min']  < phi2  < limits['phi2_max']\
+	and limits['phi3_min']  < phi3  < limits['phi3_max']:
 		return 0.0
 
 	return -np.inf
@@ -479,30 +548,28 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 					priors['rv_min']    + (priors['rv_max']     - priors['rv_min']   ) * np.random.uniform(), 
 					priors['am_min']    + (priors['am_max']     - priors['am_min'])    * np.random.uniform(),
 					priors['pwv_min']   + (priors['pwv_max']    - priors['pwv_min'])   * np.random.uniform(),
+					priors['A_min']     + (priors['A_max']      - priors['A_min'])     * np.random.uniform(),
 					priors['B_min']     + (priors['B_max']      - priors['B_min'])     * np.random.uniform(),
 					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform(),
-					priors['a1_1_min']  + (priors['a1_1_max']   - priors['a1_1_min'])  * np.random.uniform(),
-					priors['k1_1_min']  + (priors['k1_1_max']   - priors['k1_1_min'])  * np.random.uniform(),
-					priors['a2_1_min']  + (priors['a2_1_max']   - priors['a2_1_min'])  * np.random.uniform(),
-					priors['k2_1_min']  + (priors['k2_1_max']   - priors['k2_1_min'])  * np.random.uniform(),
-					priors['a1_2_min']  + (priors['a1_2_max']   - priors['a1_2_min'])  * np.random.uniform(),
-					priors['k1_2_min']  + (priors['k1_2_max']   - priors['k1_2_min'])  * np.random.uniform(),
-					priors['a2_2_min']  + (priors['a2_2_max']   - priors['a2_2_min'])  * np.random.uniform(),
-					priors['k2_2_min']  + (priors['k2_2_max']   - priors['k2_2_min'])  * np.random.uniform(),
-					priors['a1_3_min']  + (priors['a1_3_max']   - priors['a1_3_min'])  * np.random.uniform(),
-					priors['k1_3_min']  + (priors['k1_3_max']   - priors['k1_3_min'])  * np.random.uniform(),
-					priors['a2_3_min']  + (priors['a2_3_max']   - priors['a2_3_min'])  * np.random.uniform(),
-					priors['k2_3_min']  + (priors['k2_3_max']   - priors['k2_3_min'])  * np.random.uniform(),
-					priors['a1_4_min']  + (priors['a1_4_max']   - priors['a1_4_min'])  * np.random.uniform(),
-					priors['k1_4_min']  + (priors['k1_4_max']   - priors['k1_4_min'])  * np.random.uniform(),
-					priors['a2_4_min']  + (priors['a2_4_max']   - priors['a2_4_min'])  * np.random.uniform(),
-					priors['k2_4_min']  + (priors['k2_4_max']   - priors['k2_4_min'])  * np.random.uniform()]) for i in range(nwalkers)]
-
+					priors['A1_min']    + (priors['A1_max']     - priors['A1_min'])    * np.random.uniform(),
+					priors['A2_min']    + (priors['A2_max']     - priors['A2_min'])    * np.random.uniform(),
+					priors['A3_min']    + (priors['A3_max']     - priors['A3_min'])    * np.random.uniform(),
+					priors['Dos1_min']  + (priors['Dos1_max']   - priors['Dos1_min'])  * np.random.uniform(),
+					priors['Dos2_min']  + (priors['Dos2_max']   - priors['Dos2_min'])  * np.random.uniform(),
+					priors['Dos3_min']  + (priors['Dos3_max']   - priors['Dos3_min'])  * np.random.uniform(),
+					priors['R1_min']    + (priors['R1_max']     - priors['R1_min'])    * np.random.uniform(),
+					priors['R2_min']    + (priors['R2_max']     - priors['R2_min'])    * np.random.uniform(),
+					priors['R3_min']    + (priors['R3_max']     - priors['R3_min'])    * np.random.uniform(),
+					priors['phi1_min']  + (priors['phi1_max']   - priors['phi1_min'])  * np.random.uniform(),
+					priors['phi2_min']  + (priors['phi2_max']   - priors['phi2_min'])  * np.random.uniform(),
+					priors['phi3_min']  + (priors['phi3_max']   - priors['phi3_min'])  * np.random.uniform()]) for i in range(nwalkers)]
 ## multiprocessing
 
+set_start_method('fork')
 with Pool() as pool:
-	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool, moves=emcee.moves.StretchMove(a=2.0))
-	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool, moves=emcee.moves.KDEMove())
+	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool)
+	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
+			moves=emcee.moves.KDEMove())
 	time1 = time.time()
 	sampler.run_mcmc(pos, step, progress=True)
 	time2 = time.time()
@@ -524,17 +591,14 @@ print(autocorr_time)
 sampler_chain = np.load(save_to_path + '/sampler_chain.npy')
 samples = np.load(save_to_path + '/samples.npy')
 
-ylabels = [	"$T_{eff} (K)$","$log \, g$(dex)","$vsin \, i(km/s)$","$RV(km/s)$","$AM$", "pwv (mm)","$C_{\lambda}$($\AA$)","$C_{noise}$",
-			"$A_{1, 1}$", "$k_{1, 1}$($\AA^{-1}$)", "$A_{2, 1}$", "$k_{2, 1}$($\AA^{-1}$)",
-			"$A_{1, 2}$", "$k_{1, 2}$($\AA^{-1}$)", "$A_{2, 2}$", "$k_{2, 2}$($\AA^{-1}$)",
-			"$A_{1, 3}$", "$k_{1, 3}$($\AA^{-1}$)", "$A_{2, 3}$", "$k_{2, 3}$($\AA^{-1}$)",
-			"$A_{1, 4}$", "$k_{1, 4}$($\AA^{-1}$)", "$A_{2, 4}$", "$k_{2, 4}$($\AA^{-1}$)"]
+ylabels = ["$T_{\mathrm{eff}} (K)$","$\log{g}$(dex)","$v\sin{i}(km/s)$","$RV(km/s)$","$AM$", "pwv (mm)","$C_{F_{\lambda}}$ (cnt/s)","$C_{\lambda}$($\AA$)","$C_{noise}$"]
 
+ylabels += ["$A_1$", "$A_2$", "$A_3$", "$D_{\mathrm{os, 1}}$", "$D_{\mathrm{os, 2}}$", "$D_{\mathrm{os, 3}}$", "$R_1$", "$R_2$", "$R_3$", "$\phi_1$", "$\phi_2$", "$\phi_3$"]
 
 ## create walker plots
 plt.rc('font', family='sans-serif')
 plt.tick_params(labelsize=30)
-fig = plt.figure(tight_layout=True, figsize=(6, len(ylabels)))
+fig = plt.figure(figsize=(6, int(ndim*2)),tight_layout=True)
 gs  = gridspec.GridSpec(ndim, 1)
 gs.update(hspace=0.1)
 
@@ -556,102 +620,66 @@ triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
-teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, B_mcmc, N_mcmc, \
-	a1_1_mcmc, k1_1_mcmc, a2_1_mcmc, k2_1_mcmc, a1_2_mcmc, k1_2_mcmc, a2_2_mcmc, k2_2_mcmc, \
-	a1_3_mcmc, k1_3_mcmc, a2_3_mcmc, k2_3_mcmc, a1_4_mcmc, k1_4_mcmc, a2_4_mcmc, k2_4_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
+teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc, A1_mcmc, A2_mcmc, A3_mcmc, Dos1_mcmc, Dos2_mcmc, Dos3_mcmc, R1_mcmc, R2_mcmc, R3_mcmc, phi1_mcmc, phi2_mcmc, phi3_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
 
 # add the summary to the txt file
-log_path = save_to_path + '/mcmc_parameters.txt'
-file_log = open(log_path,"a")
-file_log.write("*** Below is the summary *** \n")
-file_log.write("total_time {} min\n".format(str((time2-time1)/60)))
-file_log.write("mean_acceptance_fraction {0:.3f} \n".format(np.mean(sampler.acceptance_fraction)))
-file_log.write("mean_autocorrelation_time {0:.3f} \n".format(np.mean(autocorr_time)))
-file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
-file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
-file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
-file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
-file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
-file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
-#file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
-file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
-file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
-file_log.write("a1_1_mcmc {}\n".format(str(a1_1_mcmc)))
-file_log.write("k1_1_mcmc {}\n".format(str(k1_1_mcmc)))
-file_log.write("a2_1_mcmc {}\n".format(str(a2_1_mcmc)))
-file_log.write("k2_1_mcmc {}\n".format(str(k2_1_mcmc)))
-file_log.write("a1_2_mcmc {}\n".format(str(a1_2_mcmc)))
-file_log.write("k1_2_mcmc {}\n".format(str(k1_2_mcmc)))
-file_log.write("a2_2_mcmc {}\n".format(str(a2_2_mcmc)))
-file_log.write("k2_2_mcmc {}\n".format(str(k2_2_mcmc)))
-file_log.write("a1_3_mcmc {}\n".format(str(a1_3_mcmc)))
-file_log.write("k1_3_mcmc {}\n".format(str(k1_3_mcmc)))
-file_log.write("a2_3_mcmc {}\n".format(str(a2_3_mcmc)))
-file_log.write("k2_3_mcmc {}\n".format(str(k2_3_mcmc)))
-file_log.write("a1_4_mcmc {}\n".format(str(a1_4_mcmc)))
-file_log.write("k1_4_mcmc {}\n".format(str(k1_4_mcmc)))
-file_log.write("a2_4_mcmc {}\n".format(str(a2_4_mcmc)))
-file_log.write("k2_4_mcmc {}\n".format(str(k2_4_mcmc)))
-file_log.close()
 
 # log file
 log_path2 = save_to_path + '/mcmc_result.txt'
 
 file_log2 = open(log_path2,"w+")
-index_dic = {'mcmc':0, 'mcmc_ue':1, 'mcmc_le':2}
-for key in index_dic.keys():
-	file_log2.write("teff_{} {}\n".format(key, str(teff_mcmc[index_dic[key]])))
-	file_log2.write("logg_{} {}\n".format(key, str(logg_mcmc[index_dic[key]])))
-	file_log2.write("vsini_{} {}\n".format(key, str(vsini_mcmc[index_dic[key]])))
-	file_log2.write("rv_{} {}\n".format(key, str(rv_mcmc[index_dic[key]]+barycorr)))
-	file_log2.write("am_{} {}\n".format(key, str(am_mcmc[index_dic[key]])))
-	file_log2.write("pwv_{} {}\n".format(key, str(pwv_mcmc[index_dic[key]])))
-	#file_log2.write("A_{} {}\n".format(key, str(A_mcmc[index_dic[key]])))
-	file_log2.write("B_{} {}\n".format(key, str(B_mcmc[index_dic[key]])))
-	file_log2.write("N_{} {}\n".format(key, str(N_mcmc[index_dic[key]])))
-	file_log2.write("a1_1_{} {}\n".format(key, str(a1_1_mcmc[index_dic[key]])))
-	file_log2.write("k1_1_{} {}\n".format(key, str(k1_1_mcmc[index_dic[key]])))
-	file_log2.write("a2_1_{} {}\n".format(key, str(a2_1_mcmc[index_dic[key]])))
-	file_log2.write("k2_1_{} {}\n".format(key, str(k2_1_mcmc[index_dic[key]])))
-	file_log2.write("a1_2_{} {}\n".format(key, str(a1_2_mcmc[index_dic[key]])))
-	file_log2.write("k1_2_{} {}\n".format(key, str(k1_2_mcmc[index_dic[key]])))
-	file_log2.write("a2_2_{} {}\n".format(key, str(a2_2_mcmc[index_dic[key]])))
-	file_log2.write("k2_2_{} {}\n".format(key, str(k2_2_mcmc[index_dic[key]])))
-	file_log2.write("a1_3_{} {}\n".format(key, str(a1_3_mcmc[index_dic[key]])))
-	file_log2.write("k1_3_{} {}\n".format(key, str(k1_3_mcmc[index_dic[key]])))
-	file_log2.write("a2_3_{} {}\n".format(key, str(a2_3_mcmc[index_dic[key]])))
-	file_log2.write("k2_3_{} {}\n".format(key, str(k2_3_mcmc[index_dic[key]])))
-	file_log2.write("a1_4_{} {}\n".format(key, str(a1_4_mcmc[index_dic[key]])))
-	file_log2.write("k1_4_{} {}\n".format(key, str(k1_4_mcmc[index_dic[key]])))
-	file_log2.write("a2_4_{} {}\n".format(key, str(a2_4_mcmc[index_dic[key]])))
-	file_log2.write("k2_4_{} {}\n".format(key, str(k2_4_mcmc[index_dic[key]])))
-
+file_log2.write("teff_mcmc {}\n".format(str(teff_mcmc[0])))
+file_log2.write("logg_mcmc {}\n".format(str(logg_mcmc[0])))
+file_log2.write("vsini_mcmc {}\n".format(str(vsini_mcmc[0])))
+file_log2.write("rv_mcmc {}\n".format(str(rv_mcmc[0]+barycorr)))
+file_log2.write("am_mcmc {}\n".format(str(am_mcmc[0])))
+file_log2.write("pwv_mcmc {}\n".format(str(pwv_mcmc[0])))
+file_log2.write("A_mcmc {}\n".format(str(A_mcmc[0])))
+file_log2.write("B_mcmc {}\n".format(str(B_mcmc[0])))
+file_log2.write("N_mcmc {}\n".format(str(N_mcmc[0])))
+file_log2.write("A1_mcmc {}\n".format(str(A1_mcmc[0])))
+file_log2.write("A2_mcmc {}\n".format(str(A2_mcmc[0])))
+file_log2.write("A3_mcmc {}\n".format(str(A3_mcmc[0])))
+file_log2.write("Dos1_mcmc {}\n".format(str(Dos1_mcmc[0])))
+file_log2.write("Dos2_mcmc {}\n".format(str(Dos2_mcmc[0])))
+file_log2.write("Dos3_mcmc {}\n".format(str(Dos3_mcmc[0])))
+file_log2.write("R1_mcmc {}\n".format(str(R1_mcmc[0])))
+file_log2.write("R2_mcmc {}\n".format(str(R2_mcmc[0])))
+file_log2.write("R3_mcmc {}\n".format(str(R3_mcmc[0])))
+file_log2.write("phi1_mcmc {}\n".format(str(phi1_mcmc[0])))
+file_log2.write("phi2_mcmc {}\n".format(str(phi2_mcmc[0])))
+file_log2.write("phi3_mcmc {}\n".format(str(phi3_mcmc[0])))
 file_log2.write("teff_mcmc_e {}\n".format(str(max(abs(teff_mcmc[1]), abs(teff_mcmc[2])))))
 file_log2.write("logg_mcmc_e {}\n".format(str(max(abs(logg_mcmc[1]), abs(logg_mcmc[2])))))
 file_log2.write("vsini_mcmc_e {}\n".format(str(max(abs(vsini_mcmc[1]), abs(vsini_mcmc[2])))))
 file_log2.write("rv_mcmc_e {}\n".format(str(max(abs(rv_mcmc[1]), abs(rv_mcmc[2])))))
 file_log2.write("am_mcmc_e {}\n".format(str(max(abs(am_mcmc[1]), abs(am_mcmc[2])))))
 file_log2.write("pwv_mcmc_e {}\n".format(str(max(abs(pwv_mcmc[1]), abs(pwv_mcmc[2])))))
-#file_log2.write("A_mcmc_e {}\n".format(str(max(abs(A_mcmc[1]), abs(A_mcmc[2])))))
+file_log2.write("A_mcmc_e {}\n".format(str(max(abs(A_mcmc[1]), abs(A_mcmc[2])))))
 file_log2.write("B_mcmc_e {}\n".format(str(max(abs(B_mcmc[1]), abs(B_mcmc[2])))))
 file_log2.write("N_mcmc_e {}\n".format(str(max(abs(N_mcmc[1]), abs(N_mcmc[2])))))
-file_log2.write("a1_1_mcmc_e {}\n".format(str(max(abs(a1_1_mcmc[1]), abs(a1_1_mcmc[2])))))
-file_log2.write("k1_1_mcmc_e {}\n".format(str(max(abs(k1_1_mcmc[1]), abs(k1_1_mcmc[2])))))
-file_log2.write("a2_1_mcmc_e {}\n".format(str(max(abs(a2_1_mcmc[1]), abs(a2_1_mcmc[2])))))
-file_log2.write("k2_1_mcmc_e {}\n".format(str(max(abs(k2_1_mcmc[1]), abs(k2_1_mcmc[2])))))
-file_log2.write("a1_2_mcmc_e {}\n".format(str(max(abs(a1_2_mcmc[1]), abs(a1_2_mcmc[2])))))
-file_log2.write("k1_2_mcmc_e {}\n".format(str(max(abs(k1_2_mcmc[1]), abs(k1_2_mcmc[2])))))
-file_log2.write("a2_2_mcmc_e {}\n".format(str(max(abs(a2_2_mcmc[1]), abs(a2_2_mcmc[2])))))
-file_log2.write("k2_2_mcmc_e {}\n".format(str(max(abs(k2_2_mcmc[1]), abs(k2_2_mcmc[2])))))
-file_log2.write("a1_3_mcmc_e {}\n".format(str(max(abs(a1_3_mcmc[1]), abs(a1_3_mcmc[2])))))
-file_log2.write("k1_3_mcmc_e {}\n".format(str(max(abs(k1_3_mcmc[1]), abs(k1_3_mcmc[2])))))
-file_log2.write("a2_3_mcmc_e {}\n".format(str(max(abs(a2_3_mcmc[1]), abs(a2_3_mcmc[2])))))
-file_log2.write("k2_3_mcmc_e {}\n".format(str(max(abs(k2_3_mcmc[1]), abs(k2_3_mcmc[2])))))
-file_log2.write("a1_4_mcmc_e {}\n".format(str(max(abs(a1_4_mcmc[1]), abs(a1_4_mcmc[2])))))
-file_log2.write("k1_4_mcmc_e {}\n".format(str(max(abs(k1_4_mcmc[1]), abs(k1_4_mcmc[2])))))
-file_log2.write("a2_4_mcmc_e {}\n".format(str(max(abs(a2_4_mcmc[1]), abs(a2_4_mcmc[2])))))
-file_log2.write("k2_4_mcmc_e {}\n".format(str(max(abs(k2_4_mcmc[1]), abs(k2_4_mcmc[2])))))
+# upper and lower uncertainties
+# upper uncertainties
+file_log2.write("teff_mcmc_ue {}\n".format(str(abs(teff_mcmc[1]))))
+file_log2.write("logg_mcmc_ue {}\n".format(str(abs(logg_mcmc[1]))))
+file_log2.write("vsini_mcmc_ue {}\n".format(str(abs(vsini_mcmc[1]))))
+file_log2.write("rv_mcmc_ue {}\n".format(str(abs(rv_mcmc[1]))))
+file_log2.write("am_mcmc_ue {}\n".format(str(abs(am_mcmc[1]))))
+file_log2.write("pwv_mcmc_ue {}\n".format(str(abs(pwv_mcmc[1]))))
+file_log2.write("A_mcmc_ue {}\n".format(str(abs(A_mcmc[1]))))
+file_log2.write("B_mcmc_ue {}\n".format(str(abs(B_mcmc[1]))))
+file_log2.write("N_mcmc_ue {}\n".format(str(abs(N_mcmc[1]))))
+# lower uncertainties
+file_log2.write("teff_mcmc_le {}\n".format(str(abs(teff_mcmc[2]))))
+file_log2.write("logg_mcmc_le {}\n".format(str(abs(logg_mcmc[2]))))
+file_log2.write("vsini_mcmc_le {}\n".format(str(abs(vsini_mcmc[2]))))
+file_log2.write("rv_mcmc_le {}\n".format(str(abs(rv_mcmc[2]))))
+file_log2.write("am_mcmc_le {}\n".format(str(abs(am_mcmc[2]))))
+file_log2.write("pwv_mcmc_le {}\n".format(str(abs(pwv_mcmc[2]))))
+file_log2.write("A_mcmc_le {}\n".format(str(abs(A_mcmc[2]))))
+file_log2.write("B_mcmc_le {}\n".format(str(abs(B_mcmc[2]))))
+file_log2.write("N_mcmc_le {}\n".format(str(abs(N_mcmc[2]))))
 file_log2.close()
 
 #print(teff_mcmc, logg_mcmc, vsini_mcmc, rv_mcmc, am_mcmc, pwv_mcmc, A_mcmc, B_mcmc, N_mcmc)
@@ -668,12 +696,21 @@ fig = corner.corner(triangle_samples,
 	rv_mcmc[0]+barycorr, 
 	am_mcmc[0],
 	pwv_mcmc[0],
+	A_mcmc[0],
 	B_mcmc[0],
 	N_mcmc[0],
-	a1_1_mcmc[0], k1_1_mcmc[0], a2_1_mcmc[0], k2_1_mcmc[0], 
-	a1_2_mcmc[0], k1_2_mcmc[0], a2_2_mcmc[0], k2_2_mcmc[0],
-	a1_3_mcmc[0], k1_3_mcmc[0], a2_3_mcmc[0], k2_3_mcmc[0], 
-	a1_4_mcmc[0], k1_4_mcmc[0], a2_4_mcmc[0], k2_4_mcmc[0]],
+	A1_mcmc[0],
+	A2_mcmc[0],
+	A3_mcmc[0],
+	Dos1_mcmc[0],
+	Dos2_mcmc[0],
+	Dos3_mcmc[0],
+	R1_mcmc[0],
+	R2_mcmc[0],
+	R3_mcmc[0],
+	phi1_mcmc[0],
+	phi2_mcmc[0],
+	phi3_mcmc[0]],
 	quantiles=[0.16, 0.84],
 	label_kwargs={"fontsize": 20})
 plt.minorticks_on()
@@ -689,27 +726,28 @@ vsini = vsini_mcmc[0]
 rv    = rv_mcmc[0]
 am    = am_mcmc[0]
 pwv   = pwv_mcmc[0]
-A     = 0 #A_mcmc[0]
+A     = A_mcmc[0]
 B     = B_mcmc[0]
 N     = N_mcmc[0]
-a1_1, k1_1, a2_1, k2_1 = a1_1_mcmc[0], k1_1_mcmc[0], a2_1_mcmc[0], k2_1_mcmc[0]
-a1_2, k1_2, a2_2, k2_2 = a1_2_mcmc[0], k1_2_mcmc[0], a2_2_mcmc[0], k2_2_mcmc[0]
-a1_3, k1_3, a2_3, k2_3 = a1_3_mcmc[0], k1_3_mcmc[0], a2_3_mcmc[0], k2_3_mcmc[0]
-a1_4, k1_4, a2_4, k2_4 = a1_4_mcmc[0], k1_4_mcmc[0], a2_4_mcmc[0], k2_4_mcmc[0]
+A1    = A1_mcmc[0]
+A2    = A2_mcmc[0]
+A3    = A3_mcmc[0]
+Dos1  = Dos1_mcmc[0]
+Dos2  = Dos2_mcmc[0]
+Dos3  = Dos3_mcmc[0]
+R1    = R1_mcmc[0]
+R2    = R2_mcmc[0]
+R3    = R3_mcmc[0]
+phi1  = phi1_mcmc[0]
+phi2  = phi2_mcmc[0]
+phi3  = phi3_mcmc[0]
 
-# model without fringe model
-#model_nofringe, model_notell_nofringe = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
-#	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-#	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, 
-#	output_stellar_model=True)
 
-# model with a fringe model
-model, model_notell = model_fit.makeModelFringe(teff=teff, logg=logg, metal=0.0, 
+model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
 	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, 
-	a1_1=a1_1, k1_1=k1_1, a2_1=a2_1, k2_1=k2_1, a1_2=a1_2, k1_2=k1_2, a2_2=a2_2, k2_2=k2_2, 
-	a1_3=a1_3, k1_3=k1_3, a2_3=a2_3, k2_3=k2_3, a1_4=a1_4, k1_4=k1_4, a2_4=a2_4, k2_4=k2_4,
-	output_stellar_model=True)
+	A1=A1, A2=A2, A3=A3, Dos1=Dos1, Dos2=Dos2, Dos3=Dos3, R1=R1, R2=R2, R3=R3, phi1=phi1, phi2=phi2, phi3=phi3, 
+	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, 
+	include_fringe_model=include_fringe_model, instrument=instrument)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)
@@ -753,7 +791,6 @@ color='k',
 horizontalalignment='right',
 verticalalignment='center',
 fontsize=12)
-plt.xlim(data.wave[0], data.wave[-1])
 plt.minorticks_on()
 
 ax2 = ax1.twiny()
@@ -769,6 +806,39 @@ if plot_show:
 	plt.show()
 plt.close()
 
+# chi2 and dof in the log
+log_path = save_to_path + '/mcmc_parameters.txt'
+file_log = open(log_path,"a")
+file_log.write("*** Below is the summary *** \n")
+file_log.write("total_time {} min\n".format(str((time2-time1)/60)))
+file_log.write("mean_acceptance_fraction {0:.3f} \n".format(np.mean(sampler.acceptance_fraction)))
+file_log.write("mean_autocorrelation_time {0:.3f} \n".format(np.mean(autocorr_time)))
+file_log.write("chi2 {} \n".format(round(smart.chisquare(data,model))))
+file_log.write("dof {} \n".format(round(len(data.wave-ndim)/3)))
+file_log.write("teff_mcmc {} K\n".format(str(teff_mcmc)))
+file_log.write("logg_mcmc {} dex (cgs)\n".format(str(logg_mcmc)))
+file_log.write("vsini_mcmc {} km/s\n".format(str(vsini_mcmc)))
+file_log.write("rv_mcmc {} km/s\n".format(str(rv_mcmc)))
+file_log.write("am_mcmc {}\n".format(str(am_mcmc)))
+file_log.write("pwv_mcmc {}\n".format(str(pwv_mcmc)))
+file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
+file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
+file_log.write("N_mcmc {}\n".format(str(N_mcmc)))
+file_log.write("A1_mcmc {}\n".format(str(A1_mcmc)))
+file_log.write("A2_mcmc {}\n".format(str(A2_mcmc)))
+file_log.write("A3_mcmc {}\n".format(str(A3_mcmc)))
+file_log.write("Dos1_mcmc {}\n".format(str(Dos1_mcmc)))
+file_log.write("Dos2_mcmc {}\n".format(str(Dos2_mcmc)))
+file_log.write("Dos3_mcmc {}\n".format(str(Dos3_mcmc)))
+file_log.write("R1_mcmc {}\n".format(str(R1_mcmc)))
+file_log.write("R2_mcmc {}\n".format(str(R2_mcmc)))
+file_log.write("R3_mcmc {}\n".format(str(R3_mcmc)))
+file_log.write("phi1_mcmc {}\n".format(str(phi1_mcmc)))
+file_log.write("phi2_mcmc {}\n".format(str(phi2_mcmc)))
+file_log.write("phi3_mcmc {}\n".format(str(phi3_mcmc)))
+file_log.close()
+
+
 # excel summary file
 #cat = pd.DataFrame(columns=['date_obs','date_name','tell_name','data_path','tell_path','save_path',
 #							'model_date','model_time','data_mask','order','coadd','mjd','med_snr','lsf',
@@ -776,30 +846,15 @@ plt.close()
 #							'rv','e_rv','ue_rv','le_rv','vsini','e_vsini','ue_vsini','le_vsini',
 #							'teff','e_teff','ue_teff','le_teff','logg','e_logg','ue_logg','le_logg',
 #							'am','e_am','ue_am','le_am','pwv','e_pwv','ue_pwv','le_pwv',
-#							#'cflux','e_cflux','ue_cflux','le_cflux',
-#							'cwave','e_cwave','ue_cwave','le_cwave',
-#							'cnoise','e_cnoise','ue_cnoise','le_cnoise',
-#							'a1_1', 'e_a1_1', 'ue_a1_1', 'le_a1_1', 
-#							'k1_1', 'e_k1_1', 'ue_k1_1', 'le_k1_1', 
-#							'a2_1', 'e_a2_1', 'ue_a2_1', 'le_a2_1', 
-#							'k2_1', 'e_k2_1', 'ue_k2_1', 'le_k2_1', 
-#							'a1_2', 'e_a1_2', 'ue_a1_2', 'le_a1_2', 
-#							'k1_2', 'e_k1_2', 'ue_k1_2', 'le_k1_2', 
-#							'a2_2', 'e_a2_2', 'ue_a2_2', 'le_a2_2', 
-#							'k2_2', 'e_k2_2', 'ue_k2_2', 'le_k2_2', 
-#							'a1_3', 'e_a1_3', 'ue_a1_3', 'le_a1_3', 
-#							'k1_3', 'e_k1_3', 'ue_k1_3', 'le_k1_3', 
-#							'a2_3', 'e_a2_3', 'ue_a2_3', 'le_a2_3', 
-#							'k2_3', 'e_k2_3', 'ue_k2_3', 'le_k2_3', 
-#							'a1_4', 'e_a1_4', 'ue_a1_4', 'le_a1_4', 
-#							'k1_4', 'e_k1_4', 'ue_k1_4', 'le_k1_4', 
-#							'a2_4', 'e_a2_4', 'ue_a2_4', 'le_a2_4', 
-#							'k2_4', 'e_k2_4', 'ue_k2_4', 'le_k2_4', 
-#							'wave_cal_err'])
+#							'cflux','e_cflux','ue_cflux','le_cflux','cwave','e_cwave','ue_cwave','le_cwave',
+#							'cnoise','e_cnoise','ue_cnoise','le_cnoise','wave_cal_err','chi2','dof','acceptance_fraction','autocorr_time'])
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-wave_cal_err = tell_sp.header['STD']
+if instrument == 'nirspec':
+	wave_cal_err = tell_sp.header['STD']
+else:
+	wave_cal_err = np.nan
 
 cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
 					'data_path':data_path,'tell_path':tell_path,'save_path':save_to_path,
@@ -813,26 +868,10 @@ cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':te
 					'logg':logg_mcmc[0], 'e_logg':max(logg_mcmc[1], logg_mcmc[2]), 'ue_logg':logg_mcmc[1], 'le_logg':logg_mcmc[2],
 					'am':am_mcmc[0], 'e_am':max(am_mcmc[1], am_mcmc[2]), 'ue_am':am_mcmc[1], 'le_am':am_mcmc[2], 
 					'pwv':pwv_mcmc[0], 'e_pwv':max(pwv_mcmc[1], pwv_mcmc[2]), 'ue_pwv':pwv_mcmc[1], 'le_pwv':pwv_mcmc[2],
-					#'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
+					'cflux':A_mcmc[0], 'e_cflux':max(A_mcmc[1], A_mcmc[2]), 'ue_cflux':A_mcmc[1], 'le_cflux':A_mcmc[2],
 					'cwave':B_mcmc[0], 'e_cwave':max(B_mcmc[1], B_mcmc[2]), 'ue_cwave':B_mcmc[1], 'le_cwave':B_mcmc[2], 
 					'cnoise':N_mcmc[0],'e_cnoise':max(N_mcmc[1], N_mcmc[2]), 'ue_cnoise':N_mcmc[1], 'le_cnoise':N_mcmc[2], 
-					'a1_1':a1_1_mcmc[0], 'e_a1_1':max(a1_1_mcmc[1], a1_1_mcmc[2]), 'ue_a1_1':a1_1_mcmc[1], 'le_a1_1':a1_1_mcmc[2], 
-					'k1_1':k1_1_mcmc[0], 'e_k1_1':max(k1_1_mcmc[1], k1_1_mcmc[2]), 'ue_k1_1':k1_1_mcmc[1], 'le_k1_1':k1_1_mcmc[2], 
-					'a2_1':a2_1_mcmc[0], 'e_a2_1':max(a2_1_mcmc[1], a2_1_mcmc[2]), 'ue_a2_1':a2_1_mcmc[1], 'le_a2_1':a2_1_mcmc[2], 
-					'k2_1':k2_1_mcmc[0], 'e_k2_1':max(k2_1_mcmc[1], k2_1_mcmc[2]), 'ue_k2_1':k2_1_mcmc[1], 'le_k2_1':k2_1_mcmc[2], 
-					'a1_2':a1_2_mcmc[0], 'e_a1_2':max(a1_2_mcmc[1], a1_2_mcmc[2]), 'ue_a1_2':a1_2_mcmc[1], 'le_a1_2':a1_2_mcmc[2], 
-					'k1_2':k1_2_mcmc[0], 'e_k1_2':max(k1_2_mcmc[1], k1_2_mcmc[2]), 'ue_k1_2':k1_2_mcmc[1], 'le_k1_2':k1_2_mcmc[2], 
-					'a2_2':a2_2_mcmc[0], 'e_a2_2':max(a2_2_mcmc[1], a2_2_mcmc[2]), 'ue_a2_2':a2_2_mcmc[1], 'le_a2_2':a2_2_mcmc[2], 
-					'k2_2':k2_2_mcmc[0], 'e_k2_2':max(k2_2_mcmc[1], k2_2_mcmc[2]), 'ue_k2_2':k2_2_mcmc[1], 'le_k2_2':k2_2_mcmc[2], 
-					'a1_3':a1_3_mcmc[0], 'e_a1_3':max(a1_3_mcmc[1], a1_3_mcmc[2]), 'ue_a1_3':a1_3_mcmc[1], 'le_a1_3':a1_3_mcmc[2], 
-					'k1_3':k1_3_mcmc[0], 'e_k1_3':max(k1_3_mcmc[1], k1_3_mcmc[2]), 'ue_k1_3':k1_3_mcmc[1], 'le_k1_3':k1_3_mcmc[2], 
-					'a2_3':a2_3_mcmc[0], 'e_a2_3':max(a2_3_mcmc[1], a2_3_mcmc[2]), 'ue_a2_3':a2_3_mcmc[1], 'le_a2_3':a2_3_mcmc[2], 
-					'k2_3':k2_3_mcmc[0], 'e_k2_3':max(k2_3_mcmc[1], k2_3_mcmc[2]), 'ue_k2_3':k2_3_mcmc[1], 'le_k2_3':k2_3_mcmc[2], 
-					'a1_4':a1_4_mcmc[0], 'e_a1_4':max(a1_4_mcmc[1], a1_4_mcmc[2]), 'ue_a1_4':a1_4_mcmc[1], 'le_a1_4':a1_4_mcmc[2], 
-					'k1_4':k1_4_mcmc[0], 'e_k1_4':max(k1_4_mcmc[1], k1_4_mcmc[2]), 'ue_k1_4':k1_4_mcmc[1], 'le_k1_4':k1_4_mcmc[2], 
-					'a2_4':a2_4_mcmc[0], 'e_a2_4':max(a2_4_mcmc[1], a2_4_mcmc[2]), 'ue_a2_4':a2_4_mcmc[1], 'le_a2_4':a2_4_mcmc[2], 
-					'k2_4':k2_4_mcmc[0], 'e_k2_4':max(k2_4_mcmc[1], k2_4_mcmc[2]), 'ue_k2_4':k2_4_mcmc[1], 'le_k2_4':k2_4_mcmc[2], 
-					'wave_cal_err':wave_cal_err}, index=[0])
+					'wave_cal_err':wave_cal_err, }, index=[0])
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 

@@ -11,9 +11,26 @@ from scipy.optimize import curve_fit
 import smart
 #import tellurics
 
-def get_peak_fringe_frequency(fringe_object, pixel_start, pixel_end):
+def get_peak_fringe_frequency_single(fringe_object, pixel_start, pixel_end):
 	"""
-	Get the two peak frequencies for the fringe pattern.
+	Get the peak frequency for the fringe pattern.
+	"""
+	tmp = copy.deepcopy(fringe_object)
+
+	tmp.flux = tmp.flux[pixel_start: pixel_end]
+	tmp.wave = tmp.wave[pixel_start: pixel_end]
+
+	f = np.linspace(0.01, 10.0, 10000)
+	pgram = signal.lombscargle(tmp.wave, tmp.flux, f, normalize=True)
+	
+	best_frequency = f[np.argmax(pgram)]
+	#print(best_frequency1)
+	
+	return best_frequency
+
+def get_peak_fringe_frequency_double(fringe_object, pixel_start, pixel_end):
+	"""
+	Get the top two peak frequencies for the fringe pattern.
 	"""
 	tmp = copy.deepcopy(fringe_object)
 
@@ -29,6 +46,34 @@ def get_peak_fringe_frequency(fringe_object, pixel_start, pixel_end):
 	#print(best_frequency2)
 	
 	return best_frequency1, best_frequency2
+
+def Fabry_Perot(wave, A, Dos, R, phi):
+	"""
+	Fabry_Perot fringe model implemnetation. See Cale et al. 2019 equations 5 and 6.
+	"""
+	delta = 2*Dos * wave
+
+	F = 4*R/( 1 - R )**2
+
+	factor = 1 - A * ( 2/F * ( ( 1 + F )/( 1 + F * np.sin(delta/2 + phi)**2 ) - 1 ) -1 )
+
+	return factor
+
+def double_Fabry_Perot(wave, A1, Dos1, R1, phi1, A2, Dos2, R2, phi2):
+
+	factor1 = Fabry_Perot(wave, A1, Dos1, R1, phi1)
+
+	factor2 = Fabry_Perot(wave, A2, Dos2, R2, phi2)
+
+	return factor1 * factor2 - 1
+
+def Fabry_Perot_zero(wave, A, Dos, R, phi):
+	"""
+	Single Fabry Perot model with baseline at zero for residual modeling.
+	"""
+
+	return Fabry_Perot(wave, A, Dos, R, phi) - 1 
+
 
 def double_sine(wave, a1, k1, a2, k2):
 	"""
