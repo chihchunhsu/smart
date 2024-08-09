@@ -40,7 +40,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	veiling      = kwargs.get('veiling', 0)    # flux veiling parameter
 	lsf          = kwargs.get('lsf', 4.5)   # instrumental LSF
 	include_fringe_model = kwargs.get('include_fringe_model', False)
-	fringe_mcmc  =  kwargs.get('fringe_mcmc', True)
+	fringe_mcmc  =  kwargs.get('fringe_mcmc', False)
 	piece_wise_fringe_model_list = kwargs.get('piece_wise_fringe_model_list', [0, 700, -800, -1])
 	slow_rotation_broaden = kwargs.get('slow_rotation_broaden', False)
 
@@ -180,28 +180,27 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		model = smart.applyTelluric(model=model, tell_alpha=tell_alpha, airmass=airmass, pwv=pwv, instrument=data.instrument)
 
 	
-	# fringe model; this is only optimized for Keck/NIRSPEC and Keck/KPIC for now!
-	if (include_fringe_model is True) and (fringe_mcmc is True):
-		#print('adding the fringe model')
-		s1, s2, s3, s4 = piece_wise_fringe_model_list
-		#piecewise_fringe_model_range = [s1, s2, s3, s4]
+	## fringe model; this is only optimized for Keck/NIRSPEC and Keck/KPIC for now!
+	#if (include_fringe_model is True) and (fringe_mcmc is True):
+	#	#print('adding the fringe model')
+	#	s1, s2, s3, s4 = piece_wise_fringe_model_list
+	#	#piecewise_fringe_model_range = [s1, s2, s3, s4]
 
-		popt1 = np.array([A1, Dos1, R1, phi1])
-		popt2 = np.array([A2, Dos2, R2, phi2])
-		popt3 = np.array([A3, Dos3, R3, phi3])
+	#	popt1 = np.array([A1, Dos1, R1, phi1])
+	#	popt2 = np.array([A2, Dos2, R2, phi2])
+	#	popt3 = np.array([A3, Dos3, R3, phi3])
 
-		#model.flux *= smart.double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset)
-		model_tmp = copy.deepcopy(model)
+	#	#model.flux *= smart.double_sine_fringe(model, data, piecewise_fringe_model, teff, logg, vsini, rv, airmass, pwv, wave_offset, flux_offset, lsf, modelset)
+	#	model_tmp = copy.deepcopy(model)
 
-		s2_model = int(np.where(model.wave < data.wave[s2])[0][-1])
-		s3_model = int(np.where(model.wave < data.wave[s3])[0][-1])
+	#	s2_model = int(np.where(model.wave < data.wave[s2])[0][-1])
+	#	s3_model = int(np.where(model.wave < data.wave[s3])[0][-1])
 
-		model_tmp.flux[:s2_model] = model_tmp.flux[:s2_model]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(model_tmp.wave[:s2_model], *popt1))
-		model_tmp.flux[s2_model:s3_model] = model_tmp.flux[s2_model:s3_model]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(model_tmp.wave[s2_model:s3_model], *popt2))
-		model_tmp.flux[s3_model:] = model_tmp.flux[s3_model:]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(model_tmp.wave[s3_model:], *popt3))
+	#	model_tmp.flux[:s2_model] = model_tmp.flux[:s2_model]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(model_tmp.wave[:s2_model], *popt1))
+	#	model_tmp.flux[s2_model:s3_model] = model_tmp.flux[s2_model:s3_model]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(model_tmp.wave[s2_model:s3_model], *popt2))
+	#	model_tmp.flux[s3_model:] = model_tmp.flux[s3_model:]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(model_tmp.wave[s3_model:], *popt3))
 
-		model.flux = model_tmp.flux
-	
+	#	model.flux = model_tmp.flux
 
 	# instrumental LSF
 	if instrument in ['nirspec', 'hires', 'igrins']:
@@ -353,76 +352,80 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	# using curve_fit to fit the fringe parameters outside MCMC
 	if include_fringe_model and (fringe_mcmc is False):
-		s1, s2, s3, s4 = 0, 700, -700, -1
+		s1, s2, s3, s4 = piece_wise_fringe_model_list
 
-		residual      = copy.deepcopy(data)
-		residual.flux = (data.flux - model.flux)/model.flux
+		#residual      = copy.deepcopy(data)
+		#residual.flux = (data.flux - model.flux)/model.flux
 
-		# blue
-		pixel_start, pixel_end = s1, s2
+		## blue
+		#pixel_start, pixel_end = s1, s2
 
-		tmp = copy.deepcopy(residual)
-		tmp.flux = tmp.flux[pixel_start: pixel_end]
-		tmp.wave = tmp.wave[pixel_start: pixel_end]
+		#tmp = copy.deepcopy(residual)
+		#tmp.flux = tmp.flux[pixel_start: pixel_end]
+		#tmp.wave = tmp.wave[pixel_start: pixel_end]
 
-		f = np.linspace(0.01, 10.0, 10000)
-		pgram = signal.lombscargle(tmp.wave, tmp.flux, f, normalize=True)
+		#f = np.linspace(0.01, 10.0, 10000)
+		#pgram = signal.lombscargle(tmp.wave, tmp.flux, f, normalize=True)
 
-		best_frequency1 = f[np.argmax(pgram)]
-		#print(best_frequency1)
+		#best_frequency1 = f[np.argmax(pgram)]
+		##print(best_frequency1)
 
-		amp = max(tmp.flux)
-		p0 = [amp, best_frequency1/2, 0.0, 0.0]
-		bounds = ([0.0, 0.0, 0.0, -np.pi], 
-		          [1.1*amp, 100*best_frequency1, 1.0, np.pi])
-		popt1, pcov1 = curve_fit(smart.forward_model.fringe_model.Fabry_Perot_zero, tmp.wave, tmp.flux, 
-		                       maxfev=10000, p0=p0, bounds=bounds)
+		#amp = max(tmp.flux)
+		#p0 = [amp, best_frequency1/2, 0.0, 0.0]
+		#bounds = ([0.0, 0.0, 0.0, -np.pi], 
+		#          [1.1*amp, 100*best_frequency1, 1.0, np.pi])
+		#popt1, pcov1 = curve_fit(smart.forward_model.fringe_model.Fabry_Perot_zero, tmp.wave, tmp.flux, 
+		#                       maxfev=10000, p0=p0, bounds=bounds)
 
-		# middle
-		pixel_start, pixel_end = s2, s3
+		## middle
+		#pixel_start, pixel_end = s2, s3
 
-		tmp = copy.deepcopy(residual)
-		tmp.flux = tmp.flux[pixel_start: pixel_end]
-		tmp.wave = tmp.wave[pixel_start: pixel_end]
+		#tmp = copy.deepcopy(residual)
+		#tmp.flux = tmp.flux[pixel_start: pixel_end]
+		#tmp.wave = tmp.wave[pixel_start: pixel_end]
 
-		f = np.linspace(0.01, 10.0, 10000)
-		pgram = signal.lombscargle(tmp.wave, tmp.flux, f, normalize=True)
+		#f = np.linspace(0.01, 10.0, 10000)
+		#pgram = signal.lombscargle(tmp.wave, tmp.flux, f, normalize=True)
 
-		best_frequency1 = f[np.argmax(pgram)]
-		#print(best_frequency1)
+		#best_frequency1 = f[np.argmax(pgram)]
+		##print(best_frequency1)
 
-		amp = max(tmp.flux)
-		p0 = [amp, best_frequency1/2, 0.0, 0.0]
-		bounds = ([0.0, 0.0, 0.0, -np.pi], 
-		          [1.1*amp, 100*best_frequency1, 1.0, np.pi])
-		popt2, pcov2 = curve_fit(smart.forward_model.fringe_model.Fabry_Perot_zero, tmp.wave, tmp.flux, 
-		                       maxfev=10000, p0=p0, bounds=bounds)
+		#amp = max(tmp.flux)
+		#p0 = [amp, best_frequency1/2, 0.0, 0.0]
+		#bounds = ([0.0, 0.0, 0.0, -np.pi], 
+		#          [1.1*amp, 100*best_frequency1, 1.0, np.pi])
+		#popt2, pcov2 = curve_fit(smart.forward_model.fringe_model.Fabry_Perot_zero, tmp.wave, tmp.flux, 
+		#                       maxfev=10000, p0=p0, bounds=bounds)
 
-		# red
-		pixel_start, pixel_end = s3, s4
+		## red
+		#pixel_start, pixel_end = s3, s4
 
-		tmp = copy.deepcopy(residual)
-		tmp.flux = tmp.flux[pixel_start: pixel_end]
-		tmp.wave = tmp.wave[pixel_start: pixel_end]
+		#tmp = copy.deepcopy(residual)
+		#tmp.flux = tmp.flux[pixel_start: pixel_end]
+		#tmp.wave = tmp.wave[pixel_start: pixel_end]
 
-		f = np.linspace(0.01, 10.0, 10000)
-		pgram = signal.lombscargle(tmp.wave, tmp.flux, f, normalize=True)
+		#f = np.linspace(0.01, 10.0, 10000)
+		#pgram = signal.lombscargle(tmp.wave, tmp.flux, f, normalize=True)
 
-		best_frequency1 = f[np.argmax(pgram)]
-		#print(best_frequency1)
+		#best_frequency1 = f[np.argmax(pgram)]
+		##print(best_frequency1)
 
-		amp = max(tmp.flux)
-		p0 = [amp, best_frequency1/2, 0.0, 0.0]
-		bounds = ([0.0, 0.0, 0.0, -np.pi], 
-		          [1.1*amp, 100*best_frequency1, 1.0, np.pi])
-		popt3, pcov3 = curve_fit(smart.forward_model.fringe_model.Fabry_Perot_zero, tmp.wave, tmp.flux, 
-		                       maxfev=10000, p0=p0, bounds=bounds)
+		#amp = max(tmp.flux)
+		#p0 = [amp, best_frequency1/2, 0.0, 0.0]
+		#bounds = ([0.0, 0.0, 0.0, -np.pi], 
+		#          [1.1*amp, 100*best_frequency1, 1.0, np.pi])
+		#popt3, pcov3 = curve_fit(smart.forward_model.fringe_model.Fabry_Perot_zero, tmp.wave, tmp.flux, 
+		#                       maxfev=10000, p0=p0, bounds=bounds)
+
+		popt1 = np.array([A1, Dos1, R1, phi1])
+		popt2 = np.array([A2, Dos2, R2, phi2])
+		popt3 = np.array([A3, Dos3, R3, phi3])
 
 		model_tmp = copy.deepcopy(model)
 
-		model_tmp.flux[s1:s2] = model_tmp.flux[s1:s2]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(residual.wave[s1:s2], *popt1))
-		model_tmp.flux[s2:s3] = model_tmp.flux[s2:s3]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(residual.wave[s2:s3], *popt2))
-		model_tmp.flux[s3:s4] = model_tmp.flux[s3:s4]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(residual.wave[s3:s4], *popt3))
+		model_tmp.flux[s1:s2] = model_tmp.flux[s1:s2]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(data.wave[s1:s2], *popt1))
+		model_tmp.flux[s2:s3] = model_tmp.flux[s2:s3]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(data.wave[s2:s3], *popt2))
+		model_tmp.flux[s3:s4] = model_tmp.flux[s3:s4]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(data.wave[s3:s4], *popt3))
 
 		model.flux = model_tmp.flux
 

@@ -286,11 +286,36 @@ lines          = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
 if instrument in ['nirspec', 'kpic']:
 	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[6].split('priors ')[1])
-	barycorr       = json.loads(lines[13].split('barycorr')[1])
+	if include_fringe_model:
+		fringe_param   = ast.literal_eval(lines[7].split('fringe ')[1])
+		barycorr       = json.loads(lines[14].split('barycorr')[1])
+		print('fringe_param', fringe_param)
+	else:
+		barycorr       = json.loads(lines[13].split('barycorr')[1])
 elif instrument == 'hires':
 	custom_mask    = json.loads(lines[3].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[4].split('priors ')[1])
 	barycorr       = json.loads(lines[11].split('barycorr')[1])
+
+# read the pre-determined fringe parameters
+if include_fringe_model:
+	A1=float(fringe_param['A1']) 
+	A2=float(fringe_param['A2']) 
+	A3=float(fringe_param['A3']) 
+	Dos1=float(fringe_param['Dos1']) 
+	Dos2=float(fringe_param['Dos2']) 
+	Dos3=float(fringe_param['Dos3']) 
+	R1=float(fringe_param['R1'])
+	R2=float(fringe_param['R2'])
+	R3=float(fringe_param['R3'])
+	phi1=float(fringe_param['phi1'])
+	phi2=float(fringe_param['phi2']) 
+	phi3=float(fringe_param['phi3'])
+
+	print(A1, Dos1, R1, phi1)
+	print(A2, Dos2, R2, phi2)
+	print(A3, Dos3, R3, phi3)
+
 
 # no logg 5.5 for teff lower than 900
 if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
@@ -445,8 +470,13 @@ def lnlike(theta, data, lsf):
 	teff, logg, vsini, rv, am, pwv, A, B, N = theta #N noise prefactor
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
 
-	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
+	if include_fringe_model:
+		model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+			lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument,
+			A1=A1, A2=A2, A3=A3, Dos1=Dos1, Dos2=Dos2, Dos3=Dos3, R1=R1, R2=R2, R3=R3, phi1=phi1, phi2=phi2, phi3=phi3)
+	else:
+		model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+			lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
 
 	chisquare = smart.chisquare(data, model)/N**2
 
@@ -632,11 +662,17 @@ A     = A_mcmc[0]
 B     = B_mcmc[0]
 N     = N_mcmc[0]
 
-
-model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
-	vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
-	lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, 
-	include_fringe_model=include_fringe_model, instrument=instrument)
+if include_fringe_model:
+	model, model_notell  = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
+		vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, 
+		include_fringe_model=include_fringe_model, instrument=instrument, output_stellar_model=True,
+		A1=A1, A2=A2, A3=A3, Dos1=Dos1, Dos2=Dos2, Dos3=Dos3, R1=R1, R2=R2, R3=R3, phi1=phi1, phi2=phi2, phi3=phi3)
+else:
+	model, model_notell = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, 
+		vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, output_stellar_model=True, 
+		include_fringe_model=include_fringe_model, instrument=instrument)
 
 fig = plt.figure(figsize=(16,6))
 ax1 = fig.add_subplot(111)
