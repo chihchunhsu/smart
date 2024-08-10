@@ -27,6 +27,22 @@ cal_param_nirspec = {
 }
 
 cal_param_igrins = {
-	'77':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'77': {'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'109':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'110':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'111':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'112':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'113':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'114':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'115':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'116':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'117':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'118':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'119':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'120':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'121':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'122':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'123':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
+	'124':{'xcorr_range':1.0, 'outlier_rej':2.5, 	'pixel_range_start':70, 	'pixel_range_end':-40},
 }
 
