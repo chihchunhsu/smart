@@ -35,7 +35,7 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     #print('model wave:', type(mdl.wave), mdl.wave[-1])
     #print(data.wave)
     #print(mdl.wave)
-    if data.instrument in ['nirspec', 'hires', 'igrins', 'kpic']:
+    if data.instrument in ['nirspec', 'hires', 'igrins', 'kpic', 'gnirs']:
         mdl_range      = np.where((mdl.wave >= data.wave[0]) & (mdl.wave <= data.wave[-1]))
         mdl_wave       = mdl.wave[mdl_range]
         mdl_flux       = mdl.flux[mdl_range]
@@ -67,7 +67,7 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     std_mdldiv      = np.std(mdldiv)
     
     ## replace outliers with average value for nirspec
-    if data.instrument in ['nirspec', 'hires', 'kpic']:
+    if data.instrument in ['nirspec', 'hires', 'kpic', 'gnirs']:
         mdldiv[mdldiv  <= mean_mdldiv - 2 * std_mdldiv] = mean_mdldiv
         mdldiv[mdldiv  >= mean_mdldiv + 2 * std_mdldiv] = mean_mdldiv
         try:

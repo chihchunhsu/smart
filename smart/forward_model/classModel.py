@@ -149,9 +149,8 @@ class Model():
                 self.wave = wave # Angstrom
                 self.flux = flux # erg/s/cm^2/Angstrom
             except:
-                raise Exception('No %s Model Available for %s'%(modelset, instrument))
-                #self.wave   = kwargs.get('wave', [])
-                #self.flux   = kwargs.get('flux', [])
+                self.wave   = kwargs.get('wave', [])
+                self.flux   = kwargs.get('flux', [])
         
 
     def normalize(self, filter_size=500, **kwargs):
