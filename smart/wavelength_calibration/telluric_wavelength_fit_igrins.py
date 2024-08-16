@@ -972,8 +972,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 		#	'g.',label="fitted wavelength function".format(np.std(residual1)),alpha=0.5)
 		ax2.plot(width_range_center2, waveSolution(width_range_center2, *popt2), 'r-',
 			     label="fitted wavelength function with outlier rejection, STD = {} $\AA$ ({} km/s), RMS = {} $\AA$ ({} km/s)".format(\
-			     np.round_(std, decimals=3), np.round_(std/np.average(new_wave_sol)*299792.458, decimals=3),
-			     np.round_(RMSE2, decimals=3), np.round_(RMSE2/np.average(new_wave_sol)*299792.458, decimals=3)),
+			     np.round(std, decimals=3), np.round(std/np.average(new_wave_sol)*299792.458, decimals=3),
+			     np.round(RMSE2, decimals=3), np.round(RMSE2/np.average(new_wave_sol)*299792.458, decimals=3)),
 			     alpha=0.5)
 		ax2.axhline(-delta_wave_range, c='r', ls=':')
 		ax2.axhline(delta_wave_range, c='r', ls=':')
@@ -1468,8 +1468,8 @@ def run_wave_cal(data_name, data_path, order_list,
 		ax3 = fig.add_subplot(gs[1])
 		ax3.plot(width_range_center, residual, 'r.', alpha=0.5,
 			     label="fitted wavelength function with outlier rejection, STD={} $\AA$ ={} km/s".format(\
-			     np.round_(stdWaveSol,  decimals=4),
-			     np.round_(stdWaveSolV, decimals=3)))
+			     np.round(stdWaveSol,  decimals=4),
+			     np.round(stdWaveSolV, decimals=3)))
 		ax3.set_ylabel("Residual ($\AA$)", fontsize=20)
 		#ax3.set_ylim(-3*np.std(residual), 3*np.std(residual))
 		ax3.set_xlabel('Pixel', fontsize=20)
