@@ -166,7 +166,7 @@ save_to_path: 	str
 tell_data_name       = tell_sp.name
 tell_path            = tell_sp.path
 order                = tell_sp.order
-ndim                 = 5
+ndim                 = 4
 #applymask            = False
 #pixel_start          = 10
 #pixel_end            = -30
@@ -227,7 +227,6 @@ if priors is None:
 						'airmass_min':1.0   ,  'airmass_max':3.0,		
 						'pwv_min':0.5       ,	'pwv_max':20.0,
 						'A_min':-0.1 		,  'A_max':0.1,
-						'B_min':-0.04  	    ,  'B_max':0.04    
 					}
 
 
@@ -314,13 +313,13 @@ def lnlike(theta, data=data):
 	"""
 	## Parameters MCMC
 
-	lsf, airmass, pwv, A, B = theta
+	lsf, airmass, pwv, A = theta
 
 	if include_fringe_model:
-		model = tellurics.makeTelluricModel(lsf, airmass, pwv, A, B, data=data, deg=2, niter=niter, include_fringe_model=include_fringe_model,
+		model = tellurics.makeTelluricModel(lsf, airmass, pwv, A, 0, data=data, deg=2, niter=niter, include_fringe_model=include_fringe_model,
 			A1=A1, A2=A2, A3=A3, Dos1=Dos1, Dos2=Dos2, Dos3=Dos3, R1=R1, R2=R2, R3=R3, phi1=phi1, phi2=phi2, phi3=phi3)
 	else:
-		model = tellurics.makeTelluricModel(lsf, airmass, pwv, A, B, data=data, deg=2, niter=niter)
+		model = tellurics.makeTelluricModel(lsf, airmass, pwv, A, 0, data=data, deg=2, niter=niter)
 
 	chisquare = smart.chisquare(data, model)
 
@@ -332,19 +331,17 @@ def lnprior(theta):
 	"""
 	## Parameters for theta
 	#lsf, airmass, pwv, alpha, A, B = theta
-	lsf, airmass, pwv, A, B = theta
+	lsf, airmass, pwv, A = theta
 
 	limits =  { 'lsf_min':2.0  		,  'lsf_max':10.0,
 				'airmass_min':1.0   ,  'airmass_max':3.0,
-				'pwv_min':0.50 		,	'pwv_max':20.0,
-				'A_min':-500.0 		,  'A_max':500.0,
-				'B_min':-0.04  	    ,  'B_max':0.04    }
+				'pwv_min':0.50 		,  'pwv_max':20.0,
+				'A_min':-500.0 		,  'A_max':500.0}
 
 	if  limits['lsf_min']     < lsf     < limits['lsf_max'] \
 	and limits['airmass_min'] < airmass < limits['airmass_max']\
 	and limits['pwv_min']     < pwv     < limits['pwv_max']\
-	and limits['A_min']       < A       < limits['A_max']\
-	and limits['B_min']       < B       < limits['B_max']:
+	and limits['A_min']       < A       < limits['A_max']:
 		return 0.0
 
 	return -np.inf
@@ -359,8 +356,7 @@ def lnprob(theta, data):
 pos = [np.array([priors['lsf_min']       + (priors['lsf_max']        - priors['lsf_min'] )  * np.random.uniform(),
 				 priors['airmass_min']   + (priors['airmass_max']    - priors['airmass_min'] )  * np.random.uniform(), 
 				 priors['pwv_min']       + (priors['pwv_max']        - priors['pwv_min'] )  * np.random.uniform(), 
-				 priors['A_min']         + (priors['A_max']          - priors['A_min'])     * np.random.uniform(),
-				 priors['B_min']         + (priors['B_max']          - priors['B_min'])     * np.random.uniform()]) for i in range(nwalkers)]
+				 priors['A_min']         + (priors['A_max']          - priors['A_min'])     * np.random.uniform()]) for i in range(nwalkers)]
 
 if True:
 	set_start_method('fork')
@@ -383,7 +379,7 @@ if True:
 sampler_chain = np.load(save_to_path + '/sampler_chain.npy')
 samples = np.load(save_to_path + '/samples.npy')
 
-ylabels = ["$\Delta \\nu_{inst}$ (km/s)", "airmass", "pwv (mm)", "$F_{\lambda}$ offset", "$\lambda$ offset ($\AA$)"]
+ylabels = ["$\Delta \\nu_{inst}$ (km/s)", "airmass", "pwv (mm)", "$F_{\lambda}$ offset"]
 
 ## create walker plots
 plt.rc('font', family='sans-serif')
@@ -409,7 +405,7 @@ triangle_samples = sampler_chain[:, burn:, :].reshape((-1, ndim))
 #print(triangle_samples.shape)
 
 # create the final spectra comparison
-lsf_mcmc, airmass_mcmc, pwv_mcmc, A_mcmc, B_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
+lsf_mcmc, airmass_mcmc, pwv_mcmc, A_mcmc = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), 
 	zip(*np.percentile(triangle_samples, [16, 50, 84], axis=0)))
 
 # add the summary to the txt file
@@ -421,16 +417,15 @@ file_log.write("lsf_mcmc {} km/s\n".format(str(lsf_mcmc)))
 file_log.write("airmass_mcmc {} km/s\n".format(str(airmass_mcmc)))
 file_log.write("pwv_mcmc {} km/s\n".format(str(pwv_mcmc)))
 file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
-file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
 file_log.close()
 
-print(lsf_mcmc, airmass_mcmc, pwv_mcmc, A_mcmc, B_mcmc)
+print(lsf_mcmc, airmass_mcmc, pwv_mcmc, A_mcmc)
 
 lsf = lsf_mcmc[0]
 airmass = airmass_mcmc[0]
 pwv = pwv_mcmc[0]
 A = A_mcmc[0]
-B = B_mcmc[0]
+B = 0
 
 if '_' in tell_sp.name:
 	tell_data_name = tell_sp.name.split('_')[0]
@@ -442,8 +437,7 @@ fig = corner.corner(triangle_samples,
 	truths=[lsf_mcmc[0],
 	airmass_mcmc[0],
 	pwv_mcmc[0], 
-	A_mcmc[0],
-	B_mcmc[0]],
+	A_mcmc[0]],
 	quantiles=[0.16, 0.84],
 	label_kwargs={"fontsize": 20})
 plt.minorticks_on()
@@ -452,7 +446,7 @@ fig.savefig(save_to_path+'/triangle.png', dpi=300, bbox_inches='tight')
 plt.close()
 
 data2               = copy.deepcopy(data)
-data2.wave          = data2.wave + B_mcmc[0]
+data2.wave          = data2.wave + B
 telluric_model      = tellurics.convolveTelluric(lsf_mcmc[0], airmass_mcmc[0], pwv_mcmc[0], data)
 model, pcont        = smart.continuum(data=data, mdl=telluric_model, deg=2, tell=True)
 plot_cont           = np.polyval(pcont, model.wave)
@@ -461,12 +455,6 @@ if niter is not None:
 		model, pcont2 = smart.continuum(data=data2, mdl=model, deg=2, tell=True)
 		plot_cont *= np.polyval(pcont2, model.wave)
 model.flux         += A_mcmc[0]
-
-lsf = lsf_mcmc[0]
-airmass = airmass_mcmc[0]
-pwv = pwv_mcmc[0]
-A = A_mcmc[0]
-B = B_mcmc[0]
 
 if include_fringe_model:
 	model_nofringe = model
@@ -481,7 +469,6 @@ ax1 = fig.add_subplot(111)
 ax1.plot(model.wave, model.flux, c='C3', ls='-', alpha=0.5)
 if include_fringe_model:
 	ax1.plot(model_nofringe.wave, model_nofringe.flux, c='C0', ls='-', alpha=0.5)
-#ax1.plot(model.wave, np.polyval(pcont, model.wave) + A_mcmc[0], c='C1', ls='-', alpha=0.5)
 ax1.plot(model.wave, plot_cont + A_mcmc[0], c='C1', ls='-', alpha=0.5)
 ax1.plot(data2.wave, data2.flux, 'k-', alpha=0.5)
 ax1.plot(data2.wave, data2.flux-model.flux,'k-', alpha=0.5)
@@ -506,7 +493,7 @@ plt.figtext(0.89,0.83,"LSF ${0}^{{+{1}}}_{{-{2}}} (km/s)/ airmass \, {3}^{{+{4}}
 	verticalalignment='center',
 	fontsize=12)
 plt.figtext(0.89,0.80,r"$\chi^2$ = {}, DOF = {}".format(\
-	round(smart.chisquare(data,model)), round(len(data.wave-ndim)/3)),
+	round(smart.chisquare(data2,model)), round(len(data2.wave-ndim)/3)),
 	color='k',
 	horizontalalignment='right',
 	verticalalignment='center',
@@ -517,7 +504,7 @@ plt.ylabel('Flux (counts/s)',fontsize=15)
 plt.xlabel('Wavelength ($\AA$)',fontsize=15)
 
 ax2 = ax1.twiny()
-ax2.plot(pixel, data2.flux, color='w', alpha=0)
+ax2.plot(pixel, data.flux, color='w', alpha=0)
 ax2.set_xlabel('Pixel',fontsize=15)
 ax2.tick_params(labelsize=15)
 ax2.set_xlim(pixel[0], pixel[-1])
@@ -545,8 +532,7 @@ cat = pd.DataFrame({'date_obs':date_obs, 'tell_name':tell_data_name, 'tell_path'
 					'lsf_tell':lsf_mcmc[0], 'lsf_tell_ue':lsf_mcmc[1], 'lsf_tell_le':lsf_mcmc[2], 
 					'am_tell':airmass_mcmc[0], 'am_tell_ue':airmass_mcmc[1], 'am_tell_le':airmass_mcmc[2], 
 					'pwv_tell':pwv_mcmc[0], 'pwv_tell_ue':pwv_mcmc[1], 'pwv_tell_le':pwv_mcmc[2],
-					'A_tell':A_mcmc[0], 'A_tell_ue':A_mcmc[1], 'A_tell_le':A_mcmc[2], 
-					'B_tell':B_mcmc[0], 'B_tell_ue':B_mcmc[1], 'B_tell_le':B_mcmc[2]}, index=[0])
+					'A_tell':A_mcmc[0], 'A_tell_ue':A_mcmc[1], 'A_tell_le':A_mcmc[2]}, index=[0])
 
 cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 

@@ -147,12 +147,32 @@ def convolveTelluric(lsf, airmass, pwv, telluric_data):
 
     return telluric_model
 
-def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, niter=None):
+def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, niter=None, **kwargs):
     """
     Make a continuum-corrected telluric model as a function of LSF, airmass, pwv, and flux and wavelength offsets.
 
     The model assumes a second-order polynomail for the continuum.
     """
+    include_fringe_model = kwargs.get('include_fringe_model', False)
+
+    if include_fringe_model:
+        piece_wise_fringe_model_list = kwargs.get('piece_wise_fringe_model_list', [0, 700, -700, -1])
+        s1, s2, s3, s4 = piece_wise_fringe_model_list
+
+        # for single order, (three) piece-wise Fabry Perot fringe model
+        A1       = kwargs.get('A1') 
+        A2       = kwargs.get('A2') 
+        A3       = kwargs.get('A3') 
+        Dos1     = kwargs.get('Dos1') 
+        Dos2     = kwargs.get('Dos2') 
+        Dos3     = kwargs.get('Dos3') 
+        R1       = kwargs.get('R1') 
+        R2       = kwargs.get('R2') 
+        R3       = kwargs.get('R3') 
+        phi1     = kwargs.get('phi1') 
+        phi2     = kwargs.get('phi2') 
+        phi3     = kwargs.get('phi3') 
+
     data2               = copy.deepcopy(data)
     data2.wave          = data2.wave + wave_offset
     telluric_model      = convolveTelluric(lsf, airmass, pwv, data2)
@@ -161,8 +181,17 @@ def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, 
     if niter is not None:
         for i in range(niter):
             model               = smart.continuum(data=data2, mdl=model, deg=deg)
-    
+
     model.flux         += flux_offset
+
+    if include_fringe_model:
+        popt1 = np.array([A1, Dos1, R1, phi1])
+        popt2 = np.array([A2, Dos2, R2, phi2])
+        popt3 = np.array([A3, Dos3, R3, phi3])
+
+        model.flux[s1:s2] = model.flux[s1:s2]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(data2.wave[s1:s2], *popt1))
+        model.flux[s2:s3] = model.flux[s2:s3]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(data2.wave[s2:s3], *popt2))
+        model.flux[s3:s4] = model.flux[s3:s4]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(data2.wave[s3:s4], *popt3))
 
     return model
 

@@ -73,7 +73,7 @@ class Spectrum():
 				try:
 					self.sky = hdulist[3].data
 				except IndexError:
-					print("No sky line data.")
+					#print("No sky line data.")
 					self.sky = np.zeros(self.wave.shape)
 
 			self.mask  = []
