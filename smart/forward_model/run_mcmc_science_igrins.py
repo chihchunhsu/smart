@@ -462,7 +462,7 @@ def lnlike(theta, data, lsf):
 	'''
 	chisquare = smart.chisquare(data, model)/N**2
 
-	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*(data.noise*N)**2)))
+	return -0.5 * (chisquare + np.nansum(np.log(2*np.pi*(data.noise*N)**2)))
 
 def lnprior(theta, limits=limits):
 	"""
