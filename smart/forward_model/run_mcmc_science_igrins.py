@@ -156,8 +156,9 @@ dt_string = now.strftime("%H:%M:%S")
 #####################################
 if instrument == 'igrins':
 	tell_data_name2 = tell_data_name + '_calibrated'
-	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, applymask=applymask, instrument=instrument)
-	tell_sp     = smart.Spectrum(name=tell_data_name, name2=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True)
+	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, tell_path=tell_path, applymask=applymask, instrument=instrument, spec_a0v=True)
+	#tell_sp     = smart.Spectrum(name=tell_data_name2, name2=tell_data_name2, order=data.order, path=tell_path, tell_path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True)
+	tell_sp     = smart.Spectrum(name=tell_data_name2, name2=tell_data_name2, order=data.order, tell_path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True, wavecal=True)
 
 if instrument == 'nirspec':
 	data        = smart.Spectrum(name=sci_data_name, order=order, path=data_path, applymask=applymask, instrument=instrument)
@@ -165,6 +166,7 @@ if instrument == 'nirspec':
 	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument)
 
 	data.updateWaveSol(tell_sp)
+
 
 # MJD for logging
 # upgraded NIRSPEC
@@ -301,22 +303,22 @@ elif instrument == 'igrins':
 	barycorr       = json.loads(lines[13].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
-if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
+if 'btsettl08' in modelset.lower() and priors['teff_min'] < 900: logg_max = 5.0
 else: logg_max = 5.5
 
 # limit of the flux nuisance parameter: 5 percent of the median flux
 A_const       = 0.05 * abs(np.median(data.flux))
 
-if modelset == 'btsettl08' or modelset == 'phoenix-btsettl08':
+if 'btsettl08' in modelset.lower():
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,500), 'teff_max':min(priors['teff_max']+300,3500),
 						'logg_min':3.5,                             'logg_max':logg_max,
-						'vsini_min':0.0,                            'vsini_max':100.0,
+						'vsini_min':0.0,                            'vsini_max':200.0,
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,                              	'B_max':0.6,
+						'A_min':-1000,								'A_max':1000,
+						'B_min':-5,                              	'B_max':5,
 						'N_min':0.10,                               'N_max':5.0 				
 					}
 
@@ -392,6 +394,7 @@ if instrument == 'nirspec':
 #	priors, limits         = mcmc_utils.generate_initial_priors_and_limits(sp_type=sp_type)
 #print(priors, limits)
 
+print("LSF: ", lsf)
 if lsf is None:
 	lsf           = smart.getLSF(tell_sp, alpha=alpha_tell, test=True, save_path=save_to_path)
 #	print("LSF: ", lsf)
@@ -449,10 +452,17 @@ def lnlike(theta, data, lsf):
 
 	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
 		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
-
+	'''
+	plt.figure(111111)
+	plt.plot(data.wave, data.flux, label='data')
+	plt.plot(model.wave, model.flux, label='model')
+	plt.plot(data.wave, data.noise, label='noise')
+	plt.legend()
+	plt.show()
+	'''
 	chisquare = smart.chisquare(data, model)/N**2
 
-	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*(data.noise*N)**2)))
+	return -0.5 * (chisquare + np.nansum(np.log(2*np.pi*(data.noise*N)**2)))
 
 def lnprior(theta, limits=limits):
 	"""
@@ -475,7 +485,7 @@ def lnprior(theta, limits=limits):
 	return -np.inf
 
 def lnprob(theta, data, lsf):
-		
+
 	lnp = lnprior(theta)
 
 	if not np.isfinite(lnp):
@@ -494,7 +504,6 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform()]) for i in range(nwalkers)]
 
 ## multiprocessing
-
 set_start_method('fork')
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)

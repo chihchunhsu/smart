@@ -99,15 +99,18 @@ instrument             = str(args.instrument)
 if order == 35: applymask = True
 
 if instrument == 'nirspec':
+	
 	tell_data_name2 = tell_data_name + '_calibrated'
 	tell_sp         = smart.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
+
 elif instrument == 'igrins':
+	
 	# model the unflatted spectrum
 	tell_sp = smart.Spectrum(name=tell_data_name, name2=tell_data_name+'_calibrated', 
-		order=order, path=tell_path, flat_tell=True, instrument=instrument)
-
+		order=order, path=tell_path, tell_path=tell_path, flat_tell=True, instrument=instrument, wavecal=True)
+	
 	tell_sp2 = smart.Spectrum(name=tell_data_name, name2=tell_data_name+'_calibrated', 
-		order=order, path=tell_path, flat_tell=False, instrument=instrument)
+		order=order, path=tell_path, tell_path=tell_path, flat_tell=True, instrument=instrument, wavecal=True, scale=True)
 
 	scales = tell_sp.flux/tell_sp2.flux
 	tell_sp.noise *= scales
@@ -346,7 +349,7 @@ def lnprior(theta):
 				'airmass_min':1.0   ,  'airmass_max':3.0,
 				'pwv_min':0.50 		,  'pwv_max':pwv_max,
 				'A_min':-A_max 		,  'A_max':A_max,
-				'B_min':-0.04  	    ,  'B_max':0.04    }
+				'B_min':-1.  	    ,  'B_max':1.    }
 
 	if  limits['lsf_min']     < lsf     < limits['lsf_max'] \
 	and limits['airmass_min'] < airmass < limits['airmass_max']\
@@ -430,8 +433,6 @@ file_log.write("pwv_mcmc {} km/s\n".format(str(pwv_mcmc)))
 file_log.write("A_mcmc {}\n".format(str(A_mcmc)))
 file_log.write("B_mcmc {}\n".format(str(B_mcmc)))
 file_log.close()
-
-print(lsf_mcmc, airmass_mcmc, pwv_mcmc, A_mcmc, B_mcmc)
 
 if ('_' in tell_sp.name) and (instrument != 'igrins'):
 	tell_data_name = tell_sp.name.split('_')[0]
@@ -536,6 +537,9 @@ if save is True:
 		data_path = tell_sp.path + '/' + tell_sp.name + '_' + str(tell_sp.order) + '_all.fits'
 	elif instrument == 'igrins':
 		data_path = tell_sp.path + '/' + tell_sp.name2 + '.wave.fits'
+		print(tell_sp.path)
+		print(tell_sp.name2)
+		print(data_path)
 	with fits.open(data_path) as hdulist:
 		hdulist[0].header['LSF']          = lsf_mcmc[0]
 		hdulist[0].header['AM_FIT']       = airmass_mcmc[0]

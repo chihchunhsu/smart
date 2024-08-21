@@ -588,6 +588,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 	save               = kwargs.get('save', False) # save the new wavelength solution
 	save_to_path       = kwargs.get('save_to_path', None)
 	data_path          = kwargs.get('data_path', None)
+	data_unflat        = kwargs.get('data_unflat', None)
 	length1            = kwargs.get('length1', len(data.oriWave)) # length of the input array
 	# calculation the necessary parameters
 	pixel_range_start  = kwargs.get('pixel_range_start',0)
@@ -1035,24 +1036,32 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			data_path = save_to_path + ".wave.fits"
 		save_name = save_to_path + "_calibrated.wave.fits"
 		with fits.open(data_path) as hdulist:
-			hdulist[0].header['COMMENT']  = 'SMART Calibrated Wavelength Solutions'
-			hdulist[0].header['PWV']      = pwv
-			hdulist[0].header['C0']       = c0
-			hdulist[0].header['C1']       = c1
-			hdulist[0].header['C2']       = c2
-			hdulist[0].header['C3']       = c3
-			hdulist[0].header['C4']       = c4
-			#hdulist[0].bestshift          = data2.bestshift + best_shift_list
-			hdulist[0].header['FITSTD']   = np.std(waveSolution(\
+			hdulist[1].header['COMMENT']  = 'SMART Calibrated Wavelength Solutions'
+			hdulist[1].header['PWV']      = pwv
+			hdulist[1].header['C0']       = c0
+			hdulist[1].header['C1']       = c1
+			hdulist[1].header['C2']       = c2
+			hdulist[1].header['C3']       = c3
+			hdulist[1].header['C4']       = c4
+			#hdulist[1].bestshift          = data2.bestshift + best_shift_list
+			hdulist[1].header['FITSTD']   = np.std(waveSolution(\
 			       								   width_range_center2, *popt2) - best_shift_array2)  ### XXX THIS NEEDS TO BE FIXED!
-			hdulist[0].header['POPT0']	  = popt2[0]	### XXX DO WE REALLY NEED ALL THESE? THEY ARE ONLY THE LAST ITERATION!
-			hdulist[0].header['POPT1']	  = popt2[1]
-			hdulist[0].header['POPT2']	  = popt2[2]
-			hdulist[0].header['POPT3']	  = popt2[3]
-			hdulist[0].header['POPT4']	  = popt2[4]
-			hdulist[0].header['STD']      = str(np.std(residualprevious)/np.average(new_wave_sol)*299792.458) + 'km/s'
-			hdulist[0].header['RMS']      = str(RMSEprevious/np.average(new_wave_sol)*299792.458) + 'km/s'
-			hdulist[0].data               = waveSolution(np.arange(length1), c0, c1, c2, c3, c4)
+			hdulist[1].header['POPT0']	  = popt2[0]	### XXX DO WE REALLY NEED ALL THESE? THEY ARE ONLY THE LAST ITERATION!
+			hdulist[1].header['POPT1']	  = popt2[1]
+			hdulist[1].header['POPT2']	  = popt2[2]
+			hdulist[1].header['POPT3']	  = popt2[3]
+			hdulist[1].header['POPT4']	  = popt2[4]
+			hdulist[1].header['STD']      = str(np.std(residualprevious)/np.average(new_wave_sol)*299792.458) + 'km/s'
+			hdulist[1].header['RMS']      = str(RMSEprevious/np.average(new_wave_sol)*299792.458) + 'km/s'
+			hdulist[1].data               = waveSolution(np.arange(length1), c0, c1, c2, c3, c4)
+
+			# Add the unflattened spectrum
+			hdu  = fits.ImageHDU(data=data_unflat.flux, name='SPEC')
+			hdu2 = fits.ImageHDU(data=data.noise**2, name='VAR_FLATTENED')
+			hdu3 = fits.ImageHDU(data=data_unflat.noise**2, name='VARIANCE')
+			hdulist.append(hdu)
+			hdulist.append(hdu2)
+			hdulist.append(hdu3)
 			try:
 				hdulist.writeto(save_name, overwrite=True)
 			except FileNotFoundError:
@@ -1067,7 +1076,7 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 
 
 def run_wave_cal(data_name, data_path, order_list,
-	             save_to_path, test=False, save=False, plot_masked=False,
+	             save_to_path, test=False, save=False, plot_masked=False, tell_path=None,
 	             window_width=40, window_step=5, mask_custom=[], apply_sigma_mask=False, apply_edge_mask=False, pwv='1.5',
 	             xcorr_step=0.05, niter=20, outlier_rej=None, defringe_list=[62], cal_param=None, instrument='nirspec'):
 	"""
@@ -1120,10 +1129,20 @@ def run_wave_cal(data_name, data_path, order_list,
 
 		# use median value to replace the masked values later
 		if instrument == 'igrins':
+
 			pix_start, pix_end = pixel_range_start, pixel_range_end # need to make it more flexible
-			data     = smart.Spectrum(name=data_name, order=order, path=data_path, apply_sigma_mask=apply_sigma_mask,
-									name2=data_name, flat_tell=True, instrument=instrument)
-			length1  = len(data.wave) # preserve the length of the array
+
+			data        = smart.Spectrum(name=data_name, order=order, path=data_path, tell_path=tell_path, apply_sigma_mask=apply_sigma_mask,
+						   			     name2=data_name, flat_tell=True, instrument=instrument)
+
+			#Get the unflattenen spectrum to add to the calibrated FITS file
+			data_unflat = smart.Spectrum(name=data_name, order=order, path=data_path, tell_path=tell_path, apply_sigma_mask=apply_sigma_mask,
+									     name2=data_name, flat_tell=False, instrument=instrument)
+
+			# Compute the uncertainty on the flattened spectrum
+			data.noise = data_unflat.noise / data.flux / data_unflat.flux
+
+			length1     = len(data.wave) # preserve the length of the array
 
 			p_init = np.poly1d(np.polyfit(np.arange(len(data.wave))[pix_start:pix_end], data.wave[pix_start:pix_end], 4))
 
@@ -1280,7 +1299,8 @@ def run_wave_cal(data_name, data_path, order_list,
 								  apply_sigma_mask=apply_sigma_mask,
 								  mask_custom=mask_custom,
 								  pwv=pwv,
-								  instrument=instrument)
+								  instrument=instrument,
+								  data_unflat=data_unflat)
 
 		time2 = time.time()
 		print("Total X correlation time: {} min".format((time2-time1)/60))
