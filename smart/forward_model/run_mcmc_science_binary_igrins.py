@@ -158,10 +158,8 @@ dt_string = now.strftime("%H:%M:%S")
 if instrument.lower() == 'igrins':
 	tell_data_name2 = tell_data_name + '_calibrated'
 	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, tell_path=tell_path, applymask=applymask, instrument=instrument, spec_a0v=True)
-	tell_sp     = smart
-	#data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, applymask=applymask, instrument=instrument)
-	#tell_sp     = smart.Spectrum(name=tell_data_name, name2=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True)
-	mjd = data.header['MJD-OBS']
+	tell_sp     = smart.Spectrum(name=tell_data_name2, name2=tell_data_name2, order=data.order, tell_path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True, wavecal=True)
+	mjd         = data.header['MJD-OBS']
 
 if instrument.lower() == 'nirspec':
 	tell_data_name2 = tell_data_name + '_calibrated'
@@ -310,16 +308,16 @@ if 'btsettl08' in modelset.lower():
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,500),  'teff_max':min(priors['teff_max']+300,3500),
 						'logg_min':3.5,                              'logg_max':logg_max,
-						'vsini_min':0.0,                             'vsini_max':200.0,
+						'vsini_min':0.0,                             'vsini_max':100.0,
 						'rv_min':-200.0,                             'rv_max':200.0,
 						'am_min':1.0,                                'am_max':3.0,
 						'pwv_min':0.5,                            	 'pwv_max':20.0,
-						'A_min':-100,							 	 'A_max':100,
-						'B_min':-5,                              	 'B_max':5,
+						'A_min':-A_const,							 'A_max':A_const,
+						'B_min':-0.6,                              	 'B_max':0.6,
 						'N_min':0.10,                                'N_max':5.0,
-						'teff2_min':max(priors['teff2_min']-300,500), 'teff2_max':min(priors['teff2_max']+300,3500),
+						'teff2_min':max(priors['teff2_min']-300,500),'teff2_max':min(priors['teff2_max']+300,3500),
 						'logg2_min':3.5,                             'logg2_max':logg_max,
-						'vsini2_min':0.0,                            'vsini2_max':200.0,
+						'vsini2_min':0.0,                            'vsini2_max':100.0,
 						'rv2_min':-200.0,                            'rv2_max':200.0,	
 						'flux_scale_min':0.1,                        'flux_scale_max':1.0,		
 					}
@@ -899,9 +897,9 @@ file_log.close()
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-if instrument in ['nirspec', 'igrins']:
+if instrument.lower() in ['nirspec', 'igrins']:
 	wave_cal_err = tell_sp.header['STD']
-elif instrument == 'hires':
+elif instrument.lower() == 'hires':
 	wave_cal_err = np.nan
 
 cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
