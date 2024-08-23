@@ -8,7 +8,7 @@ import matplotlib.gridspec as gridspec
 from astropy.io import fits
 import emcee
 #from schwimmbad import MPIPool
-from multiprocessing import Pool
+from multiprocessing import Pool, set_start_method
 import smart
 import model_fit
 import mcmc_utils
@@ -155,13 +155,13 @@ dt_string = now.strftime("%H:%M:%S")
 
 #####################################
 
-if instrument == 'igrins':
+if instrument.lower() == 'igrins':
 	tell_data_name2 = tell_data_name + '_calibrated'
-	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, applymask=applymask, instrument=instrument)
-	tell_sp     = smart.Spectrum(name=tell_data_name, name2=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True)
-	mjd = data.header['MJD-OBS']
+	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, tell_path=tell_path, applymask=applymask, instrument=instrument, spec_a0v=True)
+	tell_sp     = smart.Spectrum(name=tell_data_name2, name2=tell_data_name2, order=data.order, tell_path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True, wavecal=True)
+	mjd         = data.header['MJD-OBS']
 
-if instrument == 'nirspec':
+if instrument.lower() == 'nirspec':
 	tell_data_name2 = tell_data_name + '_calibrated'
 
 	tell_sp     = smart.Spectrum(name=tell_data_name2, order=data.order, path=tell_path, applymask=applymask, instrument=instrument)
@@ -176,7 +176,7 @@ if instrument == 'nirspec':
 	else:
 		mjd = data.header['MJD-OBS']
 
-if instrument == 'hires':
+if instrument.lower() == 'hires':
 	mjd = data.header['MJD']
 	
 
@@ -208,7 +208,7 @@ if coadd:
 
 sci_data  = data
 
-if instrument in ['nirspec', 'igrins']:
+if instrument.lower() in ['nirspec', 'igrins']:
 	tell_data = tell_sp 
 
 """
@@ -274,7 +274,7 @@ else:
 #if limits is None: limits = priors
 
 data          = copy.deepcopy(sci_data)
-if instrument == 'nirspec':
+if instrument.lower() == 'nirspec':
 	tell_sp       = copy.deepcopy(tell_data)
 	data.updateWaveSol(tell_sp)
 
@@ -284,27 +284,27 @@ if instrument == 'nirspec':
 
 ## read the input custom mask and priors
 lines          = open(save_to_path+'/mcmc_parameters.txt').read().splitlines()
-if instrument == 'nirspec':
+if instrument.lower() == 'nirspec':
 	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[6].split('priors ')[1])
 	barycorr       = json.loads(lines[13].split('barycorr')[1])
-elif instrument == 'hires':
+elif instrument.lower() == 'hires':
 	custom_mask    = json.loads(lines[3].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[4].split('priors ')[1])
 	barycorr       = json.loads(lines[11].split('barycorr')[1])
-elif instrument == 'igrins':
+elif instrument.lower() == 'igrins':
 	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[6].split('priors ')[1])
 	barycorr       = json.loads(lines[13].split('barycorr')[1])
 
 # no logg 5.5 for teff lower than 900
-if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
+if 'btsettl08' in modelset.lower() and priors['teff_min'] < 900: logg_max = 5.0
 else: logg_max = 5.5
 
 # limit of the flux nuisance parameter: 5 percent of the median flux
 A_const       = 0.05 * abs(np.median(data.flux))
 
-if modelset == 'btsettl08' or modelset == 'phoenix-btsettl08':
+if 'btsettl08' in modelset.lower():
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,500),  'teff_max':min(priors['teff_max']+300,3500),
 						'logg_min':3.5,                              'logg_max':logg_max,
@@ -315,7 +315,7 @@ if modelset == 'btsettl08' or modelset == 'phoenix-btsettl08':
 						'A_min':-A_const,							 'A_max':A_const,
 						'B_min':-0.6,                              	 'B_max':0.6,
 						'N_min':0.10,                                'N_max':5.0,
-						'teff2_min':max(priors['teff2_min']-300,500), 'teff2_max':min(priors['teff2_max']+300,3500),
+						'teff2_min':max(priors['teff2_min']-300,500),'teff2_max':min(priors['teff2_max']+300,3500),
 						'logg2_min':3.5,                             'logg2_max':logg_max,
 						'vsini2_min':0.0,                            'vsini2_max':100.0,
 						'rv2_min':-200.0,                            'rv2_max':200.0,	
@@ -377,7 +377,7 @@ elif modelset.upper() == 'PHOENIX_BTSETTL_CIFIST2011_2015':
 					}
 
 # HIRES wavelength calibration is not that precise, release the constraint for the wavelength offset nuisance parameter
-if data.instrument == 'hires':
+if data.instrument.lower() == 'hires':
 	limits['B_min'] = -3.0 # Angstrom
 	limits['B_max'] = +3.0 # Angstrom
 
@@ -400,7 +400,7 @@ data.wave     = data.wave[pixel_start:pixel_end]
 data.flux     = data.flux[pixel_start:pixel_end]
 data.noise    = data.noise[pixel_start:pixel_end]
 
-if instrument == 'nirspec':
+if instrument.lower() == 'nirspec':
 	tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
 	tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
 	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
@@ -523,8 +523,9 @@ pos = [np.array([	priors['teff_min']       + (priors['teff_max']       - priors[
 					priors['N_min']          + (priors['N_max']          - priors['N_min'])          * np.random.uniform(),
 					priors['flux_scale_min'] + (priors['flux_scale_max'] - priors['flux_scale_min']) * np.random.uniform()]) for i in range(nwalkers)]
 
-## multiprocessing
 
+## multiprocessing
+set_start_method('fork')
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
@@ -896,9 +897,9 @@ file_log.close()
 
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-if instrument in ['nirspec', 'igrins']:
+if instrument.lower() in ['nirspec', 'igrins']:
 	wave_cal_err = tell_sp.header['STD']
-elif instrument == 'hires':
+elif instrument.lower() == 'hires':
 	wave_cal_err = np.nan
 
 cat = pd.DataFrame({'date_obs':date_obs,'date_name':sci_data_name,'tell_name':tell_data_name,
