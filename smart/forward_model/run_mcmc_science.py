@@ -318,7 +318,7 @@ if include_fringe_model:
 
 
 # no logg 5.5 for teff lower than 900
-if modelset == 'btsettl08' and priors['teff_min'] < 900: logg_max = 5.0
+if 'btsettl08' in modelset.lower() and priors['teff_min'] < 900: logg_max = 5.0
 else: logg_max = 5.5
 
 ## apply a custom mask
@@ -333,7 +333,7 @@ if instrument == 'kpic':
 else:
 	N_max = 5.0
 
-if modelset == 'btsettl08':
+if 'btsettl08' in modelset.lower():
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,500), 'teff_max':min(priors['teff_max']+300,3500),
 						'logg_min':3.5,                             'logg_max':logg_max,
@@ -346,7 +346,7 @@ if modelset == 'btsettl08':
 						'N_min':0.10,                               'N_max':N_max 				
 					}
 
-elif modelset == 'sonora':
+elif 'sonora' in modelset.lower():
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,200), 'teff_max':min(priors['teff_max']+300,2400),
 						'logg_min':3.5,                             'logg_max':logg_max,
@@ -359,7 +359,7 @@ elif modelset == 'sonora':
 						'N_min':0.10,                               'N_max':N_max 				
 					}
 
-elif modelset == 'phoenixaces':
+elif 'phoenixaces' in modelset.lower():
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,2300), 'teff_max':min(priors['teff_max']+300,10000),
 						'logg_min':3.5,                             'logg_max':logg_max,
@@ -404,7 +404,7 @@ data.wave     = data.wave[pixel_start:pixel_end]
 data.flux     = data.flux[pixel_start:pixel_end]
 data.noise    = data.noise[pixel_start:pixel_end]
 
-if instrument != 'hires':
+if instrument.lower() != 'hires':
 	tell_sp.wave  = tell_sp.wave[pixel_start:pixel_end]
 	tell_sp.flux  = tell_sp.flux[pixel_start:pixel_end]
 	tell_sp.noise = tell_sp.noise[pixel_start:pixel_end]
