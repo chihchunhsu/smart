@@ -37,32 +37,43 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, co=0, modelset='phoenix-a
         metal      = kwargs.get('metal', 0)
         alpha      = kwargs.get('alpha', 0)
         kzz        = kwargs.get('kzz', 0)
-        co         = kwargs.get('co', 0)
+        co         = kwargs.get('co', 1)
         gridfile   = kwargs.get('gridfile', None)
         instrument = kwargs.get('instrument', 'nirspec')
         order      = kwargs.get('order', None)
-        #print(temp, logg, metal, alpha)
+        #print('1', temp, logg, metal, alpha, kzz, co)
         if gridfile is None:
             raise ValueError('Model gridfile must be provided.') 
         
         if modelset.lower() == 'btsettl08' and instrument.lower() == 'nirspec': 
             filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'    
+        
         elif 'sonora' in modelset.lower() and '2023' not in modelset:
-            if instrument.lower() == 'nirspec':
-                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-O%s.fits'%(instrument.upper(), order.upper())
+            if '2021' in modelset.lower():
+                if instrument.lower() == 'nirspec':
+                    filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH{0:.2f}'.format(float(metal)) + '_Y0.28_CO{0:.2f}'.format(float(co)) + '_%s-O%s.fits'%(instrument.upper(), order.upper())
+                else:
+                    filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH{0:.2f}'.format(float(metal)) + '_Y0.28_CO{0:.2f}'.format(float(co)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
             else:
-                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-%s.fits'%(instrument.upper(), order.upper())
+                if instrument.lower() == 'nirspec':
+                    filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-O%s.fits'%(instrument.upper(), order.upper())
+                else:
+                    filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-%s.fits'%(instrument.upper(), order.upper())
+        
         elif modelset.lower() == 'sonora-2023':
             if instrument.lower() == 'nirspec':
                 filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_CO{0:.2f}'.format(float(co)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-O%s.fits'%(instrument.upper(), order.upper())
             else:
                 filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_CO{0:.2f}'.format(float(co)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+        
         elif modelset.lower() == 'marcs-apogee-dr15':
             cm      = kwargs.get('cm', 0)
             nm      = kwargs.get('nm', 0) 
             filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_cm{0:.2f}'.format(float(cm)) + '_nm{0:.2f}'.format(float(nm)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+        
         elif kzz != 0:
             filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_kzz{0:.2f}'.format(float(kzz)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+        
         else: 
             if instrument.lower()in ['nirspec', 'hires', 'igrins']:
                 filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-O%s.fits'%(instrument.upper(), order.upper())
@@ -133,28 +144,28 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, co=0, modelset='phoenix-a
             # Get the nearest models to the gridpoint (teff)
             x0 = np.max(T1['teff'][np.where(T1['teff'] <= teff)])
             x1 = np.min(T1['teff'][np.where(T1['teff'] >= teff)])
-            #print(x0, x1)
+            #print('x', x0, x1)
             
             # Get the nearest grid point to logg
             y0 = np.max(list(set(T1['logg'][np.where( (T1['teff'] == x0) & (T1['logg'] <= logg) )]) & 
                              set(T1['logg'][np.where( (T1['teff'] == x1) & (T1['logg'] <= logg) )])))
             y1 = np.min(list(set(T1['logg'][np.where( (T1['teff'] == x0) & (T1['logg'] >= logg) )]) & 
                              set(T1['logg'][np.where( (T1['teff'] == x1) & (T1['logg'] >= logg) )])))
-            #print(y0, y1)
+            #print('y', y0, y1)
             
             # Get the nearest grid point to [M/H]
             z0 = np.max(list(set(T1['FeH'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['FeH'] <= metal) )]) & 
                              set(T1['FeH'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['FeH'] <= metal) )])))
             z1 = np.min(list(set(T1['FeH'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['FeH'] >= metal) )]) & 
                              set(T1['FeH'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['FeH'] >= metal) )])))
-            #print(z0, z1)
+            #print('z', z0, z1)
             
             # Get the nearest grid point to Alpha
             t0 = np.max(list(set(T1['Y'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['FeH'] == z0) & (T1['Y'] <= alpha) )]) & 
                              set(T1['Y'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['FeH'] == z1) & (T1['Y'] <= alpha) )])))
             t1 = np.min(list(set(T1['Y'][np.where( (T1['teff'] == x0) & (T1['logg'] == y0) & (T1['FeH'] == z0) & (T1['Y'] >= alpha) )]) & 
                              set(T1['Y'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['FeH'] == z1) & (T1['Y'] >= alpha) )])))
-            #print(t0, t1)
+            #print('t', t0, t1)
         
         elif modelset.lower() == 'sonora-2023':
 
