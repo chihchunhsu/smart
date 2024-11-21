@@ -47,7 +47,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, kzz=0, co=0, modelset='phoenix-a
         
         if modelset.lower() == 'btsettl08' and instrument.lower() == 'nirspec': 
             filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'    
-        elif modelset.lower() == 'sonora' and '2023' not in modelset:
+        elif 'sonora' in modelset.lower() and '2023' not in modelset:
             if instrument.lower() == 'nirspec':
                 filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-O%s.fits'%(instrument.upper(), order.upper())
             else:
