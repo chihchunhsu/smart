@@ -307,7 +307,7 @@ class Spectrum():
 			self.model    = np.array(hdulist[3].data)
 			self.mask     = []
 
-		elif self.instrument == 'igrins':
+		elif 'igrins' in self.instrument.lower():
 			"""
 			Follow the IGRINS PIP data product convention; default is to read the flattened spectra
 			
@@ -335,17 +335,29 @@ class Spectrum():
 			self.scale     = kwargs.get('scale',False)
 
 			# assign IGRINS data index
-			igrins_order_dict = {
-						'71':0, '72':1, '73':2, '74':3, '75':4, '76':5, '77':6, '78':7, '79':8, '80':9, # K-band
-						'81':10, '82':11, '83':12, '84':13, '85':14, '86':15, '87':16, '88':17, '89':18, '90':19,
-						'91':20, '92':21, '93':22, '94':23, '95':24, '96':25, 
-						'98':0, '99':1, '100':2, '101':3, '102':4, '103':5, '104':6, '105':7, '106':8, '107':9, '108':10, # H-band
-						'109':11, '110':12, '111':13, '112':14, '113':15, '114':16, '115':17, '116':18, '117':19, '118':20, 
-						'119':21, '120':22, '121':23, '122':24, '123':25, '124':26, '125':27, 
-			                    }
+			if self.instrument.lower() == 'igrins':
+				igrins_order_dict = {
+							'71':0, '72':1, '73':2, '74':3, '75':4, '76':5, '77':6, '78':7, '79':8, '80':9, # K-band
+							'81':10, '82':11, '83':12, '84':13, '85':14, '86':15, '87':16, '88':17, '89':18, '90':19,
+							'91':20, '92':21, '93':22, '94':23, '95':24, '96':25, 
+							'98':0, '99':1, '100':2, '101':3, '102':4, '103':5, '104':6, '105':7, '106':8, '107':9, '108':10, # H-band
+							'109':11, '110':12, '111':13, '112':14, '113':15, '114':16, '115':17, '116':18, '117':19, '118':20, 
+							'119':21, '120':22, '121':23, '122':24, '123':25, '124':26, '125':27, '126':28, '127':29, '128':30,
+							}
+			elif self.instrument.lower() == 'igrins2':
+				igrins_order_dict = {
+							'70':0,  '71':1,  '72':2,  '73':3,  '74':4,  '75':5,  '76':6,  '77':7,  '78':8,  '79':9, '80':10, # K-band
+							'81':11, '82':12, '83':13, '84':14, '85':15, '86':16, '87':17, '88':18, '89':19, '90':20,
+							'91':21, '92':22, '93':23, '94':24, '95':25, #'96':25,
+							'98':0, '99':1, '100':2, '101':3, '102':4, '103':5, '104':6, '105':7, '106':8, '107':9, '108':10, # H-band
+							'109':11, '110':12, '111':13, '112':14, '113':15, '114':16, '115':17, '116':18, '117':19, '118':20,
+							'119':21, '120':22, '121':23, '122':24, '123':25, '124':26, '125':27, '126':28, '127':29, '128':30,
+							}
 
 			if self.path == None:
 				self.path = './'
+			if self.order < 98: band = 'K'
+			else: band = 'H'
 
 			# follow the IGRINS PIP data product convention
 			# read the flattend spectrum for telluric for wavelength calibration
@@ -354,11 +366,18 @@ class Spectrum():
 					fullpath_flux = self.tell_path + '/' + self.name2 + '.wave.fits'
 					fullpath_var = fullpath_flux
 				else:
-					fullpath_flux = self.tell_path + '/' + self.name + '.spec_flattened.fits'
-					fullpath_var  = self.tell_path + '/' + self.name + '.variance.fits'
+					#if self.instrument.lower() == 'igrins2':
+					#	fullpath_flux = self.tell_path + '/' + self.name + '_%s.spec_flattened.fits'%band
+					#	fullpath_var  = self.tell_path + '/' + self.name + '_%s.variance.fits'%band
+					#else:
+						fullpath_flux = self.tell_path + '/' + self.name + '.spec_flattened.fits'
+						fullpath_var  = self.tell_path + '/' + self.name + '.variance.fits'
 				fullpath_wave = fullpath_flux
 			elif self.spec_a0v:
-				fullpath_flux = self.path + '/' + self.name + '.spec_a0v.fits'
+				if self.instrument.lower() == 'igrins2':
+					fullpath_flux = self.path + '/' + self.name + '_%s.spec_a0v.fits'%band
+				else:
+					fullpath_flux = self.path + '/' + self.name + '.spec_a0v.fits'
 				if '_calibrated' in self.name2:
 					fullpath_wave = self.tell_path + '/' + self.name2 + '.wave.fits'
 				else: 
@@ -411,8 +430,19 @@ class Spectrum():
 					self.flux   = hdulist[4].data[igrins_order_dict[str(self.order)]] 
 					self.noise  = np.sqrt(var[5].data[igrins_order_dict[str(self.order)]])
 				else:
-					self.flux   = hdulist[0].data[igrins_order_dict[str(self.order)]] 
-					self.noise  = np.sqrt(var[0].data[igrins_order_dict[str(self.order)]])
+					print(igrins_order_dict)
+					print(self.order)
+					print(str(self.order))
+					print(hdulist.info())
+					print(hdulist[1])
+					print(hdulist[1].data.shape)
+					print(igrins_order_dict[str(self.order)])
+					if self.instrument.lower() == 'igrins2':
+						self.flux   = hdulist[1].data[igrins_order_dict[str(self.order)]]
+						self.noise  = np.sqrt(hdulist[2].data[igrins_order_dict[str(self.order)]])
+					else:
+						self.flux   = hdulist[0].data[igrins_order_dict[str(self.order)]] 
+						self.noise  = np.sqrt(var[0].data[igrins_order_dict[str(self.order)]])
 			#self.mask   = []
 			
 			self.oriWave  = self.wave

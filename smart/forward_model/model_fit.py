@@ -94,7 +94,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	output_stellar_model = kwargs.get('output_stellar_model', False)
 	
-	if data is not None and instrument.lower() in ['nirspec', 'hires', 'igrins']:
+	if data is not None and instrument.lower() in ['nirspec', 'hires', 'igrins', 'igrins2']:
+
 		order = data.order
 		# read in a model
 		#print('teff ',teff,'logg ',logg, 'z', z, 'order', order, 'modelset', modelset)
@@ -103,6 +104,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	#elif data is not None and instrument == 'apogee':
 	elif instrument.lower() == 'apogee':
+
 		# not z; this should be keyword "metal"
 		if 'sonora' in modelset.lower():
 			model    = smart.Model(teff=teff, logg=logg, z=0.0, order='ALL', modelset=modelset, instrument=instrument)
@@ -120,7 +122,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 		else:
 			model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=vmicro, rotate=False, gaussian=True)
 	
-	elif data is None and instrument.lower() in ['nirspec', 'hires', 'igrins']:
+	elif data is None and instrument.lower() in ['nirspec', 'hires', 'igrins', 'igrins2']:
+		
 		model    = smart.Model(teff=teff, logg=logg, metal=metal, order=str(order), modelset=modelset, instrument=instrument)
 
 	else: # see if we have a model anyway
@@ -203,7 +206,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 	#	model.flux = model_tmp.flux
 
 	# instrumental LSF
-	if instrument.lower() in ['nirspec', 'hires', 'igrins']:
+	if instrument.lower() in ['nirspec', 'hires', 'igrins', 'igrins2']:
 		model.flux = smart.broaden(wave=model.wave, flux=model.flux, vbroad=lsf, rotate=False, gaussian=True)
 	elif instrument == 'apogee':
 		model.flux = ap.apogee_hack.spec.lsf.convolve(model.wave, model.flux, lsf=lsf, xlsf=xlsf).flatten()
@@ -229,7 +232,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 
 	# integral resampling
 	if data is not None:
-		if instrument.lower() in ['nirspec', 'hires', 'igrins']:
+		if instrument.lower() in ['nirspec', 'hires', 'igrins', 'igrins2']:
+
 			model.flux = np.array(smart.integralResample(xh=model.wave, yh=model.flux, xl=data.wave))
 			model.wave = data.wave
 
@@ -243,7 +247,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 					model2.wave = data.wave
 
 		# contunuum correction
-		if data.instrument.lower() in ['nirspec', 'hires', 'igrins', 'kpic']:
+		if data.instrument.lower() in ['nirspec', 'hires', 'igrins', 'igrins2', 'kpic']:
+
 			niter = 5 # continuum iteration
 			if output_stellar_model:
 				model, cont_factor = smart.continuum(data=data, mdl=model, prop=True)
@@ -258,6 +263,7 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 				model = smart.continuum(data=data, mdl=model)
 				for i in range(niter):
 					model = smart.continuum(data=data, mdl=model)
+
 		elif data.instrument.lower() == 'apogee':
 			## set the order in the continuum fit
 			deg         = 5
@@ -341,7 +347,8 @@ def makeModel(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0,
 			model.flux  = np.array( list(model2.flux) + list(model1.flux) + list(model0.flux) )
 			model.wave  = np.array( list(model2.wave) + list(model1.wave) + list(model0.wave) )
 
-	if instrument.lower() in ['nirspec', 'hires', 'igrins']:
+	if instrument.lower() in ['nirspec', 'hires', 'igrins', 'igrins2']:
+
 		# flux offset
 		model.flux += flux_offset
 		if output_stellar_model: 
@@ -445,6 +452,7 @@ def doub_sine(wave, a1, k1, a2, k2):
     # the initial guess is determined from the best frequency
     # wave (i.e. kx) multiplicative effects
     return (1 + a1**2 + 2 * a1*np.sin( k1 * wave )) * ( 1 + a2**2 + 2 * a2 * np.sin( k2 * wave ))
+    
 
 def makeModelFringe(teff, logg=5, metal=0, vsini=1, rv=0, tell_alpha=1.0, airmass=1.0, pwv=0.5, wave_offset=0, flux_offset=0, 
 	a1_1=0.01, k1_1=2.10, a2_1=0.01, k2_1=0.85, a1_2=0.01, k1_2=2.10, a2_2=0.01, k2_2=0.85, 

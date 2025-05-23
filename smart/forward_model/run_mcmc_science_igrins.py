@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 plt.ioff()
 import matplotlib.gridspec as gridspec
 from astropy.io import fits
+from astropy.time import Time
 import emcee
 #from schwimmbad import MPIPool
 from multiprocessing import Pool, set_start_method
@@ -154,8 +155,16 @@ now       = datetime.now()
 dt_string = now.strftime("%H:%M:%S")	
 
 #####################################
-if instrument.lower() == 'igrins':
-	tell_data_name2 = tell_data_name + '_calibrated'
+if 'igrins' in instrument.lower():			
+
+	if order < 98: band = 'K'
+	else: band = 'H'
+	
+	if instrument.lower() == 'igrins2':
+		tell_data_name2 = tell_data_name + '_%s_calibrated'%band
+	else:
+		tell_data_name2 = tell_data_name + '_calibrated'
+
 	data        = smart.Spectrum(name=sci_data_name, name2=tell_data_name2, order=order, path=data_path, tell_path=tell_path, applymask=applymask, instrument=instrument, spec_a0v=True)
 	#tell_sp     = smart.Spectrum(name=tell_data_name2, name2=tell_data_name2, order=data.order, path=tell_path, tell_path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True)
 	tell_sp     = smart.Spectrum(name=tell_data_name2, name2=tell_data_name2, order=data.order, tell_path=tell_path, applymask=applymask, instrument=instrument, flat_tell=True, wavecal=True)
@@ -177,11 +186,14 @@ if instrument.lower() == 'nirspec':
 	else:
 		mjd = data.header['MJD-OBS']
 
-elif instrument == 'hires':
+elif instrument.lower() == 'hires':
 	mjd = data.header['MJD']
 
 elif instrument.lower() == 'igrins':
 	mjd = data.header['MJD-OBS']
+
+elif instrument.lower() == 'igrins2':
+	mjd = Time(data.header['DATE-OBS']).mjd
 
 if coadd:
 	sci_data_name2 = str(args.coadd_sp_name)
@@ -211,7 +223,7 @@ if coadd:
 
 sci_data  = data
 
-if instrument.lower() in ['nirspec', 'igrins']:
+if instrument.lower() in ['nirspec', 'igrins', 'igrins2']:
 	tell_data = tell_sp 
 
 """
@@ -296,9 +308,14 @@ elif instrument.lower() == 'hires':
 	custom_mask    = json.loads(lines[3].split('custom_mask')[1])
 	priors         = ast.literal_eval(lines[4].split('priors ')[1])
 	barycorr       = json.loads(lines[11].split('barycorr')[1])
-elif instrument.lower() == 'igrins':
+elif 'igrins' in instrument.lower():
 	custom_mask    = json.loads(lines[5].split('custom_mask')[1])
 	print('custom_mask', custom_mask)
+	print('1', lines)
+	print('2', lines[6])
+	print('3', lines[6].split('priors '))
+	print('4', lines[6].split('priors ')[1])
+	print('5', type(lines[6].split('priors ')[1]))
 	priors         = ast.literal_eval(lines[6].split('priors ')[1])
 	barycorr       = json.loads(lines[13].split('barycorr')[1])
 
@@ -322,7 +339,7 @@ if 'btsettl08' in modelset.lower():
 						'N_min':0.10,                               'N_max':5.0 				
 					}
 
-elif modelset == 'sonora':
+elif modelset.lower() == 'sonora':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,200), 'teff_max':min(priors['teff_max']+300,2400),
 						'logg_min':3.5,                             'logg_max':logg_max,
@@ -335,7 +352,7 @@ elif modelset == 'sonora':
 						'N_min':0.10,                               'N_max':5.0 				
 					}
 
-elif modelset == 'phoenixaces':
+elif modelset.lower() == 'phoenix-aces-agss-cond-2011':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,2300), 'teff_max':min(priors['teff_max']+300,10000),
 						'logg_min':3.5,                             'logg_max':logg_max,
@@ -343,8 +360,8 @@ elif modelset == 'phoenixaces':
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,
 						'pwv_min':0.5,                            	'pwv_max':20.0,
-						'A_min':-A_const,							'A_max':A_const,
-						'B_min':-0.6,								'B_max':0.6,
+						'A_min':-1000,							    'A_max':1000,
+						'B_min':-5,								    'B_max':5,
 						'N_min':0.10,                               'N_max':5.50 				
 					}
 
@@ -449,18 +466,26 @@ def lnlike(theta, data, lsf):
 	## Parameters MCMC
 	teff, logg, vsini, rv, am, pwv, A, B, N = theta #N noise prefactor
 	#teff, logg, vsini, rv, , am, pwv, A, B, freq, amp, phase = theta
+	#print(teff, logg, vsini, rv, am, pwv, A, B, N)
+	#print(lsf)
 
-	model = model_fit.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
+	model = smart.makeModel(teff=teff, logg=logg, metal=0.0, vsini=vsini, rv=rv, tell_alpha=1.0, wave_offset=B, flux_offset=A,
 		lsf=lsf, order=str(data.order), data=data, modelset=modelset, airmass=am, pwv=pwv, include_fringe_model=include_fringe_model, instrument=instrument)
-	'''
-	plt.figure(111111)
-	plt.plot(data.wave, data.flux, label='data')
-	plt.plot(model.wave, model.flux, label='model')
-	plt.plot(data.wave, data.noise, label='noise')
-	plt.legend()
-	plt.show()
-	'''
+	
+	#print('1')
+	#plt.figure(111111)
+	#plt.plot(data.wave, data.flux, label='data')
+	#plt.plot(model.wave, model.flux, label='model')
+	#plt.plot(data.wave, data.noise, label='noise')
+	#plt.legend()
+	#plt.savefig('MCMC_test_figure.png')
+	#print('2')
+	#plt.show()
+	#plt.pause(0.5)
+
+	
 	chisquare = smart.chisquare(data, model)/N**2
+	#print(-0.5 * (chisquare + np.nansum(np.log(2*np.pi*(data.noise*N)**2))))
 
 	return -0.5 * (chisquare + np.nansum(np.log(2*np.pi*(data.noise*N)**2)))
 
@@ -470,6 +495,16 @@ def lnprior(theta, limits=limits):
 	"""
 	## Parameters for theta
 	teff, logg, vsini, rv, am, pwv, A, B, N = theta
+	#print('THETA2', theta)
+	#print(limits['teff_min']  < teff  < limits['teff_max'])
+	#print(limits['logg_min']  < logg  < limits['logg_max'])
+	#print(limits['vsini_min'] < vsini < limits['vsini_max'])
+	#print(limits['rv_min']    < rv    < limits['rv_max'])
+	#print(limits['am_min']    < am    < limits['am_max'])
+	#print(limits['pwv_min']   < pwv   < limits['pwv_max'])
+	#print(limits['A_min']     < A     < limits['A_max'])
+	#print(limits['B_min']     < B     < limits['B_max'])
+	#print(limits['N_min']     < N     < limits['N_max'])
 
 	if  limits['teff_min']  < teff  < limits['teff_max'] \
 	and limits['logg_min']  < logg  < limits['logg_max'] \
@@ -486,7 +521,11 @@ def lnprior(theta, limits=limits):
 
 def lnprob(theta, data, lsf):
 
+	#print('THETA', theta)
+
 	lnp = lnprior(theta)
+
+	#print('LNP', lnp)
 
 	if not np.isfinite(lnp):
 		return -np.inf
@@ -503,16 +542,19 @@ pos = [np.array([	priors['teff_min']  + (priors['teff_max']   - priors['teff_min
 					priors['B_min']     + (priors['B_max']      - priors['B_min'])     * np.random.uniform(),
 					priors['N_min']     + (priors['N_max']      - priors['N_min'])     * np.random.uniform()]) for i in range(nwalkers)]
 
+time1 = time.time()
+#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, moves=emcee.moves.KDEMove())
+#sampler.run_mcmc(pos, step, progress=True)
+
 ## multiprocessing
 set_start_method('fork')
 with Pool() as pool:
 	#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf, pwv), a=moves, pool=pool)
 	sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data, lsf), a=moves, pool=pool,
 			moves=emcee.moves.KDEMove())
-	time1 = time.time()
 	sampler.run_mcmc(pos, step, progress=True)
-	time2 = time.time()
 
+time2 = time.time()
 np.save(save_to_path + '/sampler_chain', sampler.chain[:, :, :])
 
 samples = sampler.chain[:, :, :].reshape((-1, ndim))
@@ -706,6 +748,7 @@ if plot_show:
 	plt.show()
 plt.close()
 
+
 # chi2 and dof in the log
 log_path = save_to_path + '/mcmc_parameters.txt'
 file_log = open(log_path,"a")
@@ -739,7 +782,7 @@ file_log.close()
 #
 
 med_snr      = np.nanmedian(data.flux/data.noise)
-if instrument.lower() in ['nirspec', 'igrins']:
+if instrument.lower() in ['nirspec', 'igrins', 'igrins2']:
 	wave_cal_err = tell_sp.header['STD']
 else:
 	wave_cal_err = np.nan

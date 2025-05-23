@@ -1106,7 +1106,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		print("Start telluric wavelength calibration on {} order {}".format(data_name,order))
 
 		# load the default calibration parameters
-		if instrument == 'igrins':
+		if 'igrins' in instrument.lower():
 				cal_param_dict = cal_param_igrins
 		else:
 			cal_param_dict = cal_param_nirspec
@@ -1128,7 +1128,7 @@ def run_wave_cal(data_name, data_path, order_list,
 		os.chdir(directory)
 
 		# use median value to replace the masked values later
-		if instrument == 'igrins':
+		if 'igrins' in instrument.lower():
 
 			pix_start, pix_end = pixel_range_start, pixel_range_end # need to make it more flexible
 

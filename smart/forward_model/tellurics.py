@@ -147,6 +147,7 @@ def convolveTelluric(lsf, airmass, pwv, telluric_data):
 
     return telluric_model
 
+
 def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, niter=None, **kwargs):
     """
     Make a continuum-corrected telluric model as a function of LSF, airmass, pwv, and flux and wavelength offsets.
@@ -194,6 +195,7 @@ def makeTelluricModel(lsf, airmass, pwv, flux_offset, wave_offset, data, deg=2, 
         model.flux[s3:s4] = model.flux[s3:s4]*(1+smart.forward_model.fringe_model.Fabry_Perot_zero(data2.wave[s3:s4], *popt3))
 
     return model
+
 
 def convolveTelluricFringe(lsf, airmass, pwv, telluric_data, 
     a1_1, k1_1, p1_1, a2_1, k2_1, p2_1, 

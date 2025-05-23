@@ -103,13 +103,22 @@ if instrument.lower() == 'nirspec':
 	tell_data_name2 = tell_data_name + '_calibrated'
 	tell_sp         = smart.Spectrum(name=tell_data_name2, order=order, path=tell_path, applymask=applymask)
 
-elif instrument.lower() == 'igrins':
+elif 'igrins' in instrument.lower():
+
+	if order < 98: band = 'K'
+	else: band = 'H'
 	
 	# model the unflatted spectrum
-	tell_sp = smart.Spectrum(name=tell_data_name, name2=tell_data_name+'_calibrated', 
+	if instrument.lower() == 'igrins2': 
+		tell_data_name += '_%s'%band
+		name2 = tell_data_name+'_calibrated'
+	else: 
+		name2 = tell_data_name+'_calibrated'
+	print('1')
+	tell_sp = smart.Spectrum(name=tell_data_name, name2=name2, 
 		order=order, path=tell_path, tell_path=tell_path, flat_tell=True, instrument=instrument, wavecal=True)
-	
-	tell_sp2 = smart.Spectrum(name=tell_data_name, name2=tell_data_name+'_calibrated', 
+	print('2')
+	tell_sp2 = smart.Spectrum(name=tell_data_name, name2=name2, 
 		order=order, path=tell_path, tell_path=tell_path, flat_tell=True, instrument=instrument, wavecal=True, scale=True)
 
 	scales = tell_sp.flux/tell_sp2.flux
@@ -125,6 +134,9 @@ if instrument.lower() == 'nirspec':
 		mjd = tell_sp.header['MJD-OBS']
 elif instrument.lower() == 'igrins':
 	mjd = tell_sp.header['MJD-OBS']
+elif instrument.lower() == 'igrins2':
+	mjd = tell_sp.header['DATE-OBS']
+
 
 ###########################################################################################################
 """
@@ -221,9 +233,9 @@ if priors is None:
 		A_min = -0.1
 		A_max = +0.1
 		pwv_max = 20.0
-	elif instrument.lower() == 'igrins':
-		A_min = -1000.0
-		A_max = +1000.0
+	elif 'igrins' in instrument.lower():
+		A_min = -1.0
+		A_max = +1.0
 		pwv_max = 5.0
 
 	priors      =	{	'lsf_min':3.0  		,  'lsf_max':8.0,
@@ -232,7 +244,18 @@ if priors is None:
 						'A_min':A_min 		,  'A_max':A_max,
 						'B_min':-0.04  	    ,  'B_max':0.04    
 					}
+if instrument.lower() == 'nirspec':
+	pwv_max = 20.0
+	A_max   = 500.0
+elif 'igrins' in instrument.lower():
+	pwv_max = 5.0
+	A_max   = 5000.0
 
+limits =  { 'lsf_min':2.0  		,  'lsf_max':10.0,
+			'airmass_min':1.0   ,  'airmass_max':3.0,
+			'pwv_min':0.50 		,  'pwv_max':pwv_max,
+			'A_min':-A_max 		,  'A_max':A_max,
+			'B_min':-1.  	    ,  'B_max':1.    }
 
 tell_sp.wave    = tell_sp.wave[pixel_start:pixel_end]
 tell_sp.flux    = tell_sp.flux[pixel_start:pixel_end]
@@ -321,12 +344,20 @@ def lnlike(theta, data=data):
 
 	if data.instrument.lower() == 'nirspec':
 		deg = 2
-	elif data.instrument.lower() == 'igrins':
+	elif 'igrins' in data.instrument.lower():
 		deg = 4
 
 	model = tellurics.makeTelluricModel(lsf, airmass, pwv, A, B, data=data, deg=deg, niter=None)
 
+	#plt.figure(figsize=(10,5))
+	#plt.plot(data.wave, data.flux, label='data')
+	#plt.plot(model.wave, model.flux, label='model')
+	#plt.legend()
+	#plt.savefig('TEST_telluric_mcmc.png')
+	#sys.exit()
+
 	chisquare = smart.chisquare(data, model)
+	#print(chisquare)
 
 	return -0.5 * (chisquare + np.sum(np.log(2*np.pi*data.noise**2)))
 
@@ -337,19 +368,6 @@ def lnprior(theta):
 	## Parameters for theta
 	#lsf, airmass, pwv, alpha, A, B = theta
 	lsf, airmass, pwv, A, B = theta
-
-	if instrument.lower() == 'nirspec':
-		pwv_max = 20.0
-		A_max   = 500.0
-	elif instrument.lower() == 'igrins':
-		pwv_max = 5.0
-		A_max   = 5000.0
-
-	limits =  { 'lsf_min':2.0  		,  'lsf_max':10.0,
-				'airmass_min':1.0   ,  'airmass_max':3.0,
-				'pwv_min':0.50 		,  'pwv_max':pwv_max,
-				'A_min':-A_max 		,  'A_max':A_max,
-				'B_min':-1.  	    ,  'B_max':1.    }
 
 	if  limits['lsf_min']     < lsf     < limits['lsf_max'] \
 	and limits['airmass_min'] < airmass < limits['airmass_max']\
@@ -372,6 +390,13 @@ pos = [np.array([priors['lsf_min']       + (priors['lsf_max']        - priors['l
 				 priors['pwv_min']       + (priors['pwv_max']        - priors['pwv_min'] )  * np.random.uniform(), 
 				 priors['A_min']         + (priors['A_max']          - priors['A_min'])     * np.random.uniform(),
 				 priors['B_min']         + (priors['B_max']          - priors['B_min'])     * np.random.uniform()]) for i in range(nwalkers)]
+
+# Below is for testing
+#print(tell_sp.path + '/' + tell_sp.name2 + '.wave.fits')
+#sys.exit()
+#sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(data,), a=moves, moves=emcee.moves.KDEMove())
+#sampler.run_mcmc(pos, step, progress=True)
+#sys.exit()
 
 set_start_method('fork')
 with Pool() as pool:
@@ -462,6 +487,8 @@ data2.wave          = data2.wave + B_mcmc[0]
 telluric_model      = tellurics.convolveTelluric(lsf_mcmc[0], airmass_mcmc[0], pwv_mcmc[0], data)
 model, pcont        = smart.continuum(data=data, mdl=telluric_model, deg=2, tell=True)
 model.flux         += A_mcmc[0]
+#deg = 4
+#model = tellurics.makeTelluricModel(lsf_mcmc[0], airmass_mcmc[0], pwv_mcmc[0], A_mcmc[0], B_mcmc[0], data=data, deg=deg, niter=None)
 
 plt.tick_params(labelsize=20)
 fig = plt.figure(figsize=(20,8))
@@ -469,6 +496,7 @@ ax1 = fig.add_subplot(111)
 ax1.plot(model.wave, model.flux, c='C3', ls='-', alpha=0.5)
 ax1.plot(model.wave, np.polyval(pcont, model.wave) + A_mcmc[0], c='C1', ls='-', alpha=0.5)
 ax1.plot(data.wave, data.flux, 'k-', alpha=0.5)
+#ax1.plot(data.wave, data.flux-model.flux,'k-', alpha=0.5)
 ax1.plot(data.wave, data.flux-(model.flux+A_mcmc[0]),'k-', alpha=0.5)
 ax1.minorticks_on()
 plt.figtext(0.89,0.86,"{} O{}".format(tell_data_name, order),
@@ -539,7 +567,7 @@ cat.to_excel(save_to_path + '/mcmc_summary.xlsx', index=False)
 if save is True:
 	if instrument == 'nirspec':
 		data_path = tell_sp.path + '/' + tell_sp.name + '_' + str(tell_sp.order) + '_all.fits'
-	elif instrument == 'igrins':
+	elif 'igrins' in instrument.lower():
 		data_path = tell_sp.path + '/' + tell_sp.name2 + '.wave.fits'
 		print(tell_sp.path)
 		print(tell_sp.name2)

@@ -35,7 +35,7 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     #print('model wave:', type(mdl.wave), mdl.wave[-1])
     #print(data.wave)
     #print(mdl.wave)
-    if data.instrument in ['nirspec', 'hires', 'igrins', 'kpic']:
+    if data.instrument.lower() in ['nirspec', 'hires', 'igrins', 'igrins2', 'kpic']:
         mdl_range      = np.where((mdl.wave >= data.wave[0]) & (mdl.wave <= data.wave[-1]))
         mdl_wave       = mdl.wave[mdl_range]
         mdl_flux       = mdl.flux[mdl_range]
@@ -44,13 +44,13 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     #    mdl_range      = np.where( ((mdl.wave >= data.wave[0]) & (mdl.wave <= data.wave[1350])) | (mdl.wave >= data.wave[1650]) & (mdl.wave <= data.wave[-1])  )
     #    mdl_wave       = mdl.wave[mdl_range]
     #    mdl_flux       = mdl.flux[mdl_range]
-    elif data.instrument in ['apogee']:
+    elif data.instrument.lower() in ['apogee']:
         ## the index for apogee is reversed
         #mdl_range      = np.where((mdl.wave >= data.wave[-1]) & (mdl.wave <= data.wave[0]))
         mdl_wave       = mdl.wave
         mdl_flux       = mdl.flux
 
-    if data.instrument == 'igrins':
+    if 'igrins' in data.instrument.lower():
         # avoid the telluric CH4 region for order 6
         wave = np.concatenate((data.wave[70: 1350], data.wave[1650: -10]), axis=None)
         flux = np.concatenate((data.flux[70: 1350], data.flux[1650: -10]), axis=None)
@@ -65,9 +65,16 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
     ## find mean and stdev of mdldiv
     mean_mdldiv     = np.mean(mdldiv)
     std_mdldiv      = np.std(mdldiv)
+
+    #plt.figure(figsize=(10,5))
+    #plt.plot(data.wave, data.flux, label='data')
+    #plt.plot(wave, mdldiv, label='data')
+    #plt.plot(mdl_wave, mdl_flux, label='model')
+    #plt.legend()
+    #plt.savefig('TEST_telluric_mcmc2.png')
     
     ## replace outliers with average value for nirspec
-    if data.instrument in ['nirspec', 'hires', 'kpic']:
+    if data.instrument.lower() in ['nirspec', 'hires', 'kpic']:
         mdldiv[mdldiv  <= mean_mdldiv - 2 * std_mdldiv] = mean_mdldiv
         mdldiv[mdldiv  >= mean_mdldiv + 2 * std_mdldiv] = mean_mdldiv
         try:
@@ -76,7 +83,7 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
             ## if the length of the data flux and noise are not the same
             pcont           = np.polyfit(data.wave, mdldiv, deg)
     
-    if data.instrument == 'igrins':
+    if 'igrins' in data.instrument.lower():
         #mdldiv[mdldiv  <= mean_mdldiv - 2 * std_mdldiv] = mean_mdldiv
         #mdldiv[mdldiv  >= mean_mdldiv + 2 * std_mdldiv] = mean_mdldiv
         #try:
@@ -84,6 +91,11 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
         #except:
         #    ## if the length of the data flux and noise are not the same
         pcont           = np.polyfit(wave, mdldiv, deg)
+
+        #plt.figure(figsize=(10,5))
+        #plt.plot(wave, mdldiv, label='model')
+        #plt.legend()
+        #plt.savefig('TEST_telluric_mcmc3.png')
 
     ## outlier rejection for apogee
     elif data.instrument == 'apogee':
@@ -93,6 +105,12 @@ def continuum(data, mdl, deg=10, prop=False, tell=False):
         pcont           = np.polyfit(data_wave_fit, mdldiv, deg)
     
     mdl.flux       *= np.polyval(pcont, mdl.wave)
+
+    #plt.figure(figsize=(10,5))
+    #plt.plot(data.wave, data.flux, label='data')
+    #plt.plot(mdl.wave, mdl.flux, label='model')
+    #plt.legend()
+    #plt.savefig('TEST_telluric_mcmc4.png')
 
     if data.instrument == 'apogee':
         constA    = (np.std(data.flux[select_poly_fit])/np.std(mdl.flux[select_poly_fit]))
