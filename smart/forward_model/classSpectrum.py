@@ -73,7 +73,7 @@ class Spectrum():
 				try:
 					self.sky = hdulist[3].data
 				except IndexError:
-					#print("No sky line data.")
+					print("No sky line data.")
 					self.sky = np.zeros(self.wave.shape)
 
 			self.mask  = []
@@ -326,20 +326,13 @@ class Spectrum():
 			self.name2     = kwargs.get('name2') # for wavelength solution using A0V file 
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')
-			self.tell_path = kwargs.get('tell_path')
 			self.apply_sigma_mask = kwargs.get('apply_sigma_mask', False)
 			self.flat_tell = kwargs.get('flat_tell', False)
 			self.spec_a0v  = kwargs.get('spec_a0v', False)
 			self.applymask = kwargs.get('applymask',False)
-			self.wavecal   = kwargs.get('wavecal',False)
-			self.scale     = kwargs.get('scale',False)
 
 			# assign IGRINS data index
-			igrins_order_dict = {
-			                     '77':6, 
-			                     '98':0, '99':1, '100':2, '101':3, '102':4, '103':5, '104':6, '105':7, '106':8, '107':9, '108':10, 
-			                     '109':11, '110':12, '111':13, '112':14, '113':15, '114':16, '115':17, '116':18, '117':19, '118':20, 
-			                    }
+			igrins_order_dict = {'77':6}
 
 			if self.path == None:
 				self.path = './'
@@ -347,71 +340,36 @@ class Spectrum():
 			# follow the IGRINS PIP data product convention
 			# read the flattend spectrum for telluric for wavelength calibration
 			if self.flat_tell:
-				if self.wavecal and self.name.rstrip('_calibrated') == self.name2.rstrip('_calibrated'):
-					fullpath_flux = self.tell_path + '/' + self.name2 + '.wave.fits'
-					fullpath_var = fullpath_flux
-				else:
-					fullpath_flux = self.tell_path + '/' + self.name + '.spec_flattened.fits'
-					fullpath_var  = self.tell_path + '/' + self.name + '.variance.fits'
-				fullpath_wave = fullpath_flux
+				fullpath_flux = self.path + '/' + self.name + '.spec_flattened.fits'
 			elif self.spec_a0v:
 				fullpath_flux = self.path + '/' + self.name + '.spec_a0v.fits'
-				if '_calibrated' in self.name2:
-					fullpath_wave = self.tell_path + '/' + self.name2 + '.wave.fits'
-				else: 
-					fullpath_wave = fullpath_flux
-				fullpath_var  = fullpath_flux
 			else:
 				fullpath_flux = self.path + '/' + self.name + '.spec.fits'
-				fullpath_wave = self.path + '/' + self.name + '.spec_flattened.fits'
-				fullpath_var  = self.path + '/' + self.name + '.variance.fits'
-			#fullpath_wave = self.path + '/' + self.name2 + '.wave.fits'
-			#fullpath_var  = self.path + '/' + self.name + '.variance.fits'
-			#fullpath_wave = fullpath_flux
-			#fullpath_var  = fullpath_flux
+			fullpath_wave = self.path + '/' + self.name2 + '.wave.fits'
+			fullpath_var  = self.path + '/' + self.name + '.variance.fits'
 
 			hdulist = fits.open(fullpath_flux)
 			wave    = fits.open(fullpath_wave)
 			var     = fits.open(fullpath_var)
 
-			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky - NOT TRUE ANYMORE
+			#The indices 0 to 3 correspond to wavelength, flux, noise, and sky
 			if self.flat_tell:
 				if '_calibrated' in self.name2:
-					self.header = wave[1].header
+					self.header = wave[0].header
 				else:
 					self.header = hdulist[0].header
 			else:
 				self.header = hdulist[0].header
 
 			# if the calibrated wavelength, read the data different from the raw data
-			if '_calibrated' in self.name2 and self.name.rstrip('_calibrated') == self.name2.rstrip('_calibrated'):
-				self.wave   = wave[1].data#[igrins_order_dict[str(self.order)]]
-				if self.scale: 
-					self.flux   = hdulist[6].data#[igrins_order_dict[str(self.order)]]
-					self.noise  = np.sqrt(var[8].data)#[igrins_order_dict[str(self.order)]])
-				elif self.flat_tell:
-					self.flux   = hdulist[0].data[igrins_order_dict[str(self.order)]]
-					self.noise  = np.sqrt(var[7].data)#[igrins_order_dict[str(self.order)]])
-				else: 
-					self.flux   = hdulist[0].data[igrins_order_dict[str(self.order)]]
-					self.noise  = np.sqrt(var[0].data[igrins_order_dict[str(self.order)]])
-			elif self.flat_tell:
-				self.wave   = wave[1].data[igrins_order_dict[str(self.order)]] * 1e4 # convert from micron to Angstrom
-				self.flux   = hdulist[0].data[igrins_order_dict[str(self.order)]]
-				self.noise  = np.sqrt(var[0].data[igrins_order_dict[str(self.order)]])
+			if '_calibrated' in self.name2:
+				self.wave = wave[0].data
 			else:
-				if '_calibrated' in self.name2: 
-					self.wave   = wave[1].data#[igrins_order_dict[str(self.order)]] * 1e4 # convert from micron to Angstrom
-				else:
-					self.wave   = wave[1].data[igrins_order_dict[str(self.order)]] * 1e4 # convert from micron to Angstrom
-				if self.spec_a0v:
-					self.flux   = hdulist[4].data[igrins_order_dict[str(self.order)]] 
-					self.noise  = np.sqrt(var[5].data[igrins_order_dict[str(self.order)]])
-				else:
-					self.flux   = hdulist[0].data[igrins_order_dict[str(self.order)]] 
-					self.noise  = np.sqrt(var[0].data[igrins_order_dict[str(self.order)]])
+				self.wave   = wave[0].data[igrins_order_dict[str(self.order)]] * 10.0 # convert from nm to Angstrom
+			self.flux   = hdulist[0].data[igrins_order_dict[str(self.order)]]
+			self.noise  = np.sqrt(var[0].data[igrins_order_dict[str(self.order)]])
 			#self.mask   = []
-			
+
 			self.oriWave  = self.wave
 			self.oriFlux  = self.flux
 			self.oriNoise = self.noise
@@ -518,7 +476,7 @@ class Spectrum():
 		"""
 		pixel        = np.delete(np.arange(len(self.oriWave)),self.mask)[pixel_start: pixel_end]
 		custom_mask2 = pixel[np.where(np.abs(self.flux-model.flux) > sigma*np.std(self.flux-model.flux))]
-		print('Custom mask2:', custom_mask2)
+		print(custom_mask2)
 		custom_mask2 = np.append(custom_mask2, np.array(self.mask))
 		custom_mask2.sort()
 		custom_mask2 = custom_mask2.tolist()

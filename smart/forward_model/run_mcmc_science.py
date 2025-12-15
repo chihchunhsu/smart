@@ -346,7 +346,7 @@ if modelset == 'btsettl08':
 						'N_min':0.10,                               'N_max':N_max 				
 					}
 
-elif modelset == 'sonora':
+elif modelset == 'sonora-2018':
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,200), 'teff_max':min(priors['teff_max']+300,2400),
 						'logg_min':3.5,                             'logg_max':logg_max,
@@ -376,6 +376,19 @@ elif (modelset.upper() == 'PHOENIX-BTSETTL-CIFIST2011-2015') or (modelset.upper(
 	limits         = { 
 						'teff_min':max(priors['teff_min']-300,2300), 'teff_max':min(priors['teff_max']+300,7000),
 						'logg_min':3.5,                             'logg_max':logg_max,
+						'vsini_min':0.0,                            'vsini_max':100.0,
+						'rv_min':-200.0,                            'rv_max':200.0,
+						'am_min':1.0,                               'am_max':3.0,
+						'pwv_min':0.5,                            	'pwv_max':20.0,
+						'A_min':-A_const,							'A_max':A_const,
+						'B_min':-0.6,								'B_max':0.6,
+						'N_min':0.10,                               'N_max':N_max				
+					}
+
+elif (modelset.upper() == 'PHOENIX-ACES-AGSS-COND-2011'):
+	limits         = { 
+						'teff_min':max(priors['teff_min']-300,2300), 'teff_max':min(priors['teff_max']+300,7000),
+						'logg_min':1.0,                             'logg_max':logg_max,
 						'vsini_min':0.0,                            'vsini_max':100.0,
 						'rv_min':-200.0,                            'rv_max':200.0,
 						'am_min':1.0,                               'am_max':3.0,

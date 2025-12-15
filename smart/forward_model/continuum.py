@@ -410,7 +410,7 @@ def continuumTelluric(data, model=None):
         # works for the O33, O34, O36, and O37
         idx = np.isfinite(data.wave) & np.isfinite(data.flux)
         popt, pcov = curve_fit(_continuumFit, data.wave[idx], data.flux[idx])
-        const      = np.mean(data.flux/_continuumFit(data.wave, *popt)) - np.mean(model.flux)
+        const      = np.mean(data.flux/_continuumFit(data.wave, *popt)) - np.nanmean(model.flux)
         if data.order == 57: const = 0
         data.flux  = data.flux/_continuumFit(data.wave, *popt) - const
         data.noise = data.noise/_continuumFit(data.wave, *popt)
