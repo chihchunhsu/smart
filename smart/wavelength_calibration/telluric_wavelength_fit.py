@@ -808,7 +808,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			elif i == 1:
 				if delta_wave_range >= 5:
 					# reduce the delta_wave_range as 5
-					delta_wave_range = 5
+					if order != 31: # only for NIRSPEC order 31
+						delta_wave_range = 5
 					time2 = time.time()
 					best_shift = smart.pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
 													test=test, testname=testname,
@@ -834,8 +835,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			else:
 				# reduce the delta_wave_range as 2
 				time2 = time.time()
-				if delta_wave_range > 2:
-					delta_wave_range = 0.6
+				if order != 31: # only for NIRSPEC order 31
+					if delta_wave_range > 2:
+						delta_wave_range = 0.6
 				if i > 4:
 					step = 0.01
 				best_shift = smart.pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
@@ -1384,6 +1386,8 @@ def run_wave_cal(data_name, data_path, order_list,
 		# continuum correction for the data
 		data1    = copy.deepcopy(data)
 		data     = smart.continuumTelluric(data=data, model=model)
+		
+		
 		## constant offset correction
 		const    = np.median(data.flux) - np.median(model.flux)
 		data.flux -= const

@@ -411,12 +411,21 @@ def continuumTelluric(data, model=None):
         idx = np.isfinite(data.wave) & np.isfinite(data.flux)
         popt, pcov = curve_fit(_continuumFit, data.wave[idx], data.flux[idx])
         const      = np.mean(data.flux/_continuumFit(data.wave, *popt)) - np.nanmean(model.flux)
-        if data.order == 57: const = 0
+        if data.order in [31, 57]: const = 0
         data.flux  = data.flux/_continuumFit(data.wave, *popt) - const
         data.noise = data.noise/_continuumFit(data.wave, *popt)
         #if not data.applymask:
         data2.flux  = data2.flux/_continuumFit(data2.wave, *popt) - const
         data2.noise = data2.noise/_continuumFit(data2.wave, *popt)
         data        = data2
+
+        # some scaling for order 31 since it has deep telluric water absorption
+        if data.order == 31:
+            scale_max = np.percentile(data.flux, 99)
+            scale_min = np.min(data.flux)
+
+            if scale_min < 0:
+                data.flux += abs(scale_min) # elevate the baseline
+                data.flux = data.flux/(scale_max + abs(scale_min)) # scale back to 0 and 1
 
     return data
