@@ -50,7 +50,23 @@ class Spectrum():
 	"""
 	def __init__(self, **kwargs):
 		self.instrument = kwargs.get('instrument','nirspec')
-		if (self.instrument == 'nirspec') or (self.instrument == 'kpic'):
+		# a generic spectrum class
+		if self.instrument is None:
+			self.name      = kwargs.get('name')
+			self.order     = kwargs.get('order')
+			self.path      = kwargs.get('path')
+			self.apply_sigma_mask = kwargs.get('apply_sigma_mask',False)
+
+			self.header = None
+			self.wave   = np.nan
+			self.flux   = np.nan
+			self.noise  = np.nan
+			self.mask   = []
+			self.oriWave  = np.nan
+			self.oriFlux  = np.nan
+			self.oriNoise = np.nan
+
+		elif (self.instrument == 'nirspec') or (self.instrument == 'kpic'):
 			self.name      = kwargs.get('name')
 			self.order     = kwargs.get('order')
 			self.path      = kwargs.get('path')

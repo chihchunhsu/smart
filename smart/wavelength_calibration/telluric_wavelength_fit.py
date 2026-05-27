@@ -808,7 +808,9 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			elif i == 1:
 				if delta_wave_range >= 5:
 					# reduce the delta_wave_range as 5
-					if order != 31: # only for NIRSPEC order 31
+					if order == 31: # only for NIRSPEC order 31
+						delta_wave_range = 5
+					else:
 						delta_wave_range = 5
 					time2 = time.time()
 					best_shift = smart.pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
@@ -835,9 +837,8 @@ def wavelengthSolutionFit(data, model, order, **kwargs):
 			else:
 				# reduce the delta_wave_range as 2
 				time2 = time.time()
-				if order != 31: # only for NIRSPEC order 31
-					if delta_wave_range > 2:
-						delta_wave_range = 0.6
+				if delta_wave_range > 2:
+					delta_wave_range = 0.6
 				if i > 4:
 					step = 0.01
 				best_shift = smart.pixelWaveShift(data3, model, j, width, delta_wave_range, model2,
