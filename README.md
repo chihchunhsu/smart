@@ -84,7 +84,7 @@ To calibrate the most precise wavelength solutions with a given data, we rely on
 The parameters `data_name`, `data_path`, `save_to_path` have the type str, while `order_list` has the type list. The optional parameter `applymask` provides a simple sigma-clipping mask to remove cosmic rays in the telluric spectrum. The optional parameter `pwv` is the precipitable water vapor parameter for users to adjust. Typically, 0.5 mm to 3.0 mm can fit most cases under different weather conditions. 
 
 ## Forward Modeling Science and Telluric Spectra:
-To fit the science data, `SMART` provides various self-consistent synthetic modeling grids to forward-model the data that are available to download [here](https://drive.google.com/drive/folders/1P-NrlxdyX3nphRgN4R-4oS86BKZ4Z9th). Users will need to place the downloaded files in `smart/libraries`.
+To fit the science data, `SMART` provides various self-consistent synthetic modeling grids to forward-model the data that are available to download [here](https://drive.google.com/drive/folders/1_23bl-BXqlFlrO7EIJX3FeFI4Rix-6kP?usp=sharing). Users will need to place the downloaded files in `smart/libraries`.
 
 We perform the MCMC forward-modeling fitting to the high-resolution near-infrared spectroscopic data for both the telluric and science files.
 
