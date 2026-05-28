@@ -117,5 +117,20 @@ def barycorr(header, instrument='nirspec'):
 
 		barycorr = sc.radial_velocity_correction(obstime=Time(ut, scale='utc'), location=loc)
 
+	elif instrument == 'pepsi':
+		## LBT Observatory
+		loc = EarthLocation.of_site('LBT')
+
+		ut      = header['DATE-OBS'] + 'T' + header['TIME-OBS']
+
+		coord = SkyCoord(header['RA'] + ' ' + header['DEC'], unit=(u.hourangle, u.deg))
+
+		ra   = float(coord.ra.degree) # deg
+		dec  = float(coord.dec.degree) # deg
+
+		sc      = SkyCoord(ra=ra*u.deg, dec=dec*u.deg, equinox='J2000', frame='fk5')
+
+		barycorr = sc.radial_velocity_correction(obstime=Time(ut, scale='utc'), location=loc)
+
 	
 	return barycorr.to(u.km/u.s)
