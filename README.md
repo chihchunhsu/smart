@@ -5,8 +5,8 @@ For NIRSPEC users, required adjustments need to be made before reducing private 
 
 Authors:
 * Dino Chih-Chun Hsu (Northwestern, UCSD)
-* Adam Burgasser, PI (UCSD)
 * Chris Theissen (UCSD, BU)
+* Adam Burgasser (UCSD)
 * Jessica Birky (UW, UCSD)
 * Lingfeng Wei (UCSD)
 
