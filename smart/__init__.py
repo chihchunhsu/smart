@@ -31,6 +31,6 @@ from .utils.interpolations import bilinear_interpolation, trilinear_interpolatio
 try:
 	from .utils.defringeflat import defringeflat, defringeflatAll
 except ImportError:
-	print("You need to install the wavelets package (https://github.com/aaren/wavelets) to use defringeflat functions.")
+	#print("You need to install the wavelets package (https://github.com/aaren/wavelets) to use defringeflat functions.")
 	pass
 #from .utils.subtractDark import subtractDark
